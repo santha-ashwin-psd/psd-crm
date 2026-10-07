@@ -1,0 +1,686 @@
+{
+  "info": {
+    "name": "CRM \u2014 Website Lead Capture",
+    "description": "Website inquiry capture for ieagents.co.in.\n\nONE endpoint: POST /api/method/crm.api.web_lead.capture_inquiry\n\nSetup\n-----\n1. Open the collection Variables tab.\n2. Set `base_url` (default http://localhost:8001).\n3. Set `api_key` to the secret from the CRM Web Lead Key record.\n\nThe key is sent as the `X-Lead-Api-Key` header on every request, inherited from collection-level auth-free headers set per request.\n\nNotes\n-----\n- Frappe wraps every response in {\"message\": {...}} \u2014 read response.message, not the top level.\n- `duplicate: true` is a SUCCESS, not an error: the person already enquired and the new answers were attached to their existing lead as a note.\n- Requests 1 and 5 share {{dup_email}}/{{dup_mobile}} so you can prove dedup: run 'Consultation' then 'Duplicate \u2014 same email'.\n- Rate limit is 30 requests/minute per IP. Running the whole folder repeatedly will eventually return 429, which is correct behaviour.\n\nZapier\n------\nRequests 12 and 13 cover the Zapier path: retries are idempotent for 10 minutes (same key + form_type + email/mobile), and every error body carries a stable `code` to branch on.\n\nEnvironments\n------------\nDev : http://localhost:8001\nLive: https://crm.psdigitise.com\nSwitch with the `base_url` collection variable. The key differs per environment \u2014 a key created on the dev bench does not exist on live.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8001",
+      "type": "string",
+      "description": "CRM base URL, no trailing slash. Dev: http://localhost:8001 \u2014 Live: https://crm.psdigitise.com"
+    },
+    {
+      "key": "api_key",
+      "value": "",
+      "type": "string",
+      "description": "Value for X-Lead-Api-Key. Get it from the CRM Web Lead Key record."
+    },
+    {
+      "key": "endpoint",
+      "value": "/api/method/crm.api.web_lead.capture_inquiry",
+      "type": "string"
+    },
+    {
+      "key": "dup_email",
+      "value": "postman.dedup@example.com",
+      "type": "string",
+      "description": "Shared by the dedup pair. Change it to re-run dedup from a clean slate."
+    },
+    {
+      "key": "dup_mobile",
+      "value": "9876500123",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Fresh identity per request, so repeated runs do not all collide on",
+          "// the dedup rule and report false 'duplicate' results.",
+          "const n = Math.random().toString(36).slice(2, 8);",
+          "pm.collectionVariables.set('rand', n);",
+          "pm.collectionVariables.set('rand_email', `postman.${n}@example.com`);",
+          "// Valid Indian mobile: 10 digits starting 6-9.",
+          "const mobile = '9' + Math.floor(100000000 + Math.random() * 899999999);",
+          "pm.collectionVariables.set('rand_mobile', mobile);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Applies to every request in the collection.",
+          "pm.test('response is JSON', () => pm.response.json());",
+          "if (pm.response.code === 401) {",
+          "    console.log('401 \u2014 check the api_key collection variable');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Consultation form \u2014 creates a lead",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Lead-Api-Key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"form_type\": \"consultation\",\n  \"first_name\": \"arun\",\n  \"last_name\": \"kumar\",\n  \"email\": \"{{dup_email}}\",\n  \"mobile_no\": \"98765 00123\",\n  \"city\": \"Chennai\",\n  \"page_url\": \"https://ieagents.co.in/\",\n  \"utm_source\": \"google\",\n  \"utm_medium\": \"cpc\",\n  \"utm_campaign\": \"study-abroad-2026\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        },
+        "description": "The 'Book Free Consultation' popup. Note the deliberately messy input: lowercase names and a spaced mobile. The response lead will have 'Arun Kumar' and '+919876500123'."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json().message;",
+              "pm.test('success', () => pm.expect(b.success).to.be.true);",
+              "pm.test('a lead name came back', () => pm.expect(b.lead).to.be.a('string'));",
+              "if (!b.duplicate) {",
+              "    pm.collectionVariables.set('first_lead', b.lead);",
+              "    console.log('created', b.lead);",
+              "} else {",
+              "    console.log('already existed ->', b.lead, '(change dup_email to start clean)');",
+              "    pm.collectionVariables.set('first_lead', b.lead);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Evaluation form \u2014 creates a lead",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Lead-Api-Key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"form_type\": \"evaluation\",\n  \"first_name\": \"Divya\",\n  \"last_name\": \"Sundaram\",\n  \"email\": \"{{rand_email}}\",\n  \"mobile_no\": \"{{rand_mobile}}\",\n  \"city\": \"Coimbatore\",\n  \"highest_qualification\": \"Bachelors in Commerce\",\n  \"course_level\": \"Masters\",\n  \"preferred_state\": \"New South Wales\",\n  \"start_timeline\": \"Feb 2027 Intake\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        },
+        "description": "'Start your free evaluation'. The four extra fields land on custom_highest_qualification, custom_course_level, custom_preferred_state and custom_start_timeline."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json().message;",
+              "pm.test('success', () => pm.expect(b.success).to.be.true);",
+              "pm.test('not a duplicate (random identity)', () => pm.expect(b.duplicate).to.be.false);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Contact form \u2014 minimal payload",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Lead-Api-Key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"form_type\": \"contact\",\n  \"first_name\": \"Rahul\",\n  \"mobile_no\": \"{{rand_mobile}}\",\n  \"city\": \"Madurai\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        },
+        "description": "Only first_name and mobile_no are required. No email at all \u2014 that is allowed."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "pm.test('success without an email', () => pm.expect(pm.response.json().message.success).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Form-encoded body (instead of JSON)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Lead-Api-Key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "form_type",
+              "value": "contact"
+            },
+            {
+              "key": "first_name",
+              "value": "Priya"
+            },
+            {
+              "key": "mobile_no",
+              "value": "{{rand_mobile}}"
+            },
+            {
+              "key": "city",
+              "value": "Trichy"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        },
+        "description": "The endpoint accepts application/x-www-form-urlencoded as well as JSON, for form plugins that cannot send a JSON body."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "pm.test('success', () => pm.expect(pm.response.json().message.success).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Duplicate \u2014 same email, different mobile",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Lead-Api-Key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"form_type\": \"evaluation\",\n  \"first_name\": \"Arun\",\n  \"email\": \"{{dup_email}}\",\n  \"mobile_no\": \"{{rand_mobile}}\",\n  \"course_level\": \"Masters\",\n  \"preferred_state\": \"Victoria\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        },
+        "description": "RUN REQUEST 1 FIRST.\n\nSame person, second form, different phone. No new lead is created \u2014 the evaluation answers are attached to the existing lead as a note. Returns duplicate:true, which is a success."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json().message;",
+              "pm.test('duplicate:true is still success:true', () => {",
+              "    pm.expect(b.success).to.be.true;",
+              "    pm.expect(b.duplicate).to.be.true;",
+              "});",
+              "const first = pm.collectionVariables.get('first_lead');",
+              "if (first) {",
+              "    pm.test('points at the SAME lead as request 1', () => pm.expect(b.lead).to.eql(first));",
+              "} else {",
+              "    console.log('run request 1 first to assert the lead name matches');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Duplicate \u2014 same mobile, different email",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Lead-Api-Key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"form_type\": \"consultation\",\n  \"first_name\": \"Arun\",\n  \"email\": \"{{rand_email}}\",\n  \"mobile_no\": \"{{dup_mobile}}\",\n  \"city\": \"Chennai\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        },
+        "description": "RUN REQUEST 1 FIRST.\n\nMatching is email OR normalised mobile. '9876500123' here normalises to the same +919876500123 as the '98765 00123' in request 1."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json().message;",
+              "pm.test('matched on mobile despite formatting', () => pm.expect(b.duplicate).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Missing first_name \u2014 400",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Lead-Api-Key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"form_type\": \"consultation\",\n  \"last_name\": \"Kumar\",\n  \"mobile_no\": \"{{rand_mobile}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('400', () => pm.response.to.have.status(400));",
+              "const b = pm.response.json().message;",
+              "pm.test('success:false', () => pm.expect(b.success).to.be.false);",
+              "pm.test('says which field', () => pm.expect(b.message).to.include('First name'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Invalid mobile \u2014 400",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Lead-Api-Key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"form_type\": \"consultation\",\n  \"first_name\": \"Arun\",\n  \"mobile_no\": \"12345\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        },
+        "description": "Also try: '1234567890' (starts with 1), '+1 415 555 0142' (not Indian), 'abcdefghij'. All rejected. Accepted: '9876543210', '09876543210', '919876543210', '+91 98765 43210'."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('400', () => pm.response.to.have.status(400));",
+              "pm.test('mentions the mobile', () => pm.expect(pm.response.json().message.message).to.include('mobile'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Invalid email \u2014 400",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Lead-Api-Key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"form_type\": \"consultation\",\n  \"first_name\": \"Arun\",\n  \"mobile_no\": \"{{rand_mobile}}\",\n  \"email\": \"not-an-email\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        },
+        "description": "Email is optional \u2014 but if you send one it must be valid. Omit the field or send \"\" when the form has no email."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('400', () => pm.response.to.have.status(400));",
+              "pm.test('mentions the email', () => pm.expect(pm.response.json().message.message).to.include('Email'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Wrong API key \u2014 401",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Lead-Api-Key",
+            "value": "definitely-not-the-key"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"first_name\": \"Arun\",\n  \"mobile_no\": \"{{rand_mobile}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('401', () => pm.response.to.have.status(401));",
+              "pm.test('no lead created', () => pm.expect(pm.response.json().message.lead).to.be.null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. No API key header \u2014 401",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"first_name\": \"Arun\",\n  \"mobile_no\": \"{{rand_mobile}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        },
+        "description": "The key is accepted ONLY from the X-Lead-Api-Key header, never from the body \u2014 a key in the body would end up in access logs and in our own payload log."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Zapier retry \u2014 identical resend, no new lead",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Lead-Api-Key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"form_type\": \"consultation\",\n  \"first_name\": \"Arun\",\n  \"email\": \"{{dup_email}}\",\n  \"mobile_no\": \"98765 00123\",\n  \"city\": \"\",\n  \"last_name\": \"null\",\n  \"zap_id\": \"01HXYZ-example\",\n  \"Raw Body\": \"{...}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        },
+        "description": "RUN REQUEST 1 FIRST, then send this one TWICE.\n\nShaped the way Zapier actually posts:\n- `city` is an empty string (unmapped field)\n- `last_name` is the literal word \"null\"\n- `zap_id` and `Raw Body` are fields we do not know about\n\nAll three are tolerated: blanks and blank-words are treated as missing, unknown fields are ignored.\n\nThe retry behaviour: an identical submission (same key + form_type + email/mobile) within 10 minutes returns the ORIGINAL lead with duplicate:true and writes no second note. Send it 3 times \u2014 the lead name never changes and the lead's note count stays put."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json().message;",
+              "pm.test('success', () => pm.expect(b.success).to.be.true);",
+              "pm.test('duplicate:true', () => pm.expect(b.duplicate).to.be.true);",
+              "const first = pm.collectionVariables.get('first_lead');",
+              "if (first) pm.test('same lead as request 1', () => pm.expect(b.lead).to.eql(first));",
+              "console.log('lead:', b.lead, '\u2014 send again, it must not change');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Error codes \u2014 for Zap filters",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Lead-Api-Key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"first_name\": \"Arun\",\n  \"mobile_no\": \"12345\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}{{endpoint}}",
+          "host": [
+            "{{base_url}}{{endpoint}}"
+          ]
+        },
+        "description": "Every error body carries a stable `code` next to the human `message`:\n\nmissing_first_name | invalid_mobile | invalid_email | invalid_api_key | ip_not_allowed | internal_error\n\nBranch on `code` in a Zapier Filter. The `message` is translated and may be reworded; the `code` will not move."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('400', () => pm.response.to.have.status(400));",
+              "const b = pm.response.json().message;",
+              "pm.test('carries a machine-readable code', () => pm.expect(b.code).to.eql('invalid_mobile'));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

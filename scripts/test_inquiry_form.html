@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IEA — Inquiry Form Simulator</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --surface: #ffffff;
+        --border: #e2e5ea;
+        --text: #1b1f26;
+        --muted: #646b78;
+        --accent: #2563eb;
+        --ok: #148a4a;
+        --err: #c02626;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 32px 16px;
+        background: var(--bg);
+        color: var(--text);
+        font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .wrap { max-width: 760px; margin: 0 auto; }
+      h1 { font-size: 20px; margin: 0 0 4px; }
+      .sub { color: var(--muted); margin: 0 0 24px; }
+      .warn {
+        background: #fff8e6;
+        border: 1px solid #f0d9a0;
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin-bottom: 24px;
+        color: #6b4e00;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      .card h2 { font-size: 15px; margin: 0 0 16px; }
+      label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+      input, select {
+        width: 100%;
+        height: 38px;
+        padding: 0 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        margin-bottom: 12px;
+      }
+      input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+      .req::after { content: " *"; color: var(--err); }
+      button {
+        height: 40px;
+        padding: 0 18px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      pre {
+        background: #0f1115;
+        color: #e6e8ec;
+        padding: 14px;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-size: 12.5px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .status { font-weight: 600; margin-bottom: 8px; }
+      .status.ok { color: var(--ok); }
+      .status.err { color: var(--err); }
+      @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>IEA Inquiry Form Simulator</h1>
+      <p class="sub">Posts to <code>crm.api.web_lead.capture_inquiry</code> exactly as the website's backend would.</p>
+
+      <div class="warn">
+        <strong>Local testing only.</strong> This page puts the API key in the browser, which the real
+        integration must never do. On the live site the key stays on your server: the browser posts to
+        <em>your</em> backend, your backend checks the captcha and then calls the CRM with the key.
+        That is also why this endpoint sends no CORS headers — opening this file straight from disk
+        (<code>file://</code>) will be blocked by the browser. Serve it over http instead:
+        <code>python3 -m http.server 8080</code>, then open <code>http://localhost:8080/scripts/test_inquiry_form.html</code>.
+      </div>
+
+      <div class="card">
+        <h2>Connection</h2>
+        <label for="base">CRM base URL</label>
+        <input id="base" value="http://localhost:8001" />
+        <label for="key" class="req">X-Lead-Api-Key</label>
+        <input id="key" placeholder="paste the key from CRM Web Lead Key" />
+      </div>
+
+      <form class="card" id="form">
+        <h2>Inquiry</h2>
+
+        <label for="form_type">Form type</label>
+        <select id="form_type">
+          <option value="consultation">consultation — Book Free Consultation</option>
+          <option value="evaluation">evaluation — Start your free evaluation</option>
+          <option value="contact">contact — Contact page</option>
+        </select>
+
+        <div class="row">
+          <div>
+            <label for="first_name" class="req">First Name</label>
+            <input id="first_name" value="Arun" />
+          </div>
+          <div>
+            <label for="last_name">Last Name</label>
+            <input id="last_name" value="Kumar" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="email">Email Address</label>
+            <input id="email" type="email" value="arun.kumar@example.com" />
+          </div>
+          <div>
+            <label for="mobile_no" class="req">Mobile Number</label>
+            <input id="mobile_no" value="98765 43210" />
+          </div>
+        </div>
+
+        <label for="city">City You Are Calling From</label>
+        <input id="city" value="Chennai" />
+
+        <!-- Shown for the evaluation form; harmless to send on any form type. -->
+        <div class="row">
+          <div>
+            <label for="highest_qualification">Highest Qualification</label>
+            <input id="highest_qualification" value="Bachelors in Commerce" />
+          </div>
+          <div>
+            <label for="course_level">Course Level</label>
+            <input id="course_level" value="Masters" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="preferred_state">Preferred State</label>
+            <input id="preferred_state" value="New South Wales" />
+          </div>
+          <div>
+            <label for="start_timeline">Start Timeline</label>
+            <input id="start_timeline" value="Feb 2027 Intake" />
+          </div>
+        </div>
+
+        <button type="submit" id="submit">Submit inquiry</button>
+      </form>
+
+      <div class="card">
+        <h2>Response</h2>
+        <div class="status" id="status">Not sent yet.</div>
+        <pre id="out">—</pre>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const FIELDS = [
+        'first_name', 'last_name', 'email', 'mobile_no', 'city',
+        'highest_qualification', 'course_level', 'preferred_state', 'start_timeline',
+      ];
+
+      $('form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const key = $('key').value.trim();
+        if (!key) {
+          $('status').className = 'status err';
+          $('status').textContent = 'Enter the API key first.';
+          return;
+        }
+
+        const payload = { form_type: $('form_type').value, page_url: location.href };
+        for (const f of FIELDS) {
+          const v = $(f).value.trim();
+          if (v) payload[f] = v;
+        }
+
+        $('submit').disabled = true;
+        $('status').className = 'status';
+        $('status').textContent = 'Sending…';
+
+        const url = $('base').value.replace(/\/$/, '') + '/api/method/crm.api.web_lead.capture_inquiry';
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Lead-Api-Key': key },
+            body: JSON.stringify(payload),
+          });
+          const text = await res.text();
+          let body;
+          try {
+            body = JSON.parse(text);
+            // Frappe wraps whitelisted return values in {"message": ...}
+            if (body && body.message !== undefined) body = body.message;
+          } catch { body = text; }
+
+          const ok = res.ok && body && body.success;
+          $('status').className = 'status ' + (ok ? 'ok' : 'err');
+          $('status').textContent =
+            'HTTP ' + res.status + (body && body.message ? ' — ' + body.message : '');
+          $('out').textContent =
+            'REQUEST\n' + JSON.stringify(payload, null, 2) +
+            '\n\nRESPONSE\n' + (typeof body === 'string' ? body : JSON.stringify(body, null, 2));
+        } catch (err) {
+          $('status').className = 'status err';
+          $('status').textContent = 'Request failed (see the note about CORS above).';
+          $('out').textContent = String(err);
+        } finally {
+          $('submit').disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

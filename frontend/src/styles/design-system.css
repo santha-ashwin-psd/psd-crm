@@ -1,0 +1,364 @@
+/* ============================================================================
+   CRM DESIGN SYSTEM — radius, spacing, type, tone, and the primitives built
+   from them.
+   ============================================================================
+
+   WHERE THIS SITS
+
+   index.css line 1 imports `frappe-ui/style.css`, which is the file carrying
+   `@tailwind base`. So the framework's own base-layer `:root` (including the
+   `--radius-*` variables its preset generates) is emitted at the very top of
+   the bundle, and this file — imported on line 2 — comes after it. That is why
+   the plain `:root` blocks below override framework variables with no
+   `!important`, no `@layer` juggling and no specificity tricks.
+
+   DIVISION OF LABOUR
+
+     design-system.css   the SCALES: radius, spacing, type, semantic tone,
+                         and the shared primitives composed from them.
+     index.css           the --crm-* surface/text/status palette, the dark
+                         theme, and the override layer that reshapes
+                         frappe-ui's rendered markup.
+
+   Rule of thumb: if a value answers "how big / how round / how loud", it
+   belongs here. If it answers "what colour is this surface", it belongs in
+   index.css. Override-layer rules should EXPRESS themselves in these tokens
+   rather than restating literals.
+   ========================================================================= */
+
+:root {
+  /* ---- RADIUS -------------------------------------------------------------
+     frappe-ui's preset rewires every `rounded-*` utility to `var(--radius-*)`
+     (see tailwind/plugin.js#buildRadiusConfig), so redefining the aliases here
+     retunes all ~319 utility usages app-wide without touching one component.
+
+     The stock scale ran 4 / 8 / 10 / 12 / 16 / 20px. Topping out at 20px is
+     what made cards read playful rather than professional. Retuned to five
+     steps, each with exactly one job:
+
+        4px   badges, status pills, small chips
+        8px   controls — buttons, inputs, dropdown items, menu rows
+       10px   cards, panels, list surfaces
+       12px   dialogs, modals, large panels
+       14px   the largest containers only
+
+     Only the ALIASES are retuned. The numeric scale (`rounded-4`, `rounded-7`…)
+     keeps the framework's values: app code uses none of it (verified across
+     every .vue file under src), so frappe-ui's internal components keep their
+     intended shape and we change only what we actually render. */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 14px;
+
+  /* CRM-facing aliases — the same five steps named by ROLE, so hand-written
+     component CSS reads as intent ("this is a control") rather than as a
+     measurement ("this is 8px"). Prefer these in .vue <style> blocks.
+
+     `--crm-radius` keeps its historic name and 12px value: the dialog chrome
+     in index.css references it, and dialogs are exactly the 12px step. */
+  --crm-radius-xs: 4px; /* badge / pill / chip     */
+  --crm-radius-sm: 8px; /* control                 */
+  --crm-radius-md: 10px; /* card / panel            */
+  --crm-radius: 12px; /* dialog / large panel    */
+  --crm-radius-lg: 14px; /* largest container       */
+  --crm-radius-pill: 9999px; /* true pills and circles  */
+
+  /* ---- SPACING ------------------------------------------------------------
+     Tailwind's own 4px-based scale already covers utility classes. These exist
+     for hand-written CSS, which is where the drift actually lives — the app
+     had `11px 13px`, `14px 16px`, `15px 18px` and `18px 20px` all describing
+     the same "card padding" idea.
+
+     Eight steps, and nothing between them. If a value here doesn't fit, the
+     answer is to pick the nearer step, not to add a ninth. */
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 20px;
+  --space-7: 24px;
+  --space-8: 32px;
+
+  /* No composite aliases. --pad-card, --pad-control and --gap-tight/default/
+     section lived here and were consumed by nothing: five names asserting a
+     convention that no rule followed, which is worse than no name at all.
+     Hand-written CSS reaches for the eight steps directly. */
+
+  /* ---- TYPOGRAPHY ---------------------------------------------------------
+     One ladder, seven rungs. Sizes are absolute px (not rem): the root stays
+     at 16px to protect Tailwind's spacing scale, so density is driven by the
+     body size instead — see the `body` rule in index.css.
+
+     NOTE — deliberate deviation from the brief. The design brief asks for
+     14–15px body text. This app runs a 13px body, chosen with the Books
+     density language and applied consistently across list rows, side panels
+     and detail tiles. Raising it to 14px would reflow every table and panel in
+     the product for a readability gain the 13px/1.5 pairing already delivers.
+     `--text-body-lg` (14px) is provided for prose-like contexts (note bodies,
+     email content, activity text) where the extra size does earn its space. */
+  --text-overline: 10.5px; /* uppercase micro-labels    */
+  --text-caption: 11px; /* captions, trends, meta    */
+  --text-secondary: 12px; /* secondary / muted copy    */
+  --text-body: 13px; /* body — the app's default  */
+  --text-body-lg: 14px; /* prose-like content        */
+  --text-section-title: 15px; /* section headings          */
+  --text-page-title: 20px; /* page headings             */
+  --text-metric: 22px; /* KPI / primary values      */
+
+  /* 420, not 400. frappe-ui's own token map defines regular as 420 and bakes
+     it into every text utility it generates; InterVariable is loaded and has
+     the axis to render the difference, so a 400 here would put two regular
+     weights on screen at once. See the `body` rule in index.css. */
+  --weight-normal: 420;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --tracking-overline: 0.05em;
+  --tracking-tight: -0.01em;
+
+  /* ---- NAVIGATION SURFACES ------------------------------------------------
+     The sidebar is deliberately dark in BOTH themes — it is the app's fixed
+     frame, not a themed content surface — so these have no dark-mode variant
+     and must not be folded into the --crm-* surface tokens, which do flip.
+
+     Extracted verbatim from the hex literals that were spread across
+     AppSidebar.vue, SidebarLink.vue and the `.crm-sidebar-banners` block in
+     index.css. Values are unchanged; the point is that the sidebar's palette
+     now has ONE home and can be retuned in one edit instead of sixteen. */
+  --nav-bg: #21263c; /* sidebar body            */
+  --nav-bg-brand: #181c2e; /* brand row               */
+  --nav-bg-hover: #333850; /* item / section hover    */
+  --nav-bg-raised: #262c44; /* footer banner cards     */
+  --nav-bg-control: #1f2937; /* collapse button hover   */
+  --nav-border: #1f2937; /* internal hairlines      */
+  --nav-border-raised: #333a57; /* banner card border      */
+  --nav-border-control: #374151; /* control outlines        */
+  --nav-edge: #0d1117; /* outer right edge        */
+
+  --nav-text: #f0f0f0; /* default item label      */
+  --nav-text-soft: #e5e7eb; /* sidebar container text  */
+  --nav-text-strong: #ffffff; /* hover / active label    */
+  --nav-text-brand: #f9fafb; /* wordmark                */
+  --nav-text-heading: #f1f5f9; /* banner headings         */
+  --nav-text-body: #e2e8f0; /* banner body             */
+  --nav-text-muted: #97a1bd; /* banner secondary        */
+  --nav-text-dim: #9ca3af; /* icon-button rest state  */
+  --nav-icon: #cbd5e1; /* banner icons            */
+
+  --nav-danger: #fca5a5;
+  --nav-danger-soft: rgba(248, 113, 113, 0.12);
+
+  /* The active item is the one place the sidebar uses the brand accent, so it
+     tracks --crm-accent-* rather than restating the blue. */
+  --nav-active-bg: var(--crm-accent-primary);
+  --nav-active-bg-hover: var(--crm-accent-hover);
+  --nav-active-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.35);
+}
+
+/* ============================================================================
+   SEMANTIC TONE
+   ============================================================================
+   The brief's core colour rule: colour must carry MEANING, never decoration.
+   A tone class sets three variables and nothing else; the primitives below
+   (and any component) consume them via `var(--tone*)`. That way one element
+   can be re-toned by swapping a single class, and nothing needs a dynamic
+   Tailwind class name that the purge step could drop.
+
+     --tone        the saturated hue — icons, values, indicators
+     --tone-soft   the wash        — chip and badge fills
+     --tone-text   readable text on a --tone-soft background
+
+   Pair with utils/statusTheme.js, which maps a raw status string onto one of
+   these five and is the only place that decision is made.
+   ========================================================================= */
+.crm-tone-success {
+  --tone: var(--crm-success);
+  --tone-soft: var(--crm-success-soft);
+  --tone-text: var(--crm-success);
+}
+.crm-tone-danger {
+  --tone: var(--crm-danger);
+  --tone-soft: var(--crm-danger-soft);
+  --tone-text: var(--crm-danger);
+}
+.crm-tone-warning {
+  --tone: var(--crm-warning);
+  --tone-soft: var(--crm-warning-soft);
+  --tone-text: var(--crm-warning);
+}
+.crm-tone-info {
+  --tone: var(--crm-info);
+  --tone-soft: var(--crm-info-soft);
+  --tone-text: var(--crm-accent-text);
+}
+.crm-tone-neutral {
+  --tone: var(--crm-text-3);
+  --tone-soft: var(--crm-surface-2);
+  --tone-text: var(--crm-text-2);
+}
+
+/* ============================================================================
+   PRIMITIVES
+   ============================================================================
+   Built only from the scales above. Each exists because the same shape was
+   already being rebuilt inline in several places.
+   ========================================================================= */
+
+/* ---- Surface ------------------------------------------------------------
+   The brief prefers a hairline border and surface contrast over shadow (§10,
+   §11), so the card has no shadow at all. */
+.crm-card {
+  background: var(--crm-surface);
+  border: 1px solid var(--crm-border);
+  border-radius: var(--crm-radius-md);
+}
+/* A card that is itself a control — a KPI card that filters the list, a
+   selectable tile. Every such surface was inventing its own hover: one lifted
+   2px with a heavy shadow, another only changed its border. Subtle and shared:
+   the border firms up, a small shadow appears, nothing moves on hover (motion
+   is reserved for drag feedback). */
+.crm-card--interactive {
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.15s var(--crm-ease),
+    box-shadow 0.15s var(--crm-ease),
+    background-color 0.15s var(--crm-ease);
+}
+.crm-card--interactive:hover {
+  border-color: var(--crm-border-strong);
+  box-shadow: var(--crm-shadow-sm);
+}
+.crm-card--interactive:focus-visible {
+  outline: 2px solid var(--crm-accent-primary);
+  outline-offset: 2px;
+}
+/* Selected state — the accent ring, never a fill, so the card's own tone stays
+   readable underneath. */
+.crm-card--interactive[aria-pressed='true'],
+.crm-card--interactive.is-selected {
+  border-color: var(--crm-accent-primary);
+  box-shadow: inset 0 0 0 1px var(--crm-accent-primary);
+}
+
+/* Containment — a card clips what it holds. Charts render at their own
+   intrinsic size and will otherwise paint their axes, gridlines and labels
+   outside the card's rounded edge at narrow widths. Any panel that hosts a
+   chart or another sized-by-content child should carry this. */
+.crm-card--contain {
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ---- Badge --------------------------------------------------------------
+   The one badge in the app, rendered only through components/StatusBadge.vue.
+   It replaced `.crm-status-pill`, which took its fill from `currentColor` set
+   by a Tailwind text class the caller passed in — so a surface that passed no
+   class rendered an achromatic grey, and each of the six callers carried its
+   own colour map. Here the tone is explicit and semantic: a property of the
+   status, not of the call site. */
+.crm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 3px var(--space-3);
+  border-radius: var(--crm-radius-xs);
+  font-size: var(--text-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  white-space: nowrap;
+  color: var(--tone-text, var(--crm-text-2));
+  background: var(--tone-soft, var(--crm-surface-2));
+}
+
+/* ---- Type ---------------------------------------------------------------
+   Semantic classes so a heading is marked up as a heading instead of being
+   reassembled from `text-xl font-semibold tracking-tight` at each call site. */
+.crm-section-title {
+  font-size: var(--text-section-title);
+  font-weight: var(--weight-semibold);
+  line-height: 1.35;
+  color: var(--crm-text);
+}
+/* Uppercase is reserved for genuine scanning aids — column heads, KPI labels,
+   metadata keys — never for body copy (§12). */
+.crm-overline {
+  font-size: var(--text-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--crm-text-4);
+}
+
+/* ---- Key-facts tile -----------------------------------------------------
+   The strip of label/value tiles under the record hero on the Lead, Deal,
+   Contact and Organization detail pages. It was defined four times, byte-for-
+   byte identical, in four `<style scoped>` blocks. Global because it is shared
+   by four pages; expressed in tokens so it tracks the scales above. */
+.fact-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  /* space-between, not flex-start: the grid row stretches every tile to the
+     tallest, and a two-word heading like COMPANY SIZE wraps once the columns
+     get narrow (~1024px, six across). Pinning the value to the bottom keeps
+     all six values on one line across the strip instead of letting the wrapped
+     tile drop its value half a row below its neighbours'. */
+  justify-content: space-between;
+  gap: var(--space-1);
+  width: 100%;
+  min-width: 0;
+  padding: 11px 13px;
+  text-align: left;
+  border: 1px solid var(--crm-border);
+  border-radius: var(--crm-radius-md);
+  background: var(--crm-surface);
+  cursor: default; /* display-only tiles — not clickable */
+}
+/* The KEY is the heading here, not a caption. These tiles are scanned by
+   looking for the field you want ("where's the phone number?") and only then
+   reading the value, so the label has to win the first glance.
+
+   Both sit at --text-body: an email address is the payload of its tile and
+   goes smaller than the body size only at the cost of reading it. The
+   hierarchy is carried by weight, case and colour instead — bold uppercase
+   near-black against medium sentence-case --crm-text-2 — which separates the
+   two lines just as clearly as a size step would, and keeps the value legible.
+
+   Tracking is pulled in a little from --tracking-overline: uppercase, bold and
+   wide letterspacing all push the same direction, and at 13px the three
+   together would shout. */
+.fact-k {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-body);
+  line-height: 1.3;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--crm-text);
+  font-weight: var(--weight-bold);
+}
+/* The leading glyph keeps its size when the heading wraps beside it. */
+.fact-k > svg {
+  flex-shrink: 0;
+}
+.fact-v {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--crm-text-2);
+}
+.fact-empty {
+  color: var(--crm-text-4);
+  font-weight: var(--weight-medium);
+}

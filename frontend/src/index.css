@@ -1,0 +1,3004 @@
+@import 'frappe-ui/style.css';
+/* The scales — radius, spacing, type, semantic tone — and the primitives built
+   from them. Imported second on purpose: `frappe-ui/style.css` is the file
+   carrying `@tailwind base`, so the framework's generated `:root` (including
+   its `--radius-*` variables) is emitted above this and can be retuned here
+   with a plain `:root`. This file owns "how big / how round / how loud";
+   index.css owns "what colour is this surface". */
+@import './styles/design-system.css';
+
+@layer base {
+  :root {
+    /* ---- Books design tokens (standardized on accent #2563eb) ---- */
+    --crm-accent-primary: #2563eb;
+    --crm-accent-hover: #1d4ed8;
+    --crm-accent-soft: #eff6ff;
+    --crm-accent-text: #1d4ed8;
+
+    /* Surfaces & borders */
+    --crm-bg: #f0f2f5; /* Books --bv-bg (app content background) */
+    --crm-surface: #ffffff;
+    --crm-surface-2: #f3f3fe;
+    --crm-topbar: #f7f7fe; /* Books topbar — mild violet-white */
+    --crm-border: #e5e7eb;
+    --crm-border-strong: #d1d5db;
+    --crm-row-border: #f0f2f5;
+
+    /* Text */
+    --crm-text: #111827;
+    --crm-text-2: #374151;
+    --crm-text-3: #6b7280;
+    --crm-text-4: #9ca3af;
+
+    /* Status pairs (color / soft-bg / text) */
+    --crm-success: #16a34a;
+    --crm-success-soft: #f0fdf4;
+    --crm-danger: #dc2626;
+    --crm-danger-soft: #fef2f2;
+    --crm-warning: #d97706;
+    --crm-warning-soft: #fffbeb;
+    --crm-info: #2563eb;
+    --crm-info-soft: #dbeafe;
+    --crm-purple: #7c3aed;
+    --crm-purple-soft: #f5f3ff;
+
+    /* Shadow / motion. The radius scale (--crm-radius*) lives in
+       styles/design-system.css, which owns every size-and-shape token. */
+    --crm-shadow-sm:
+      0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
+    --crm-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    --crm-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1);
+    --crm-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Glass helpers (kept for existing consumers) */
+    --crm-surface-glass: rgba(255, 255, 255, 0.75);
+    --crm-border-glass: rgba(226, 232, 240, 0.8);
+
+    /* Tokens backing the list/skeleton !important literals (so they flip by theme).
+       Values matched to Books' table (inv-table-wrap / th / row-hover). */
+    --crm-table-border: #e5e7eb; /* Books inv-table-wrap border */
+    --crm-list-header-bg: #f9f9fb; /* Books th background */
+    --crm-list-header-border: #e8ecf0; /* Books th 2px bottom border */
+    --crm-list-header-item: #6b7280;
+    --crm-row-hover: #f8faff; /* Books inv-row:hover */
+    --crm-filter-bg: #f1f2f5; /* Filter fields + toolbar buttons fill */
+    --crm-checkbox-border: #cbd5e1;
+    --crm-skeleton-base: #f1f5f9;
+    --crm-skeleton-mid: #e8edf5;
+
+    /* Settings modal palette — sampled from the reference design. The sidebar is
+       a faint blue-tinted off-white (not pure white), and the chips/banner sit
+       lighter + more indigo than the general --crm-info-soft. */
+    --crm-settings-sidebar: #f7f8fd;
+    --crm-settings-border: #eceef3;
+    --crm-settings-wash: rgba(219, 234, 254, 0.5);
+    --crm-chip-blue: #e7ecfe;
+    --crm-chip-green: #e8f5eb;
+    --crm-banner-blue: #f2f5fc;
+
+    /* Dialog chrome. The radius stays at --crm-radius (12px) on purpose:
+       Settings' sidebar is `m-1 rounded-l-lg` inside an overflow-hidden panel,
+       and a larger panel radius exposes a sliver of --crm-bg at its corners. */
+    --crm-overlay: rgba(15, 19, 32, 0.42);
+    --crm-dialog-radius: var(--crm-radius);
+  }
+
+  /* =====================================================
+     DARK THEME — midnight navy, cohesive with the navy sidebar.
+     Redefines every --crm-* token so all var-driven surfaces flip at once.
+     ===================================================== */
+  [data-theme='dark'] {
+    --crm-accent-primary: #2563eb;
+    --crm-accent-hover: #3b82f6;
+    --crm-accent-soft: rgba(37, 99, 235, 0.16);
+    --crm-accent-text: #93c5fd;
+
+    --crm-bg: #0f1320;
+    --crm-surface: #1a1f33;
+    --crm-surface-2: #222842;
+    --crm-topbar: #161a2d;
+    --crm-border: #2b3350;
+    --crm-border-strong: #3a4568;
+    --crm-row-border: #242a44;
+
+    --crm-text: #e5e7eb;
+    --crm-text-2: #cbd5e1;
+    --crm-text-3: #94a3b8;
+    --crm-text-4: #64748b;
+
+    --crm-success: #22c55e;
+    --crm-success-soft: rgba(22, 163, 74, 0.16);
+    --crm-danger: #ef4444;
+    --crm-danger-soft: rgba(220, 38, 38, 0.18);
+    --crm-warning: #f59e0b;
+    --crm-warning-soft: rgba(217, 119, 6, 0.18);
+    --crm-info: #3b82f6;
+    --crm-info-soft: rgba(37, 99, 235, 0.18);
+    --crm-purple: #a78bfa;
+    --crm-purple-soft: rgba(124, 58, 237, 0.2);
+
+    --crm-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --crm-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+    --crm-shadow-lg: 0 12px 34px rgba(0, 0, 0, 0.55);
+
+    --crm-surface-glass: rgba(26, 31, 51, 0.72);
+    --crm-border-glass: rgba(255, 255, 255, 0.08);
+
+    --crm-table-border: #2b3350;
+    --crm-list-header-bg: #171b2c;
+    --crm-list-header-border: #2b3350;
+    --crm-list-header-item: #94a3b8;
+    --crm-row-hover: rgba(255, 255, 255, 0.04);
+    --crm-filter-bg: #222842; /* dark: match surface-2 */
+    --crm-checkbox-border: #3a4568;
+    --crm-skeleton-base: #1c2138;
+    --crm-skeleton-mid: #2a3150;
+
+    --crm-settings-sidebar: #171b2c;
+    --crm-settings-border: #262e48;
+    --crm-settings-wash: rgba(37, 99, 235, 0.16);
+    --crm-chip-blue: rgba(37, 99, 235, 0.24);
+    --crm-chip-green: rgba(22, 163, 74, 0.22);
+    --crm-banner-blue: rgba(37, 99, 235, 0.12);
+
+    --crm-overlay: rgba(2, 4, 10, 0.66);
+  }
+
+  /* Custom Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.35);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.6);
+  }
+
+  html,
+  body {
+    height: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background-color: var(--crm-bg) !important;
+  }
+
+  /* Hide Frappe framework default web navbar/header & footer so SPA fills viewport */
+  #website-navbar,
+  .web-footer,
+  body > .navbar,
+  header.navbar,
+  .navbar-default,
+  .frappe-nav {
+    display: none !important;
+  }
+
+  /* Books typography: stock Inter, dense 13px base, tight tracking.
+     Root rem stays 16px (protects Tailwind spacing); density is body-size driven.
+     No stylistic sets — Books uses plain 'Inter', so digits/letters keep their
+     default shapes (see books.css --font). */
+  body {
+    font-family:
+      'InterVar',
+      'Inter',
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
+    font-size: 13px;
+    /* ONE regular weight for the app. frappe-ui bakes `font-weight: 420` into
+       all 121 of its generated text utilities (its token map maps
+       regular -> 420), while unstyled text was inheriting the browser's 400.
+       InterVariable really is loaded and covers the 100-900 axis, so those two
+       rendered as genuinely different weights side by side. Matching the
+       framework here is the low-risk direction: forcing its utilities down to
+       400 would mean overriding 121 selectors and fighting `font-medium`
+       in the cascade. */
+    font-weight: var(--weight-normal);
+    color: var(--crm-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: -0.005em;
+  }
+}
+
+/* Books typeface parity — Books renders stock Inter with no OpenType stylistic
+   sets, so we explicitly reset feature settings on every element. Without this,
+   any alternate letterforms inherited from frappe-ui / the html root (open
+   digits, single-story a, slashed 0) leak into buttons, inputs, list cells and
+   number displays. Unlayered + !important so it beats Tailwind preflight. */
+html,
+body,
+#app,
+#app *,
+#app *::before,
+#app *::after {
+  font-feature-settings: normal !important;
+  font-variant-ligatures: normal;
+}
+
+/* =====================================================
+   Re-base frappe-ui's blue token family → Books blue (#2563eb)
+   The linked @framework/ui (Tailwind v4 / OKLCH) exposes surface/ink/
+   outline-blue-1..10 + ink-blue-link. We remap the light-mode ramp to
+   the brand blue so every blue accent (links, blue buttons, toggle "on",
+   active-tab underline, focus rings) reads #2563eb. Unlayered :root so it
+   wins over the framework's layered theme vars. App is light-only.
+   ===================================================== */
+:root {
+  /* surfaces: 1 = lightest tint → 10 = darkest fill */
+  --surface-blue-1: #eff6ff;
+  --surface-blue-2: #dbeafe;
+  --surface-blue-3: #bfdbfe;
+  --surface-blue-4: #93c5fd;
+  --surface-blue-5: #60a5fa;
+  --surface-blue-6: #3b82f6;
+  --surface-blue-7: #2563eb;
+  --surface-blue-8: #1d4ed8;
+  --surface-blue-9: #1e40af;
+  --surface-blue-10: #1e3a8a;
+
+  /* text: 1 = white (text on blue) → readable link blue at 6 */
+  --ink-blue-1: #ffffff;
+  --ink-blue-2: #bfdbfe;
+  --ink-blue-3: #93c5fd;
+  --ink-blue-4: #60a5fa;
+  --ink-blue-5: #3b82f6;
+  --ink-blue-6: #2563eb;
+  --ink-blue-7: #1d4ed8;
+  --ink-blue-8: #1e40af;
+  --ink-blue-9: #1e3a8a;
+  --ink-blue-10: #172554;
+  --ink-blue-link: #2563eb;
+
+  /* borders / focus rings */
+  --outline-blue-1: #dbeafe;
+  --outline-blue-2: #bfdbfe;
+  --outline-blue-3: #93c5fd;
+  --outline-blue-4: #60a5fa;
+  --outline-blue-5: #3b82f6;
+  --outline-blue-6: #2563eb;
+  --outline-blue-7: #1d4ed8;
+  --outline-blue-8: #1e40af;
+  --outline-blue-9: #1e3a8a;
+  --outline-blue-10: #172554;
+}
+
+/* Dark-mode blue ramp — keeps blue accents on-brand (#2563eb family) in dark
+   instead of reverting to the framework's default. Tints are dark, fills stay
+   saturated, and link/text tokens go lighter for contrast on dark surfaces. */
+[data-theme='dark'] {
+  --surface-blue-1: #16213a;
+  --surface-blue-2: #1b2c4d;
+  --surface-blue-3: #22375f;
+  --surface-blue-4: #2a4680;
+  --surface-blue-5: #2f5fd0;
+  --surface-blue-6: #2563eb;
+  --surface-blue-7: #3b82f6;
+  --surface-blue-8: #60a5fa;
+  --surface-blue-9: #93c5fd;
+  --surface-blue-10: #bfdbfe;
+
+  --ink-blue-1: #ffffff;
+  --ink-blue-2: #bfdbfe;
+  --ink-blue-3: #93c5fd;
+  --ink-blue-4: #60a5fa;
+  --ink-blue-5: #3b82f6;
+  --ink-blue-6: #93c5fd;
+  --ink-blue-7: #60a5fa;
+  --ink-blue-8: #3b82f6;
+  --ink-blue-9: #2563eb;
+  --ink-blue-10: #1d4ed8;
+  --ink-blue-link: #93c5fd;
+
+  --outline-blue-1: #22375f;
+  --outline-blue-2: #2a4680;
+  --outline-blue-3: #2f5fd0;
+  --outline-blue-4: #3b82f6;
+  --outline-blue-5: #3b82f6;
+  --outline-blue-6: #2563eb;
+  --outline-blue-7: #60a5fa;
+  --outline-blue-8: #93c5fd;
+  --outline-blue-9: #bfdbfe;
+  --outline-blue-10: #dbeafe;
+}
+
+@layer components {
+  .prose-f {
+    @apply break-all
+			max-w-none
+			prose
+			prose-code:break-all
+			prose-code:whitespace-pre-wrap
+			prose-img:border
+			prose-img:rounded-lg
+			prose-sm
+			prose-table:table-fixed
+			prose-td:border
+			prose-td:border-outline-gray-2
+			prose-td:p-2
+			prose-td:relative
+			prose-th:bg-surface-gray-2
+			prose-th:border
+			prose-th:border-outline-gray-2
+			prose-th:p-2
+			prose-th:relative;
+  }
+
+  /* Premium Glassmorphic Surface */
+  .glass-panel {
+    background: var(--crm-surface-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--crm-border-glass);
+  }
+
+  /* Subtle Card Hover Effects */
+  .premium-card {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow:
+      0 1px 3px 0 rgba(0, 0, 0, 0.04),
+      0 1px 2px 0 rgba(0, 0, 0, 0.02);
+  }
+
+  .premium-card-hover {
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .premium-card-hover:hover {
+    transform: translateY(-1.5px);
+    box-shadow:
+      0 10px 25px -5px rgba(0, 0, 0, 0.06),
+      0 4px 10px -2px rgba(0, 0, 0, 0.03);
+  }
+
+  /* Subtle Focus Ring */
+  .focus-ring-premium {
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all duration-150;
+  }
+
+  /* KPI cards: a tone-coloured BORDER only — the card's own surface fills it,
+     so there is no tint wash and no card-in-card. The tone comes from the
+     `.crm-tone-*` class utils/dashboardCards.js derives from what the metric
+     MEANS; the five `card-kpi-blue|emerald|rose|teal|neutral` classes this
+     replaced were keyed on the metric name and, failing that, on the card's
+     position in the grid — which is how "Won deals" ended up drawn in rose,
+     the danger colour, and why a metric changed colour when the dashboard was
+     rearranged. One rule now covers light and dark, because `--tone` is
+     already theme-aware. */
+  [class*='crm-tone-'].dash-kpi-card {
+    border: 1px solid color-mix(in srgb, var(--tone) 45%, var(--crm-surface));
+  }
+
+  /* The Dashboard NumberChart renders its own `bg-surface-base` box; inside our
+     KPI cards that shows as a darker inner rectangle in dark mode. Drop it so it
+     inherits the card surface (no card-in-card, both themes). */
+  .dash-kpi-card .bg-surface-base {
+    background-color: transparent !important;
+  }
+
+  /* Pill Buttons & Search */
+  .pill-input {
+    @apply rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20;
+  }
+
+  /* Sidebar footer banners (GettingStarted / Signup / Trial / SalesHierarchy).
+     These are frappe-ui cards (bg-surface-elevation-2 + ink-gray text + a Button)
+     that otherwise render as stark light cards on the dark navy sidebar. Re-skin
+     them as subtle raised-navy cards with a solid-blue primary action. */
+  .crm-sidebar-banners > div {
+    background: var(--nav-bg-raised) !important;
+    border: 1px solid var(--nav-border-raised) !important;
+    box-shadow: none !important;
+    border-radius: var(--crm-radius-md) !important;
+  }
+  .crm-sidebar-banners .text-ink-gray-9 {
+    color: var(--nav-text-heading) !important;
+  }
+  .crm-sidebar-banners .text-ink-gray-8 {
+    color: var(--nav-text-body) !important;
+  }
+  .crm-sidebar-banners .text-ink-gray-7 {
+    color: var(--nav-text-muted) !important;
+  }
+  .crm-sidebar-banners svg,
+  .crm-sidebar-banners [class^='lucide-'],
+  .crm-sidebar-banners [class*=' lucide-'] {
+    color: var(--nav-icon);
+  }
+  /* Primary action (frappe-ui Button carries `justify-center`; the small
+     dismiss "x" buttons do not, so they keep the lightened ink-gray color). */
+  .crm-sidebar-banners button.justify-center {
+    background: var(--nav-active-bg) !important;
+    color: var(--nav-text-strong) !important;
+    border-color: var(--nav-active-bg) !important;
+    font-weight: 500 !important;
+  }
+  .crm-sidebar-banners button.justify-center:hover {
+    background: var(--nav-active-bg-hover) !important;
+  }
+  .crm-sidebar-banners button.justify-center svg,
+  .crm-sidebar-banners button.justify-center [class^='lucide-'] {
+    color: var(--nav-text-strong) !important;
+  }
+
+  /* Redesigned List Table & Row Overrides — matched to Books (inv-table-wrap:
+     white surface, 1px #e5e7eb border, 10px radius, border only / no shadow). */
+  .crm-table-card {
+    margin-left: 0.75rem;
+    margin-right: 0.75rem;
+    margin-top: 0.75rem;
+    border-radius: var(--crm-radius-md); /* Books inv-table-wrap */
+    border: 1px solid var(--crm-table-border);
+    background-color: var(--crm-surface);
+    box-shadow: none;
+    overflow: hidden;
+  }
+  @media (min-width: 640px) {
+    .crm-table-card {
+      margin-left: 1.25rem;
+      margin-right: 1.25rem;
+    }
+  }
+
+  .frappe-list-view,
+  [class*='ListView'] {
+    position: relative;
+  }
+
+  /* ---------- Horizontal overflow ----------
+     A list wider than its card was reading as "content cut off at the right
+     edge". It was not actually clipped: frappe-ui's ListView root is already
+     an `overflow-x-auto` container wrapping BOTH the header grid and the rows,
+     so they scroll together and everything is reachable. The problem was that
+     it scrolled invisibly — the app-wide scrollbar rule paints a 6px thumb on
+     a transparent track, which macOS/iOS render as an overlay scrollbar that
+     is completely hidden until a scroll gesture begins. With no scrollbar, no
+     shadow and no fade, a truncated column header is indistinguishable from a
+     layout bug.
+
+     The affordance cannot be the scrollbar itself. Where the OS uses overlay
+     scrollbars — the macOS default, and what this app is developed against —
+     the bar is painted over the content only during a scroll gesture and
+     occupies no layout space, and NO CSS can opt out of that: setting
+     `scrollbar-width`, or styling ::-webkit-scrollbar explicitly, both leave
+     `offsetHeight - clientHeight` at 0 (measured, not assumed).
+
+     So the edge is painted instead, with the standard four-layer scroll-shadow
+     technique. Two "cover" gradients sit at the left and right edges and
+     scroll WITH the content (`local`); two shadow gradients are fixed to the
+     container (`scroll`). At the far left the left cover hides the left
+     shadow; scroll right and the cover moves away, revealing it. The result is
+     a soft shadow on exactly the side that has more content, and none when
+     there is nothing more to see — so a cut-off column now reads as "scroll
+     this way" rather than as a broken layout.
+
+     The scrollbar rules below still matter on Windows and Linux, where
+     classic scrollbars do occupy space; they are a complement to the shadows,
+     not the mechanism. Applied on the shared `.crm-table-card`, so every list
+     page inherits it and no page needs its own fix. */
+  .crm-table-card > .overflow-x-auto {
+    background:
+      /* covers — scroll with the content */
+      linear-gradient(to right, var(--crm-surface), transparent) left center /
+        36px 100% no-repeat local,
+      linear-gradient(to left, var(--crm-surface), transparent) right center /
+        36px 100% no-repeat local,
+      /* shadows — fixed to the container, revealed as a cover moves away */
+        radial-gradient(
+          farthest-side at 0 50%,
+          rgba(15, 23, 42, 0.13),
+          transparent
+        )
+        left center / 15px 100% no-repeat scroll,
+      radial-gradient(
+          farthest-side at 100% 50%,
+          rgba(15, 23, 42, 0.13),
+          transparent
+        )
+        right center / 15px 100% no-repeat scroll;
+    background-color: var(--crm-surface);
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: var(--crm-border-strong) var(--crm-list-header-bg);
+  }
+  [data-theme='dark'] .crm-table-card > .overflow-x-auto {
+    background-image:
+      linear-gradient(to right, var(--crm-surface), transparent),
+      linear-gradient(to left, var(--crm-surface), transparent),
+      radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.5), transparent),
+      radial-gradient(
+        farthest-side at 100% 50%,
+        rgba(0, 0, 0, 0.5),
+        transparent
+      );
+  }
+  .crm-table-card > .overflow-x-auto::-webkit-scrollbar {
+    height: 10px;
+  }
+  .crm-table-card > .overflow-x-auto::-webkit-scrollbar-track {
+    background: var(--crm-list-header-bg);
+    border-top: 1px solid var(--crm-border);
+  }
+  .crm-table-card > .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: var(--crm-border-strong);
+    border-radius: var(--crm-radius-pill);
+    /* Inset the thumb inside the track so it reads as a handle, not a fill. */
+    border: 3px solid var(--crm-list-header-bg);
+  }
+  .crm-table-card > .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: var(--crm-text-4);
+  }
+
+  /* ---------- Record-page tab strip ----------
+     Nine tabs do not fit the left card below ~1300px, and the strip hides its
+     scrollbar. Same treatment as the table above: a fade pinned to the edge,
+     revealed only once there is something scrolled out of view — so "Notes"
+     and "Attachments" announce themselves instead of silently vanishing. */
+  .crm-record-tabs [role='tablist'] {
+    background:
+      linear-gradient(to right, var(--crm-surface), transparent) left center /
+        28px 100% no-repeat local,
+      linear-gradient(to left, var(--crm-surface), transparent) right center /
+        28px 100% no-repeat local,
+      radial-gradient(
+          farthest-side at 0 50%,
+          rgba(15, 23, 42, 0.11),
+          transparent
+        )
+        left center / 12px 100% no-repeat scroll,
+      radial-gradient(
+          farthest-side at 100% 50%,
+          rgba(15, 23, 42, 0.11),
+          transparent
+        )
+        right center / 12px 100% no-repeat scroll;
+    background-color: var(--crm-surface);
+  }
+  [data-theme='dark'] .crm-record-tabs [role='tablist'] {
+    background-image:
+      linear-gradient(to right, var(--crm-surface), transparent),
+      linear-gradient(to left, var(--crm-surface), transparent),
+      radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.5), transparent),
+      radial-gradient(
+        farthest-side at 100% 50%,
+        rgba(0, 0, 0, 0.5),
+        transparent
+      );
+  }
+
+  /* ---------- List table ----------
+     frappe-ui's list parts carry NO semantic class names, so we target their
+     real utility-class structure, scoped to the shared .crm-table-card wrapper
+     (used by every *ListView). */
+
+  /* Header → a flush, defined band (roomier, uppercase, tracked). The default
+     is a floating rounded `bg-surface-gray-2` bar with margin. */
+  /* Header → Books th: bg #f9f9fb, 2px bottom border #e8ecf0, 11px/600, 10px 14px
+     padding, uppercase gray. */
+  .crm-table-card .grid.items-center.rounded.bg-surface-gray-2 {
+    margin-bottom: 0 !important;
+    border-radius: 0 !important;
+    background-color: var(--crm-list-header-bg) !important;
+    border-bottom: 2px solid var(--crm-list-header-border) !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--crm-list-header-item) !important;
+  }
+
+  /* The column label sits in an inner `div.text-sm` (14px) inside each
+     ListHeaderItem, which overrides the container size — so target it directly
+     to get Books' smaller 11px + a slightly bolder weight. */
+  .crm-table-card .grid.items-center.rounded.bg-surface-gray-2 .text-sm {
+    font-size: 11px !important;
+    font-weight: var(--weight-semibold) !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  /* Rows → Books td density: 11px/14px padding, 13px text, 1px #f0f2f5 divider. */
+  .crm-table-card .grid.items-center.gap-4.px-2 {
+    height: auto !important;
+    min-height: 2.75rem !important;
+    padding-top: 11px !important;
+    padding-bottom: 11px !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    font-size: 13px !important;
+    color: var(--crm-text-2) !important;
+  }
+
+  /* Row density: the grid owns the vertical rhythm, the cells do not.
+     Each cell ships its own `py-3` (24px), which stacked on top of the row
+     grid's 11px padding and made every row 63px tall — half of it padding
+     applied twice. Zeroing the cell padding lets the row's own min-height and
+     padding define density, which brings a row to ~45px: dense enough for a
+     business list, still comfortably above the 24px avatar it has to hold. */
+  .crm-table-card .grid.items-center.gap-4.px-2 > * {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Numbers line up. ListRowItem maps a column's `align` onto a justify
+     utility, so a right-aligned column is the currency/number column —
+     tabular figures keep the decimal points in a straight line down the
+     column, which is most of what makes a money column readable. */
+  .crm-table-card .justify-end {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Row divider + hover (Books: border-bottom 1px #f0f2f5, hover #f8faff). */
+  .crm-table-card .flex.flex-col.transition-all {
+    border-bottom: 1px solid var(--crm-row-border) !important;
+  }
+  .crm-table-card .flex.flex-col.transition-all:last-child {
+    border-bottom: none !important;
+  }
+  .crm-table-card .flex.flex-col.transition-all:hover {
+    background-color: var(--crm-row-hover) !important;
+  }
+
+  /* The status badge lives in styles/design-system.css as `.crm-badge`, and is
+     rendered only through components/StatusBadge.vue.
+
+     `.crm-status-pill` used to sit here. It took its colour from
+     `currentColor`, set by a Tailwind text class the caller passed in — which
+     meant a surface that passed no class (every CRM Deal row) rendered an
+     achromatic grey badge, and each of the six callers kept its own colour map
+     to decide what to pass. `.crm-badge` reads a semantic tone instead, so the
+     colour is a property of the status rather than of the call site. */
+
+  /* Name-column initials avatar → blue shade (image avatars render an <img>,
+     so only the initials placeholder <div> is tinted). */
+  .crm-name-avatar > div {
+    background-color: #dbe1ff !important;
+    color: #2563eb !important;
+    font-weight: 600 !important;
+  }
+
+  .frappe-list-footer,
+  [class*='ListFooter'] {
+    background-color: var(--crm-list-header-bg) !important;
+    border-top: 1px solid var(--crm-border) !important;
+    padding: 0.5rem 1.25rem !important;
+    color: var(--crm-text-3) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+  }
+
+  .frappe-list-footer button,
+  [class*='ListFooter'] button {
+    border-radius: var(--crm-radius-xs) !important;
+    font-weight: 600 !important;
+  }
+
+  /* =====================================================
+     frappe-ui SOLID buttons → Books blue primary
+     The default (gray) solid button renders dark/near-black
+     (bg-surface-gray-10); the blue-themed solid uses bg-blue-500
+     (frappe-ui's brighter blue). Retarget both to our accent so
+     every primary action matches Books. Scoped to <button>/<a>
+     so surfaces/badges using the same bg-* are untouched, and
+     red/green themed solids (their own bg-*) stay semantic.
+
+     Written as [class~="..."] rather than `button.bg-blue-500`: an
+     element-qualified Tailwind utility gets its class rewritten by the dark
+     variant into `:is(.dark, [data-theme="dark"] *)button svg`, which is
+     invalid, so browsers dropped these rules entirely in dark mode.
+     ===================================================== */
+  button[class~='bg-surface-gray-10'],
+  a[class~='bg-surface-gray-10'],
+  button[class~='bg-blue-500'],
+  a[class~='bg-blue-500'] {
+    background-color: var(--crm-accent-primary) !important;
+    color: #ffffff !important;
+  }
+  button[class~='bg-surface-gray-10']:hover,
+  a[class~='bg-surface-gray-10']:hover,
+  button[class~='bg-blue-500']:hover,
+  a[class~='bg-blue-500']:hover {
+    background-color: var(--crm-accent-hover) !important;
+  }
+  button[class~='bg-surface-gray-10']:active,
+  a[class~='bg-surface-gray-10']:active,
+  button[class~='bg-blue-500']:active,
+  a[class~='bg-blue-500']:active {
+    background-color: #1e40af !important;
+  }
+  /* keep icon/label white on the blue primary */
+  button[class~='bg-surface-gray-10'] svg,
+  button[class~='bg-blue-500'] svg,
+  a[class~='bg-surface-gray-10'] svg,
+  a[class~='bg-blue-500'] svg {
+    color: #ffffff !important;
+  }
+
+  /* Custom Checkboxes matching the blue accent */
+  input[type='checkbox'] {
+    border-radius: var(--crm-radius-xs) !important;
+    border: 1px solid var(--crm-checkbox-border) !important;
+    color: var(--crm-accent-primary) !important;
+    cursor: pointer !important;
+    transition: all 0.15s var(--crm-ease) !important;
+  }
+  input[type='checkbox']:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+  }
+
+  /* Kanban Drag & Drop Visuals */
+  .kanban-ghost-card {
+    opacity: 0.35;
+    border: 2px dashed var(--crm-accent-primary) !important;
+    background-color: rgba(37, 99, 235, 0.05) !important;
+    box-shadow: none !important;
+  }
+
+  .kanban-chosen-card {
+    transform: rotate(1.5deg);
+    box-shadow:
+      0 20px 25px -5px rgba(37, 99, 235, 0.12),
+      0 10px 10px -5px rgba(37, 99, 235, 0.06) !important;
+  }
+
+  .kanban-column-container {
+    transition:
+      background-color 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  /* Floating Glassmorphic Bulk Selection Banner */
+  .custom-select-banner {
+    position: fixed !important;
+    bottom: 2rem !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1.5rem !important;
+    padding: 0.75rem 1.5rem !important;
+    background: rgba(15, 23, 42, 0.88) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow:
+      0 20px 25px -5px rgba(0, 0, 0, 0.25),
+      0 10px 10px -5px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 9999px !important;
+    z-index: 50 !important;
+    /* Hug the content (so all bulk actions fit) up to the viewport width,
+       instead of a fixed 650px that squeezed the label onto two lines. */
+    width: max-content !important;
+    max-width: calc(100vw - 2.5rem) !important;
+    white-space: nowrap !important;
+    color: #ffffff !important;
+    font-family: 'Inter', sans-serif !important;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  /* Force all text (divs/spans/buttons) light — the banner's contents use
+     dark ink-gray tokens that are invisible on the dark pill. */
+  .custom-select-banner,
+  .custom-select-banner div,
+  .custom-select-banner span,
+  .custom-select-banner button {
+    color: #f1f5f9 !important;
+    white-space: nowrap !important;
+  }
+  .custom-select-banner span {
+    font-weight: 500 !important;
+  }
+  /* Soften the internal divider so it reads on dark */
+  .custom-select-banner [class*='border-outline'] {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  .custom-select-banner button {
+    transition: background-color 0.15s ease !important;
+  }
+
+  .custom-select-banner button:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  /* Checkbox bounce micro-interaction */
+  .task-checkbox {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .task-checkbox:active {
+    transform: scale(0.85);
+  }
+  .task-checkbox:checked {
+    animation: checkbox-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes checkbox-bounce {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.22);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Emerald Glowing active in-call */
+  .shadow-glow-emerald {
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+  }
+
+  /* Prefers Reduced Motion Fallback */
+  @media (prefers-reduced-motion: reduce) {
+    .task-checkbox,
+    .task-checkbox:checked,
+    .kanban-chosen-card,
+    .kanban-column-container,
+    .custom-select-banner,
+    .activity,
+    .animate-pulse {
+      animation: none !important;
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+
+  /* =====================================================
+     Phase 6 — Motion & Skeleton Tokens
+     ===================================================== */
+
+  /* Shimmer keyframe — the "moving highlight" skeleton animation */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--crm-skeleton-base) 25%,
+      var(--crm-skeleton-mid) 50%,
+      var(--crm-skeleton-base) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+    border-radius: var(--crm-radius-sm);
+  }
+
+  /* Canonical fade-in-up for modals (CommandPalette already uses this inline) */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Vue <Transition name="modal"> — fade + subtle scale */
+  .modal-enter-active {
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .modal-leave-active {
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease;
+  }
+  .modal-enter-from,
+  .modal-leave-to {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+
+  /* Vue <Transition name="drawer"> — slide from right */
+  .drawer-enter-active {
+    transition:
+      opacity 0.2s ease,
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .drawer-leave-active {
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease;
+  }
+  .drawer-enter-from,
+  .drawer-leave-to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+
+  /* =====================================================
+     Phase 6 — Toast Override Layer
+     (frappe-ui toast portal uses class selectors that
+      contain "toast"; this upgrades them to match our
+      premium design language without touching frappe-ui)
+     ===================================================== */
+  [class*='toast-container'] > *,
+  [class*='Toast'] {
+    border-radius: var(--crm-radius-lg) !important;
+    box-shadow:
+      0 10px 25px -5px rgba(0, 0, 0, 0.1),
+      0 4px 10px -2px rgba(0, 0, 0, 0.05) !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
+    border: 1px solid var(--crm-border) !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* =====================================================
+     Phase 6 — Mobile Bulk Selection Banner Fix
+     On small screens the full-width pill was overflowing.
+     ===================================================== */
+  @media (max-width: 640px) {
+    .custom-select-banner {
+      bottom: 1rem !important;
+      width: calc(100% - 1rem) !important;
+      max-width: unset !important;
+      border-radius: var(--crm-radius-lg) !important;
+      padding: 0.625rem 1rem !important;
+      gap: 0.75rem !important;
+      flex-wrap: wrap !important;
+    }
+  }
+
+  /* Reduced-motion: also suppress skeleton shimmer */
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer {
+      animation: none !important;
+      background: var(--crm-skeleton-base) !important;
+    }
+    .animate-fade-in-up {
+      animation: none !important;
+    }
+    .modal-enter-active,
+    .modal-leave-active,
+    .drawer-enter-active,
+    .drawer-leave-active {
+      transition: none !important;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Filter bar (list pages) — redesigned as ONE cohesive control strip. Every
+   control (text inputs, Select/Link/Date triggers, and the action buttons)
+   shares the same 34px height, 8px radius and hairline border, defined by crisp
+   borders on white fills rather than gray pills. Subtle gray fill on hover; an
+   accent border + soft blue ring on focus/open. frappe-ui renders these as
+   <input> / <button data-slot="trigger"> / <button> carrying a `bg-surface-gray-2`
+   utility, so this global !important rule (anchored on .crm-quick-filters /
+   .crm-toolbar-actions, outside @layer) wins the cascade.
+   -------------------------------------------------------------------------- */
+.crm-quick-filters input:not([type='checkbox']),
+.crm-quick-filters select,
+.crm-quick-filters [data-slot='trigger'],
+.crm-quick-filters button,
+.crm-toolbar-actions button,
+.crm-toolbar-actions [data-slot='trigger'] {
+  height: 40px !important;
+  min-height: 40px !important;
+  border-radius: var(--crm-radius-sm) !important;
+  border: 1px solid var(--crm-settings-border) !important;
+  background-color: var(--crm-surface) !important;
+  color: var(--crm-text-2) !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease !important;
+}
+
+/* Action buttons stay square so the icons sit flush beside the fields. */
+.crm-toolbar-actions button,
+.crm-toolbar-actions [data-slot='trigger'] {
+  min-width: 40px !important;
+}
+
+/* Hover — subtle gray fill + stronger border for affordance. */
+.crm-quick-filters input:not([type='checkbox']):hover,
+.crm-quick-filters select:hover,
+.crm-quick-filters [data-slot='trigger']:hover,
+.crm-quick-filters button:hover,
+.crm-toolbar-actions button:hover,
+.crm-toolbar-actions [data-slot='trigger']:hover {
+  border-color: var(--crm-border-strong) !important;
+  background-color: var(--crm-row-hover) !important;
+}
+
+/* Focus / open — accent border + soft ring, back to a clean white fill. */
+.crm-quick-filters input:not([type='checkbox']):focus,
+.crm-quick-filters select:focus,
+.crm-quick-filters [data-slot='trigger']:focus,
+.crm-quick-filters [data-slot='trigger'][data-state='open'],
+.crm-quick-filters button:focus,
+.crm-toolbar-actions button:focus-visible,
+.crm-toolbar-actions button[data-state='open'],
+.crm-toolbar-actions [data-slot='trigger'][data-state='open'] {
+  border-color: var(--crm-accent-primary) !important;
+  background-color: var(--crm-surface) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Create / Edit document modals — cohesive Books chrome + form fields.
+   Anchored on `.crm-doc-modal` (added to each modal's content). Fields come
+   from the shared FieldLayout (frappe controls), so inputs / selects / Link
+   triggers / textareas are unified: white fill, hairline border, 8px radius,
+   blue focus ring. Lives outside @layer so its !important wins over frappe-ui.
+   -------------------------------------------------------------------------- */
+.crm-doc-modal
+  :is(
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea,
+    [data-slot='trigger']
+  ) {
+  border-radius: var(--crm-radius-sm) !important;
+  border: 1px solid var(--crm-settings-border) !important;
+  background-color: var(--crm-surface) !important;
+  color: var(--crm-text-2) !important;
+  box-shadow: none !important;
+}
+/* Field labels — compact, muted, tracked (were 14px ink-gray-5). */
+.crm-doc-modal .field > .text-sm:first-child,
+.crm-doc-modal .field label.text-sm {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--crm-text-3) !important;
+  margin-bottom: 5px !important;
+}
+.crm-doc-modal
+  :is(
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea,
+    [data-slot='trigger']
+  ):hover {
+  border-color: var(--crm-border-strong) !important;
+}
+.crm-doc-modal
+  :is(
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea,
+    [data-slot='trigger']
+  ):focus,
+.crm-doc-modal [data-slot='trigger'][data-state='open'] {
+  border-color: var(--crm-accent-primary) !important;
+  background-color: var(--crm-surface) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+.crm-doc-modal .section {
+  border-color: var(--crm-border) !important;
+}
+/* The dialog panel belongs to frappe-ui, so it keeps `bg-surface-elevation-1`.
+   That resolves to a neutral grey (#1f1f1f) in dark mode while every field
+   inside resolves to the CRM navy (--crm-surface, #1a1f33) — grey desk chrome
+   wrapped around navy fields, which is what makes the popup read as stock
+   Frappe. `:has()` is the only way to reach the panel from the inner marker. */
+/* ---------------------------------------------------------------------------
+   Dialog baseline — EVERY frappe-ui Dialog, not just the six we hand-styled.
+   The panel ships `bg-surface-elevation-1`, a neutral grey that fights the CRM
+   navy in dark mode, and the controls inside keep desk defaults. 36 of the
+   app's 44 dialogs — every confirmation popup, the pickers, the settings
+   sub-modals — carried no CRM styling at all, so this is applied once here
+   instead of editing each component.
+
+   Scoped to `.bg-surface-elevation-1` (the standard Dialog panel) rather than
+   bare [role='dialog'], so a dialog that deliberately paints its own surface
+   is left alone.
+   -------------------------------------------------------------------------- */
+[role='dialog'].bg-surface-elevation-1 {
+  background-color: var(--crm-surface) !important;
+  border: 1px solid var(--crm-border) !important;
+  box-shadow: var(--crm-shadow-lg) !important;
+}
+/* Form controls in any dialog get the same shape as the doc modals. */
+[role='dialog']
+  :is(
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea,
+    [data-slot='trigger']
+  ) {
+  border-radius: var(--crm-radius-sm) !important;
+  border: 1px solid var(--crm-settings-border) !important;
+  background-color: var(--crm-surface) !important;
+  color: var(--crm-text-2) !important;
+  box-shadow: none !important;
+}
+[role='dialog']
+  :is(
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea,
+    [data-slot='trigger']
+  ):hover {
+  border-color: var(--crm-border-strong) !important;
+}
+[role='dialog']
+  :is(
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea,
+    [data-slot='trigger']
+  ):focus,
+[role='dialog'] [data-slot='trigger'][data-state='open'] {
+  border-color: var(--crm-accent-primary) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+/* Shared dialog pieces, so a hand-built modal body matches the doc modals
+   without each one inventing its own label / banner / field-box styling. */
+.crm-field-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--crm-text-3);
+}
+/* Informational note — accent wash, never the grey desk callout. */
+.crm-note-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 13px;
+  border-radius: var(--crm-radius-md);
+  border: 1px solid var(--crm-border);
+  background: var(--crm-accent-soft);
+  color: var(--crm-text-2);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.crm-note-banner svg {
+  margin-top: 1px;
+  color: var(--crm-accent-primary);
+}
+/* Box around a multi-select: supplies the field's shape only. The control
+   inside must stay transparent or it draws a second box within this one. */
+.crm-multiselect-box {
+  border-radius: var(--crm-radius-sm);
+  border: 1px solid var(--crm-settings-border);
+  background: var(--crm-surface);
+  padding: var(--space-2);
+  transition:
+    border-color 0.15s var(--crm-ease),
+    box-shadow 0.15s var(--crm-ease);
+}
+.crm-multiselect-box:hover {
+  border-color: var(--crm-border-strong);
+}
+.crm-multiselect-box:focus-within {
+  border-color: var(--crm-accent-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+/* The dialog-wide control rule above matches this control's input with higher
+   specificity, so it must be out-specified here (extra `:not()`s + the dialog
+   scope) or the input paints its own hairline + focus ring inside the wrapper —
+   a box within a box, with the placeholder clipped against the inner edge. */
+[role='dialog']
+  .crm-multiselect-box
+  :is(input:not([type='checkbox']):not([type='radio']), [data-slot='trigger']),
+[role='dialog']
+  .crm-multiselect-box
+  :is(
+    input:not([type='checkbox']):not([type='radio']),
+    [data-slot='trigger']
+  ):is(:hover, :focus),
+.crm-multiselect-box :is(input, [data-slot='trigger']) {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+/* The combobox anchor paints its own fill even in the `ghost` variant —
+   `bg-surface-base`, which is a neutral near-black (#171717) in dark mode and
+   so reads as a foreign grey box inside the navy field. The wrapper already
+   supplies the surface, so flatten whatever the control paints. */
+.crm-multiselect-box [class*='bg-surface-base'],
+.crm-multiselect-box [class*='bg-surface-gray'] {
+  background-color: transparent !important;
+}
+
+/* Rich-text editors ship their own grey fill + hairline in every dialog. */
+[role='dialog'] .ProseMirror {
+  border-radius: var(--crm-radius-sm) !important;
+  border: 1px solid var(--crm-settings-border) !important;
+  background-color: var(--crm-surface) !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Composer treatment — Task / Note create+edit.
+   The generic FieldLayout renders every field as label-above-box, which is what
+   makes these popups read as a desk form. A task is not six equal attributes:
+   the title and body ARE the document, the rest are metadata. So the first two
+   shed their labels and their boxes and are typed directly, and the remaining
+   fields stay a compact labelled grid underneath.
+
+   Keyed on `data-name` (the fieldname, set by Column.vue) rather than position,
+   so reordering fields in Edit Fields Layout cannot mis-target them.
+   -------------------------------------------------------------------------- */
+.crm-doc-modal--composer .field[data-name='title'] > .text-sm,
+.crm-doc-modal--composer
+  .field:is([data-name='description'], [data-name='content'])
+  > .text-sm {
+  display: none !important;
+}
+/* Title: the document's name, not a form value. */
+.crm-doc-modal--composer .field[data-name='title'] input {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  height: auto !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--crm-text) !important;
+}
+.crm-doc-modal--composer .field[data-name='title'] input::placeholder {
+  color: var(--crm-text-3) !important;
+  font-weight: 600 !important;
+}
+/* The shared field rule adds a 3px focus ring; on a borderless input that would
+   draw a box around nothing. The underline below is the focus cue instead. */
+.crm-doc-modal--composer .field[data-name='title'] input:focus {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+/* Structure: with no labels and no boxes it was ambiguous where each field
+   began. The title and body therefore sit together in one soft card — the
+   document — with a hairline between them, rather than each regaining a
+   labelled box. Matched by the section that *contains* the title, so a
+   reordered layout cannot card the wrong group. */
+.crm-doc-modal--composer .section:has(.field[data-name='title']) {
+  /* Plain surface, never the tinted --crm-surface-2: every field surface in the
+     app is white, and a tinted panel here would reintroduce the grey-fill look.
+     The hairline border and the title/body divider carry the structure. */
+  background: var(--crm-surface);
+  /* !important because a Vue-scoped rule strips the first section's top border
+     (`.section[data-v-…]:has(.field):nth-child(1 of …) { border-top: none }`).
+     It ties this selector on specificity and lands later, which would leave the
+     card with three sides and an open top. */
+  border: 1px solid var(--crm-border) !important;
+  border-radius: var(--crm-radius);
+  padding: 12px 14px !important;
+  margin-top: 0 !important;
+  transition:
+    border-color 0.15s var(--crm-ease),
+    box-shadow 0.15s var(--crm-ease);
+}
+.crm-doc-modal--composer .section:has(.field[data-name='title']):focus-within {
+  border-color: var(--crm-accent-primary) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+/* The divider is what makes "title ends here, body starts here" readable. */
+.crm-doc-modal--composer
+  .field:is([data-name='description'], [data-name='content']) {
+  border-top: 1px solid var(--crm-border);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+/* Body: CRM Task calls this field `description`, FCRM Note calls it `content` —
+   same role, different fieldname, so both are matched. The editor's toolbar
+   ships a grey fill and its own hairline box, which is the loudest desk-UI
+   signal in the popup. Flatten both. */
+.crm-doc-modal--composer
+  .field:is([data-name='description'], [data-name='content'])
+  .ProseMirror {
+  border: 0 !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  min-height: 96px !important;
+  color: var(--crm-text-2) !important;
+}
+.crm-doc-modal--composer
+  .field:is([data-name='description'], [data-name='content'])
+  [class*='rounded-t-lg'] {
+  border: 0 !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+}
+/* The toolbar only earns its space once the body has focus. */
+.crm-doc-modal--composer
+  .field:is([data-name='description'], [data-name='content'])
+  [class*='rounded-t-lg'] {
+  opacity: 0.55;
+  transition: opacity 0.15s var(--crm-ease);
+  /* It ships `overflow-x-auto` + nowrap: 23 buttons need 744px but only ~496px
+     exists inside the card, leaving a third of the controls off-screen. That was
+     survivable while it had a bordered edge hinting it scrolled; once flattened
+     above, the cut-off became invisible. Wrap instead, so every control is
+     reachable without a horizontal scroll gesture. */
+  flex-wrap: wrap !important;
+  overflow-x: visible !important;
+  row-gap: 2px;
+}
+/* The toolbar holds a SINGLE inline-flex group containing all 31 controls, so
+   wrapping the toolbar itself does nothing — the group is one unbreakable flex
+   item. The wrap has to be applied to that inner group, and its intrinsic width
+   (740px) capped, or it keeps sizing to its content. */
+.crm-doc-modal--composer
+  .field:is([data-name='description'], [data-name='content'])
+  [class*='rounded-t-lg']
+  > * {
+  flex-wrap: wrap !important;
+  max-width: 100% !important;
+  row-gap: 2px;
+}
+.crm-doc-modal--composer
+  .field:is([data-name='description'], [data-name='content']):focus-within
+  [class*='rounded-t-lg'] {
+  opacity: 1;
+}
+
+/* Metadata grid: smaller labels, tighter rhythm — subordinate to the body. */
+.crm-doc-modal--composer .section + .section {
+  margin-top: 18px !important;
+  padding-top: 16px !important;
+}
+.crm-doc-modal--composer .section + .section .field > .text-sm {
+  font-size: 11px !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+  color: var(--crm-text-3) !important;
+}
+
+/* =====================================================
+   Settings rows — one card per setting: icon chip, copy, control.
+   Shared by the settings modules (General, Dashboard, …) so the pattern
+   stays identical across them. Unscoped so it also reaches the frappe-ui
+   internals of the controls rendered inside a row.
+   ===================================================== */
+.crm-settings-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 18px 20px;
+  border-radius: var(--crm-radius);
+  border: 1px solid var(--crm-settings-border);
+  background: var(--crm-surface);
+  box-shadow: var(--crm-shadow-sm);
+  transition:
+    border-color 0.15s var(--crm-ease),
+    box-shadow 0.15s var(--crm-ease);
+}
+.crm-settings-row:hover {
+  border-color: var(--crm-border-strong);
+  box-shadow: var(--crm-shadow);
+}
+
+.crm-settings-row-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--crm-radius-md);
+  background: var(--crm-chip-blue);
+  color: var(--crm-accent-primary);
+}
+
+/* Switch track defaults to near-black when on; the design uses the accent. */
+.crm-settings-row [data-slot='control'][data-state='checked'] {
+  background-color: var(--crm-accent-primary) !important;
+}
+.crm-settings-row [data-slot='control'][data-state='checked']:hover {
+  background-color: var(--crm-accent-hover) !important;
+}
+
+/* Row controls → the shared 40px / 10px-radius / soft-border shape. */
+.crm-settings-row select,
+.crm-settings-row input:not([type='checkbox']),
+.crm-settings-row [data-slot='trigger'] {
+  height: 40px !important;
+  min-height: 40px !important;
+  border-radius: var(--crm-radius-sm) !important;
+  border: 1px solid var(--crm-settings-border) !important;
+  background-color: var(--crm-surface) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--crm-text-2) !important;
+  box-shadow: none !important;
+}
+.crm-settings-row select:hover,
+.crm-settings-row input:not([type='checkbox']):hover,
+.crm-settings-row [data-slot='trigger']:hover {
+  border-color: var(--crm-border-strong) !important;
+}
+/* Inner pieces of a composite control carry no box of their own. */
+.crm-settings-row [data-slot='trigger'] [data-slot='input'],
+.crm-settings-row [data-slot='trigger'] [data-slot='chevron'] {
+  height: 100% !important;
+  min-height: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Read-only value shown where a setting is locked after first save. */
+.crm-settings-row-static {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--crm-radius-sm);
+  border: 1px solid var(--crm-settings-border);
+  background: var(--crm-surface-2);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--crm-text-2);
+}
+
+/* Save bar at the foot of a settings module. */
+.crm-settings-savebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-top: var(--space-1);
+  padding: 14px 18px;
+  border-radius: var(--crm-radius);
+  border: 1px solid var(--crm-settings-border);
+  background: var(--crm-banner-blue);
+}
+
+/* Blue-label outline action inside a settings row (Upload, Add Notification…). */
+.crm-settings-action button,
+button.crm-settings-action {
+  height: 38px !important;
+  border-radius: var(--crm-radius-sm) !important;
+  border: 1px solid var(--crm-settings-border) !important;
+  background-color: var(--crm-surface) !important;
+  color: var(--crm-accent-primary) !important;
+  font-weight: 500 !important;
+}
+.crm-settings-action button:hover,
+button.crm-settings-action:hover {
+  background-color: var(--crm-chip-blue) !important;
+}
+.crm-settings-action button svg,
+button.crm-settings-action svg {
+  color: var(--crm-accent-primary) !important;
+}
+
+/* Field with a leading icon overlay.
+   Unscoped on purpose: frappe-ui's FormControl dispatches to sub-components,
+   so a scoped `:deep()` rule never reaches the inner input/select/textarea
+   (the data-v attribute lands on the wrapper, not the control). */
+.crm-icon-field {
+  position: relative;
+}
+.crm-icon-field input:not([type='checkbox']),
+.crm-icon-field select,
+.crm-icon-field textarea {
+  padding-left: 36px !important;
+  border-radius: var(--crm-radius-sm) !important;
+  border: 1px solid var(--crm-settings-border) !important;
+  background-color: var(--crm-surface) !important;
+}
+.crm-icon-field select,
+.crm-icon-field input:not([type='checkbox']) {
+  height: 42px !important;
+}
+.crm-icon-field textarea {
+  min-height: 96px !important;
+  padding-top: 10px !important;
+}
+
+/* Column labels above a list of .crm-settings-row cards. Padding and gap must
+   match .crm-settings-row exactly (20px / 16px) or the labels drift out of
+   alignment with the values underneath. */
+.crm-settings-collabels {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 2px 20px 4px;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--crm-text-4);
+}
+/* Fixed-width trailing columns shared by the labels and the row. */
+.crm-col-toggle {
+  width: 64px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+}
+.crm-col-menu {
+  width: 32px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* =====================================================
+   Keyboard focus is always visible.
+   Many components clear the default outline with `focus:outline-none` and
+   never add a replacement, which leaves keyboard users with no idea where
+   they are. `:focus-visible` only matches keyboard navigation, so this
+   restores the indicator without adding a ring on mouse clicks.
+   ===================================================== */
+#app
+  :is(
+    a[href],
+    button,
+    [role='button'],
+    [role='option'],
+    [role='tab'],
+    [tabindex]:not([tabindex='-1']),
+    input:not([type='hidden']),
+    select,
+    textarea,
+    [data-slot='trigger'],
+    [contenteditable='true']
+  ):focus-visible {
+  outline: 2px solid var(--crm-accent-primary) !important;
+  outline-offset: 2px !important;
+}
+
+/* =====================================================
+   Composer focus — the ring belongs on the BOX, not the text body.
+
+   The rule above assumes `:focus-visible` means "keyboard", but Chrome also
+   matches it on a plain mouse click into any text-entry element, contenteditable
+   included. So clicking into a comment or email body lit up the ProseMirror
+   node itself — and that node sits in a scroll container exactly as wide as it
+   is, so `outline-offset: 2px` put the ring's left and right edges outside the
+   container's 748px viewport where they were clipped. What survived was the
+   top and bottom: two full-width blue bars across the composer.
+
+   The composer already owns a border and a radius, so it can carry the state
+   properly. box-shadow rather than outline: it follows the 14px corner and is
+   not clipped by the ancestor's `overflow: hidden`.
+   ===================================================== */
+/* frappe-ui's TextEditor root is `relative w-full`, i.e. `width: 100%`, and we
+   add `ml-10 mr-10` on top of it. Percentage width resolves against the
+   parent's content box and margins are added OUTSIDE it, so the composer
+   measured 830px inside an 830px parent and then started 40px in — 40px of
+   horizontal overflow, a scrollbar, and a right edge sliced through the
+   Discard/Send buttons the moment a composer opened.
+
+   `width: auto` on a block box fills the containing block MINUS its margins,
+   which is what the margins were always meant to express. */
+.crm-composer {
+  width: auto;
+}
+.crm-composer:focus-within {
+  border-color: var(--crm-accent-primary) !important;
+  box-shadow: 0 0 0 3px var(--crm-accent-soft) !important;
+}
+/* `#app` on purpose: the rule above is `#app :is(...)`, whose ID outranks a
+   class-only selector no matter how many !importants it carries. */
+#app .crm-composer [contenteditable='true']:focus,
+#app .crm-composer [contenteditable='true']:focus-visible {
+  outline: none !important;
+}
+
+/* =====================================================
+   Settings modal — one control shape for every field.
+
+   frappe-ui's Select/Combobox are NOT native <select>; reka renders them as
+   <button data-slot="trigger"> carrying the "subtle" variant
+   (bg-surface-gray-2). Real <input>s render white. That mismatch is why a row
+   showed a white text box beside a gray dropdown. Normalising all of them
+   here — rather than per component — keeps every settings field identical and
+   removes the need for fragile per-file :deep() overrides.
+   ===================================================== */
+.crm-settings-modal
+  :is(
+    input:not([type='checkbox']):not([type='radio']):not([type='range']):not(
+        [class*='bg-transparent']
+      ):not([class*='border-0']),
+    select,
+    textarea,
+    [data-slot='trigger']
+  ) {
+  border-radius: var(--crm-radius-sm) !important;
+  border: 1px solid var(--crm-settings-border) !important;
+  background-color: var(--crm-surface) !important;
+  box-shadow: none !important;
+}
+.crm-settings-modal
+  :is(
+    input:not([type='checkbox']):not([type='radio']):not([type='range']):not(
+        [class*='bg-transparent']
+      ):not([class*='border-0']),
+    select,
+    [data-slot='trigger']
+  ) {
+  height: 42px !important;
+  min-height: 42px !important;
+}
+.crm-settings-modal :is(input, select, textarea, [data-slot='trigger']):hover {
+  border-color: var(--crm-border-strong) !important;
+}
+.crm-settings-modal :is(input, select, textarea, [data-slot='trigger']):focus,
+.crm-settings-modal [data-slot='trigger'][data-state='open'] {
+  border-color: var(--crm-accent-primary) !important;
+}
+/* Composite controls: the inner input/chevron must not draw a second box. */
+.crm-settings-modal
+  [data-slot='trigger']
+  :is([data-slot='input'], [data-slot='chevron']) {
+  height: 100% !important;
+  min-height: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+/* Rich-text editors ship a gray fill in their editor-class. */
+.crm-settings-modal .ProseMirror {
+  border-radius: var(--crm-radius-sm) !important;
+  border: 1px solid var(--crm-settings-border) !important;
+  background-color: var(--crm-surface) !important;
+}
+
+/* Leading-icon fields: the trigger is a button, so it needs the padding too. */
+.crm-icon-field [data-slot='trigger'] {
+  padding-left: 36px !important;
+}
+
+/* Role selector in Settings → Users. Global, not scoped: `Dropdown` renders
+   its own <button>, which never carries the calling component's data-v
+   attribute, so a scoped rule silently matched nothing. */
+.role-pill {
+  height: 38px !important;
+  border-radius: var(--crm-radius-sm) !important;
+  border: 1px solid var(--crm-settings-border) !important;
+  background-color: var(--crm-surface) !important;
+  font-weight: 500 !important;
+}
+.role-pill:hover {
+  background-color: var(--crm-surface-2) !important;
+}
+.role-pill-admin,
+.role-pill-admin:hover {
+  background-color: var(--crm-chip-blue) !important;
+  border-color: transparent !important;
+  color: var(--crm-accent-primary) !important;
+}
+.role-pill-admin svg {
+  color: var(--crm-accent-primary) !important;
+}
+
+/* Composite fields: a styled wrapper holding a prefix plus a bare input
+   (e.g. the "/crm-form/" route field). The wrapper is the control, so it
+   carries the shape and the inner input stays transparent. */
+.crm-composite-field {
+  min-height: 42px;
+  padding-inline: 12px;
+  border-radius: var(--crm-radius-sm);
+  border: 1px solid var(--crm-settings-border);
+  background-color: var(--crm-surface);
+}
+.crm-composite-field:hover {
+  border-color: var(--crm-border-strong);
+}
+.crm-composite-field:focus-within {
+  border-color: var(--crm-accent-primary);
+}
+
+/* =====================================================
+   DASHBOARD
+   =====================================================
+   The KPI card sizes ITSELF from its own width via a container query, rather
+   than from a viewport breakpoint. That is what gives the section its
+   hierarchy for free: a card a user gives more columns to reads as a primary
+   metric, a narrow one steps down — and because the steps are keyed to the
+   space actually available, a value can never be clipped or a title truncated
+   into ambiguity at any viewport width. It replaces a fixed 24px value that
+   was cut to "0 day" in a 148px card at 820px.
+   ===================================================== */
+.dash-kpi-card {
+  container-type: inline-size;
+  container-name: kpi;
+  gap: var(--space-4);
+}
+
+.dash-kpi-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--crm-radius-md);
+  color: var(--tone, var(--crm-text-3));
+  background: color-mix(
+    in srgb,
+    var(--tone, var(--crm-text-3)) 14%,
+    var(--crm-surface)
+  );
+}
+.dash-kpi-glyph {
+  width: 18px;
+  height: 18px;
+}
+
+/* NumberChart is built to BE a card: it adds px-6/pt-5, paints its own
+   background and clips with overflow-hidden. Inside our card it should only be
+   the text block, so strip that chrome. Targeted structurally (not by Tailwind
+   class) so it survives upgrades. */
+.dash-kpi-body > *,
+.dash-kpi-body > * > * {
+  max-width: 100%;
+  padding: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+.dash-kpi-body > * > * > * {
+  width: 100%;
+  min-width: 0;
+}
+
+/* The title. Truncates with an ellipsis and carries a tooltip; it must never
+   wrap, because the grid row has a fixed height and a wrapped title would push
+   the caption out of the card. The container steps below keep it legible
+   instead of relying on truncation to fit. */
+.dash-kpi-body [class*='text-base'],
+.dash-kpi-body [class*='text-sm'] {
+  font-size: var(--text-secondary) !important;
+  line-height: 1.35 !important;
+  color: var(--crm-text-3) !important;
+}
+
+/* The value. `leading-10` is a 40px line box around a 24px number — most of
+   the card's dead vertical space — and `truncate` cut "0 days" to "0 day".
+   A KPI value is never shown partially, so the ellipsis is removed here and
+   the size is driven by the container steps below. */
+.dash-kpi-body [class*='leading-10'] {
+  font-size: 20px !important;
+  line-height: 1.15 !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+  color: var(--crm-text) !important;
+}
+
+.dash-kpi-caption {
+  margin-top: 1px;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-medium);
+  line-height: 1.3;
+  color: var(--crm-text-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- container steps ---------------------------------------------------
+   Keyed to the card, not the viewport. Below ~150px there is not enough room
+   for the icon chip alongside the text, so it is dropped rather than allowed
+   to squeeze the number. */
+@container kpi (max-width: 168px) {
+  .dash-kpi-icon {
+    display: none;
+  }
+  .dash-kpi-body [class*='leading-10'] {
+    font-size: 18px !important;
+  }
+}
+@container kpi (min-width: 260px) {
+  .dash-kpi-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .dash-kpi-glyph {
+    width: 20px;
+    height: 20px;
+  }
+  .dash-kpi-body [class*='leading-10'] {
+    font-size: 24px !important;
+  }
+}
+/* A card given real width on the desktop grid reads as a primary metric. */
+@container kpi (min-width: 340px) {
+  .dash-kpi-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .dash-kpi-glyph {
+    width: 22px;
+    height: 22px;
+  }
+  .dash-kpi-body [class*='leading-10'] {
+    font-size: 30px !important;
+  }
+  .dash-kpi-body [class*='text-base'],
+  .dash-kpi-body [class*='text-sm'] {
+    font-size: var(--text-body) !important;
+  }
+}
+
+/* Panel body — the region a chart or an empty state fills. `min-width: 0` is
+   what lets a flex/grid child actually shrink, and is the difference between a
+   chart sizing to its container and a chart forcing the panel wider than the
+   page. */
+.dash-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+/* A chart must FILL this box, not be centred inside it: ECharts renders at its
+   own intrinsic height, so centring an oversized canvas clips the top gridline
+   and the bottom axis labels simultaneously. Height is handed down explicitly
+   instead. */
+.dash-panel-body > * {
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+}
+/* The single-segment summary is content, not a canvas — it is centred in the
+   space rather than stretched to fill it. */
+.dash-panel-body > .dash-solo {
+  height: auto;
+  min-height: 100%;
+  align-items: center;
+}
+
+/* Neutral stand-in for a deal with no organization: an empty Avatar rendered
+   as a blank indent beside the title, which read as a loading fault. */
+.mdeal-avatar-placeholder {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--crm-radius-md);
+  border: 1px solid var(--crm-border);
+  background: var(--crm-surface-2);
+  color: var(--crm-text-4);
+}
+
+/* The status control shares the header row with the breadcrumb rather than
+   floating over it; this keeps a long status name from squeezing its own
+   label to nothing. */
+.mdeal-status button {
+  max-width: 46vw;
+}
+.mdeal-status button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Mobile deal header facts — a strong value under a muted label, the same
+   pairing the desktop fact tiles use, without the tile's border on a screen
+   that has no room for six of them. */
+.mdeal-fact {
+  margin-top: 1px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--crm-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =====================================================
+   KANBAN BOARD (components/Kanban/KanbanView.vue)
+   =====================================================
+   Each lane is a surface tinted with its own status colour. An earlier pass
+   had the lanes share the page background on the grounds that five bordered
+   panels read as five unrelated products — true when the borders were plain
+   grey chrome, but that board had no level above "card" and no visible status
+   at all. The tint is the status: the lane you want is findable by colour from
+   across the screen, and the hue is mixed from the SAME `parseColor()` value
+   the lane's dot and badge already use, so nothing here invents a palette.
+
+   Every tint is `color-mix(in srgb, currentColor …%, --crm-surface)`, with
+   `color` set once on `.kb-col` from the lane's colour class. Keep the
+   percentages low — the tint has to stay quieter than the white cards sitting
+   on it, or the board turns into decoration.
+   ===================================================== */
+.kb-board {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-4);
+  height: 100%;
+  min-height: 0;
+  padding: var(--space-4) var(--space-4) var(--space-5);
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Scroll shadows: a board wider than the viewport says so at its edges
+     rather than simply ending mid-column. Same technique as the list table —
+     overlay scrollbars are invisible until a gesture begins, so the affordance
+     has to be painted.
+
+     The shadow is wider and darker than the table's. There, it lands on a
+     white card and 12px/0.10 is plenty; here it lands on --crm-bg, which is
+     already a grey, so the same values washed out and the sliced last column
+     read as clipped rather than as scrollable. */
+  background:
+    linear-gradient(to right, var(--crm-bg), transparent) left center / 28px
+      100% no-repeat local,
+    linear-gradient(to left, var(--crm-bg), transparent) right center / 28px
+      100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(15, 23, 42, 0.2), transparent)
+      left center / 20px 100% no-repeat scroll,
+    radial-gradient(
+        farthest-side at 100% 50%,
+        rgba(15, 23, 42, 0.2),
+        transparent
+      )
+      right center / 20px 100% no-repeat scroll;
+  scrollbar-width: thin;
+}
+.kb-board::-webkit-scrollbar {
+  height: 10px;
+}
+.kb-board::-webkit-scrollbar-track {
+  background: transparent;
+}
+.kb-board::-webkit-scrollbar-thumb {
+  background: var(--crm-border-strong);
+  border-radius: var(--crm-radius-pill);
+  border: 3px solid var(--crm-bg);
+}
+
+/* ---- Column ---- */
+.kb-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Fixed width so columns stay consistent and predictable while the board
+     scrolls; never squeezed to fit, which is what makes a board unusable. */
+  flex: 0 0 288px;
+  width: 288px;
+  border-radius: var(--crm-radius-lg);
+  /* 5% / 22%: the lane reads as coloured at a glance and still sits well
+     behind the white cards on it. The border is the same hue rather than
+     --crm-border, so a lane is one object instead of a grey box with
+     something coloured inside it. */
+  background: color-mix(in srgb, currentColor 7%, var(--crm-surface));
+  border: 1px solid color-mix(in srgb, currentColor 22%, var(--crm-surface));
+}
+/* The two lanes that are not statuses take no tint — "Add Column" is chrome,
+   and the loading skeleton has no status to be coloured by yet. */
+.kb-col--add {
+  flex-basis: 220px;
+  width: 220px;
+  padding-top: var(--space-4);
+  background: transparent;
+  border: 0;
+}
+.kb-col--collapsed {
+  flex-basis: 52px;
+  width: 52px;
+}
+.kb-col[aria-busy='true'] {
+  background: var(--crm-surface);
+  border-color: var(--crm-border);
+}
+
+/* ---- Column header ---- */
+.kb-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  padding: var(--space-3);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  /* One step up from the lane body, so the header is a band rather than a
+     title floating on the same field as the cards. No bottom border: two
+     tints meeting is already an edge, and a hairline on top of it reads as
+     chrome.
+     Rounded to match the lane rather than clipped by `overflow: hidden` on
+     the lane itself — that would also have clipped the drag ghost. */
+  background: color-mix(in srgb, currentColor 13%, var(--crm-surface));
+  border-radius: 13px 13px 0 0;
+}
+.kb-col-title {
+  /* A rung up from body: this is the lane's heading, and at --text-body it sat
+     at the same size as the card text under it, so the board had no level
+     above "card" at all. Matched to the section headings elsewhere. */
+  font-size: var(--text-section-title);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--crm-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.kb-count {
+  flex-shrink: 0;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: var(--crm-radius-pill);
+  /* White against the tinted header — the count has to stay legible on five
+     different hues, and a surface-2 fill disappeared into the darker ones. */
+  background: var(--crm-surface);
+  border: 1px solid color-mix(in srgb, currentColor 20%, var(--crm-surface));
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--crm-text-2);
+  text-align: center;
+}
+.kb-col-sum {
+  flex-shrink: 0;
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--crm-accent-primary);
+}
+.kb-dot-btn,
+.kb-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: var(--crm-radius-xs);
+  color: var(--crm-text-3);
+  transition:
+    background-color 0.15s var(--crm-ease),
+    color 0.15s var(--crm-ease),
+    opacity 0.15s var(--crm-ease);
+}
+.kb-dot-btn:hover,
+.kb-icon-btn:hover {
+  background: var(--crm-surface);
+  color: var(--crm-text);
+}
+/* "Add to this lane" is the only action in the header that creates something,
+   so it wears the lane's colour and stays visible; collapse and the options
+   menu are view controls and stay on hover. */
+.kb-add-btn,
+.kb-add-btn:hover {
+  color: inherit;
+}
+.kb-add-btn:hover {
+  background: color-mix(in srgb, currentColor 14%, var(--crm-surface));
+}
+.kb-dot-btn:focus-visible,
+.kb-icon-btn:focus-visible {
+  outline: 2px solid var(--crm-accent-primary);
+  outline-offset: 1px;
+}
+.kb-color-pop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 160px;
+  padding: 10px 12px;
+  border-radius: var(--crm-radius);
+  border: 1px solid var(--crm-border);
+  background: var(--crm-surface);
+  box-shadow: var(--crm-shadow-lg);
+}
+
+/* ---- Column body ---- */
+.kb-col-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-3) var(--space-4);
+  scrollbar-width: thin;
+}
+/* The SortableJS drop container. It has to FILL the column: this was
+   `min-height: 8px`, shrunk from a 150px+ placeholder to stop an empty column
+   reserving a screenful of nothing — but the drop target shrank with it, so a
+   card could be dragged and then only dropped onto an 8px sliver at the top of
+   an empty column. Filling the body costs nothing visually (the zone is
+   transparent) and makes the whole column catch a card, which is what a
+   kanban column is for. */
+.kb-drop {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: var(--space-3);
+  min-height: 120px;
+}
+
+/* Empty lane. `margin: auto` centres it in whatever height the lane has — the
+   drop container is flex:1, so this is the one element on the board whose
+   position is driven by the viewport rather than by content. */
+.kb-empty {
+  /* Never intercept a drag that lands on it: the whole lane is the drop
+     target, and the empty state sits in the middle of it. */
+  pointer-events: none;
+  margin: auto;
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.kb-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  margin-bottom: var(--space-5);
+  border-radius: var(--crm-radius-pill);
+  background: color-mix(in srgb, currentColor 14%, var(--crm-surface));
+}
+.kb-empty-title {
+  font-size: var(--text-section-title);
+  font-weight: var(--weight-semibold);
+  color: var(--crm-text);
+}
+.kb-empty-hint {
+  margin-top: var(--space-2);
+  max-width: 200px;
+  font-size: var(--text-secondary);
+  line-height: 1.5;
+  color: var(--crm-text-3);
+}
+
+/* ---- Card ---- */
+.kb-card {
+  position: relative;
+  display: block;
+  padding: 10px 12px;
+  border-radius: var(--crm-radius-md);
+  border: 1px solid var(--crm-border);
+  background: var(--crm-surface);
+  box-shadow: var(--crm-shadow-sm);
+  color: var(--crm-text-2);
+  cursor: pointer;
+  transition:
+    border-color 0.15s var(--crm-ease),
+    box-shadow 0.15s var(--crm-ease);
+}
+.kb-card:hover {
+  border-color: var(--crm-border-strong);
+  box-shadow: var(--crm-shadow);
+}
+.kb-card:focus-visible {
+  outline: 2px solid var(--crm-accent-primary);
+  outline-offset: 2px;
+}
+.kb-card-title {
+  /* One rung above the card's body text, which is --text-body: the title was
+     the same size as the description under it and only a weight apart. */
+  font-size: var(--text-body-lg);
+  font-weight: var(--weight-semibold);
+  line-height: 1.4;
+  color: var(--crm-text);
+  /* Wraps to at most two lines and ends on an ellipsis — never clipped
+     mid-word, never allowed to grow the card without limit. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.kb-card-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.kb-card-fields:not(:empty) {
+  margin-top: var(--space-2);
+}
+
+/* ---- Card row (components/Kanban/KanbanCardField.vue) ----
+   A fixed gutter, then the value. Rows used to be plain flex, so a row with
+   an avatar indented its text by 24px and a row without it started flush at
+   the card's padding — a lead card showed its name, organisation, email and
+   phone on two different left edges. Grid claims the gutter whether or not
+   there is a glyph for it, so the column of values is straight for any set of
+   fields a view happens to show. */
+.kb-card-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.kb-card-row-icon {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--crm-text-4);
+}
+.kb-card-row-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The card's heading line. It carried no treatment at all: the lead's name
+   rendered at the same size, weight and colour as the email address beneath
+   it, so the card had nothing to read first. Matched to `.kb-card-title`. */
+.kb-card-name {
+  font-size: var(--text-body-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--crm-text);
+}
+
+.kb-card-meta {
+  font-size: var(--text-secondary);
+  color: var(--crm-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Activity counts and the card menu. These are facts ABOUT the record rather
+   than fields OF it, so they sit below a hairline instead of continuing the
+   value list — previously the row began immediately after the last field and
+   read as one more line of data. */
+.kb-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--crm-border);
+}
+.kb-card-move {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  opacity: 0;
+  transition: opacity 0.15s var(--crm-ease);
+}
+.kb-card:hover .kb-card-move,
+.kb-card:focus-within .kb-card-move {
+  opacity: 1;
+}
+
+/* Task card meta row — priority and due date, directly under the title.
+   Each chip pairs its tone with a word and an icon, so priority and urgency
+   are never communicated by colour alone. */
+.kb-task-title {
+  /* Same rung as `.kb-card-title`. Tasks render their own title slot, so a
+     bump to the default renderer alone left the task board's titles at body
+     size — the same size as the description under them. */
+  font-size: var(--text-body-lg);
+  font-weight: var(--weight-semibold);
+  line-height: 1.4;
+  color: var(--crm-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.kb-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: var(--space-2);
+}
+/* Kanban cards use the shared `.crm-badge`. `.kb-chip` was a second badge
+   primitive that read the same tone variables but shaped them differently —
+   1px/7px padding, 11px/600 sentence case against the badge's 3px/8px and
+   10.5px/700 uppercase — so a priority on a card and a status in a list were
+   the same idea drawn two ways. The only thing worth keeping was the glyph
+   sizing, which lives here. */
+.crm-badge svg,
+.crm-badge [class^='lucide-'] {
+  flex-shrink: 0;
+}
+
+/* ---- Collapsed rail ---- */
+.kb-col-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  height: 100%;
+  width: 100%;
+  padding: var(--space-4) 0;
+  /* Transparent: the collapsed rail is still the lane, so it keeps the lane's
+     tint rather than reverting to grey the moment you fold it. */
+  background: transparent;
+  color: var(--crm-text-3);
+}
+.kb-col-rail:hover {
+  background: var(--crm-row-hover);
+  color: var(--crm-text);
+}
+.kb-col-rail-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: var(--text-secondary);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+/* Activity timeline day headings. Sticky, so the day you are reading stays
+   named while you scroll a long stream. */
+.crm-activity-daygroup {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-top: 10px;
+  padding-bottom: 6px;
+  background: linear-gradient(
+    var(--crm-surface) 70%,
+    color-mix(in srgb, var(--crm-surface) 0%, transparent)
+  );
+}
+.crm-activity-daygroup span {
+  font-size: var(--text-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--crm-text-4);
+}
+
+/* =====================================================
+   STAGE PIPELINE (components/StatusPipeline.vue)
+   =====================================================
+   A chevron track, sized to communicate progress at a glance rather than to
+   occupy a band of its own. Each step is a control, so the pipeline is also
+   how a stage is changed.
+   ===================================================== */
+.crm-pipeline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-width: 0;
+}
+
+.crm-pipeline-step {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 5px 12px;
+  border: 1px solid var(--crm-border);
+  background: var(--crm-surface);
+  color: var(--crm-text-3);
+  font-size: var(--text-secondary);
+  font-weight: 500;
+  line-height: 1.3;
+  border-radius: var(--crm-radius-xs);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s var(--crm-ease),
+    border-color 0.15s var(--crm-ease),
+    color 0.15s var(--crm-ease);
+}
+.crm-pipeline-step:hover:not(.is-readonly):not(.is-current) {
+  border-color: var(--crm-border-strong);
+  background: var(--crm-row-hover);
+  color: var(--crm-text-2);
+}
+.crm-pipeline-step:focus-visible {
+  outline: 2px solid var(--crm-accent-primary);
+  outline-offset: 1px;
+}
+.crm-pipeline-step.is-readonly {
+  cursor: default;
+}
+
+/* Completed steps read as settled: filled, but quiet. */
+.crm-pipeline-step.is-done {
+  background: var(--crm-accent-soft);
+  border-color: transparent;
+  color: var(--crm-accent-text);
+}
+
+/* The current stage is the one thing this component exists to communicate. */
+.crm-pipeline-step.is-current {
+  background: var(--crm-accent-primary);
+  border-color: var(--crm-accent-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Terminal outcome */
+.crm-pipeline-outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 5px 12px;
+  border-radius: var(--crm-radius-xs);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--tone-text, var(--crm-text-2));
+  background: var(--tone-soft, var(--crm-surface-2));
+}
+.crm-pipeline-outcome-note {
+  font-size: var(--text-caption);
+  color: var(--crm-text-4);
+}
+.crm-pipeline-reopen {
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--crm-accent-primary);
+  padding: 3px 8px;
+  border-radius: var(--crm-radius-xs);
+}
+.crm-pipeline-reopen:hover {
+  background: var(--crm-accent-soft);
+}
+
+/* Narrow: the track scrolls sideways on purpose rather than wrapping each
+   stage onto its own line, which would turn a progress indicator into a list. */
+@media (max-width: 767px) {
+  .crm-pipeline {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .crm-pipeline::-webkit-scrollbar {
+    display: none;
+  }
+  .crm-pipeline-step {
+    flex: 0 0 auto;
+  }
+}
+
+/* Single-segment donut — a ring drawn to say "100%" communicates one number
+   with a large circle. This states the number instead, with a full-width bar
+   standing in for the arc. */
+.dash-solo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 2px;
+}
+/* Stands in for the arc: a fixed rule, not `align-self: stretch`, which grew
+   to the full panel height once the summary was told to fill its box. */
+.dash-solo-bar {
+  width: 6px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: var(--crm-radius-pill);
+  background: var(--crm-accent-primary);
+}
+.dash-solo-text {
+  min-width: 0;
+}
+.dash-solo-value {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--crm-text);
+}
+.dash-solo-label {
+  margin-top: 2px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--crm-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dash-solo-note {
+  margin-top: var(--space-1);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-medium);
+  color: var(--crm-text-4);
+}
+
+/* Chart panel header — the title/subtitle are drawn inside the ECharts SVG by
+   default; suppressed there and rendered as HTML so they can carry the icon
+   chip and the measure pill the design shows. */
+.dash-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-1);
+}
+.dash-panel-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--crm-radius-sm);
+  color: var(--crm-accent-primary);
+  background: color-mix(
+    in srgb,
+    var(--crm-accent-primary) 14%,
+    var(--crm-surface)
+  );
+}
+.dash-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--crm-text);
+}
+.dash-panel-subtitle {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--crm-text-3);
+}
+.dash-panel-measure {
+  flex-shrink: 0;
+  padding: 5px 11px;
+  border-radius: var(--crm-radius-sm);
+  border: 1px solid var(--crm-border);
+  background: var(--crm-surface-2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--crm-text-2);
+  white-space: nowrap;
+}
+
+/* =====================================================
+   ONE FIELD DESIGN, APP-WIDE
+   frappe-ui defaults every input / select / textarea to a gray fill
+   (bg-surface-gray-2), which left fields looking different depending on which
+   component rendered them. This is the single resting style for a field:
+   white surface, soft border, 10px radius.
+
+   Deliberately colour-only — no height, padding or display changes — so it
+   cannot disturb composite fields or existing layouts.
+
+   Opted out on purpose:
+     • the detail side panel, which is borderless by design (all its fields
+       already match each other) — see SidePanelLayout.vue
+     • bare inner inputs of a composite field (prefix + input)
+     • checkboxes, radios and ranges, which are not text fields
+   ===================================================== */
+#app
+  :is(
+    input:not([type='checkbox']):not([type='radio']):not([type='range']):not(
+        [type='hidden']
+      ),
+    select,
+    textarea,
+    [data-slot='trigger']
+  ):not([class*='bg-transparent']):not([class*='border-0']) {
+  border-radius: var(--crm-radius-sm);
+  border: 1px solid var(--crm-settings-border);
+  background-color: var(--crm-surface);
+  box-shadow: none;
+}
+#app
+  :is(input, select, textarea, [data-slot='trigger']):not(
+    [class*='bg-transparent']
+  ):not([class*='border-0']):hover {
+  border-color: var(--crm-border-strong);
+}
+#app
+  :is(input, select, textarea, [data-slot='trigger']):not(
+    [class*='bg-transparent']
+  ):not([class*='border-0']):focus,
+#app [data-slot='trigger'][data-state='open'] {
+  border-color: var(--crm-accent-primary);
+}
+
+/* ===========================================================================
+   DIALOG CHROME BASELINE — targets frappe-ui's Dialog markup
+   ---------------------------------------------------------------------------
+   Makes a stock `<Dialog title=… actions=…>` read as Settings chrome without
+   touching the .vue file: 16/600 title, full-bleed header hairline, 36px soft
+   square icon chip, footer bar with a top hairline.
+
+   This reaches INTO frappe-ui's markup and is therefore version-coupled. It is
+   a bridge, not the destination — every dialog moved onto CrmDialog.vue stops
+   depending on it. tests/unit/frappeUiDialogContract.test.js fails loudly if a
+   frappe-ui upgrade changes the DOM these selectors assume.
+
+   The markup being matched:
+     .dialog-content                        the panel, [role=dialog]
+     └ div.bg-surface-elevation-1           the auto body card
+       └ div.flex > div.w-full.flex-1
+         ├ div (header row)                 matched via :has(> div > header)
+         │ ├ div (icon chip)                matched via :has(> header) > div
+         │ └ header                         DialogTitle renders as="header"
+         └ (slot content)
+     └ div                                  the auto actions bar
+     └ button                               standalone close (when no header)
+
+   Anchors, most stable first:
+     .dialog-overlay / .dialog-content  hand-written by frappe-ui for its own
+                                        keyframes — safe.
+     <header>                           a deliberate semantic choice upstream;
+                                        no CRM dialog body contains a <header>.
+     div.bg-surface-elevation-1         semantic token class, medium stability.
+   Deliberately NOT used as hooks: .mb-6 / .px-4 / .pb-7 — pure Tailwind
+   spacing that would rot on any upstream restyle.
+
+   MUST stay last in this file: it beats .crm-settings-modal (~line 1390) and
+   the app-wide field baseline above by source order at equal specificity.
+   ========================================================================= */
+
+/* --- shared metrics ------------------------------------------------------ */
+/* One variable drives card padding, header bleed and footer padding, so the
+   divider can never drift out of alignment with the content it separates. */
+.dialog-content {
+  --crm-dialog-pad: 16px;
+  --crm-dialog-head-y: 13px;
+  --crm-dialog-foot-y: 12px;
+  border-radius: var(--crm-dialog-radius) !important;
+}
+@media (min-width: 640px) {
+  .dialog-content {
+    --crm-dialog-pad: 20px;
+  }
+}
+
+/* --- overlay ------------------------------------------------------------- */
+/* frappe-ui ships bg-black-overlay-200 / dark:bg-black-overlay-700; the custom
+   overlays (CommandPalette, ShortcutsHelpModal) ship bg-slate-900/40 +
+   backdrop-blur-sm. One token, one blur, everywhere. */
+.dialog-overlay {
+  background-color: var(--crm-overlay) !important;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* --- the auto body card -------------------------------------------------- */
+/* elevation-2 is included for GridRowModal, which paints its own #body root
+   and would otherwise stay desk-grey in dark mode. */
+.dialog-content > div.bg-surface-elevation-1,
+.dialog-content > div.bg-surface-elevation-2 {
+  background-color: var(--crm-surface) !important;
+  padding: var(--crm-dialog-pad) !important;
+}
+/* With a header present, the header owns the top edge and supplies the gutter.
+   Descendant :has() (not child) keeps this depth-independent. */
+.dialog-content > div.bg-surface-elevation-1:has(header) {
+  padding-top: 0 !important;
+}
+
+/* --- the auto header row ------------------------------------------------- */
+/* The header sits two levels inside the padded card, so a full-bleed divider
+   needs the card's padding back as negative margin. The intermediate divs
+   carry no padding of their own, so -pad lands exactly on the panel edge, and
+   the panel is overflow-hidden so nothing spills. */
+.dialog-content div:has(> div > header) {
+  margin: 0 calc(-1 * var(--crm-dialog-pad)) var(--crm-dialog-pad) !important;
+  padding: var(--crm-dialog-head-y) var(--crm-dialog-pad) !important;
+  border-bottom: 1px solid var(--crm-border);
+  gap: var(--space-4);
+}
+.dialog-content div:has(> div > header) > button {
+  height: 32px !important;
+  width: 32px !important;
+  border-radius: var(--crm-radius-sm) !important;
+  flex-shrink: 0;
+}
+
+/* --- title --------------------------------------------------------------- */
+/* Covers the default h3.text-2xl-semibold and any heading a caller renders
+   through the #title slot (ViewControls, AssignmentModal, FilesUploader…). */
+.dialog-content header {
+  min-width: 0;
+}
+.dialog-content header :is(h1, h2, h3, h4) {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.01em;
+  color: var(--crm-text) !important;
+}
+
+/* --- icon chip ----------------------------------------------------------- */
+/* :has(> header) matches only the title wrapper; its lone div child is the
+   chip. h-7/w-7/rounded-full becomes the Settings 36px soft square. space-x-2
+   must be neutralised or its margin-left doubles the gap set here. */
+.dialog-content :has(> header) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.dialog-content :has(> header) > * + * {
+  margin-left: 0 !important;
+}
+.dialog-content :has(> header) > div {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: var(--crm-radius-sm) !important;
+  background-color: var(--crm-accent-soft) !important;
+  color: var(--crm-accent-primary) !important;
+}
+.dialog-content :has(> header) > div :is(svg, span) {
+  color: inherit !important;
+}
+/* Remap frappe-ui's icon themes onto CRM tokens. The red one matters most —
+   it is what the delete confirmations show. */
+.dialog-content :has(> header) > div[class*='bg-surface-red-2'] {
+  background-color: var(--crm-danger-soft) !important;
+  color: var(--crm-danger) !important;
+}
+.dialog-content :has(> header) > div[class*='bg-surface-green-2'] {
+  background-color: var(--crm-success-soft) !important;
+  color: var(--crm-success) !important;
+}
+.dialog-content :has(> header) > div[class*='bg-surface-amber-2'] {
+  background-color: var(--crm-warning-soft) !important;
+  color: var(--crm-warning) !important;
+}
+.dialog-content :has(> header) > div[class*='bg-surface-gray-2'] {
+  background-color: var(--crm-surface-2) !important;
+  color: var(--crm-text-3) !important;
+}
+
+/* --- the auto actions bar ------------------------------------------------ */
+/* The bar is the div immediately after the card. The panel's only other direct
+   child is the standalone close <button>, which this cannot match. */
+.dialog-content > div.bg-surface-elevation-1 + div {
+  border-top: 1px solid var(--crm-border) !important;
+  background-color: var(--crm-surface) !important;
+  padding: var(--crm-dialog-foot-y) var(--crm-dialog-pad) !important;
+}
+
+/* --- standalone close (dialogs rendered without a title) ----------------- */
+.dialog-content > button {
+  border-radius: var(--crm-radius-sm) !important;
+  height: 32px !important;
+  width: 32px !important;
+}
+
+/* --- a11y: restore the focus ring inside dialogs ------------------------- */
+/* reka-ui portals the dialog to document.body, so the `#app …:focus-visible`
+   rule earlier in this file never matched a single dialog control. */
+.dialog-content
+  :is(
+    a[href],
+    button,
+    [role='button'],
+    [role='option'],
+    [role='tab'],
+    [tabindex]:not([tabindex='-1']),
+    input:not([type='hidden']),
+    select,
+    textarea,
+    [data-slot='trigger'],
+    [contenteditable='true']
+  ):focus-visible {
+  outline: 2px solid var(--crm-accent-primary) !important;
+  outline-offset: 2px !important;
+}
+
+/* ===========================================================================
+   CrmDialog — the shared modal shell (components/Modals/CrmDialog.vue)
+   ---------------------------------------------------------------------------
+   Global rather than <style scoped>: the body slot is full of frappe-ui
+   internals that a data-v attribute never reaches — the same reason the
+   .crm-settings-modal and .crm-doc-modal blocks live out here.
+   ========================================================================= */
+.crm-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--crm-surface);
+  color: var(--crm-text);
+}
+
+.crm-dialog__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-shrink: 0;
+  user-select: none;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--crm-border);
+}
+.crm-dialog__heading {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.crm-dialog__chip {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--crm-radius-sm);
+  background: var(--crm-accent-soft);
+  color: var(--crm-accent-primary);
+}
+.crm-dialog__chip--red {
+  background: var(--crm-danger-soft);
+  color: var(--crm-danger);
+}
+.crm-dialog__chip--green {
+  background: var(--crm-success-soft);
+  color: var(--crm-success);
+}
+.crm-dialog__chip--amber {
+  background: var(--crm-warning-soft);
+  color: var(--crm-warning);
+}
+.crm-dialog__chip--gray {
+  background: var(--crm-surface-2);
+  color: var(--crm-text-3);
+}
+
+.crm-dialog__title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--crm-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.crm-dialog__subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--crm-text-3);
+}
+.crm-dialog__header-actions {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+.crm-dialog__close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--crm-radius-sm);
+  color: var(--crm-text-3);
+  transition:
+    background-color 0.15s var(--crm-ease),
+    color 0.15s var(--crm-ease);
+}
+.crm-dialog__close:hover {
+  background: var(--crm-surface-2);
+  color: var(--crm-text);
+}
+
+/* variant: 'plain' — no chip, so the title sits flush left */
+.crm-dialog__header--plain .crm-dialog__heading {
+  gap: 0;
+}
+
+/* variant: 'wash' — Settings' gradient + topo lines, fading down past the
+   header into the top of the body. The layers are children of the panel and
+   sit at z-0; the header, body and footer sit above them and go transparent
+   so the panel's own --crm-surface reads through. 168px matches the proportion
+   Settings uses (h-52 against its taller pane). */
+.crm-dialog__header--wash {
+  padding: 18px 20px;
+  border-bottom-color: transparent;
+}
+.crm-dialog--wash .crm-dialog__header,
+.crm-dialog--wash .crm-dialog__body {
+  background: transparent;
+}
+.crm-dialog__wash-gradient,
+.crm-dialog__wash {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 168px;
+  width: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+.crm-dialog__wash-gradient {
+  background: linear-gradient(to bottom, var(--crm-settings-wash), transparent);
+}
+.crm-dialog__header,
+.crm-dialog__body,
+.crm-dialog__footer {
+  position: relative;
+  z-index: 1;
+}
+/* Promoted out of Settings.vue's <style scoped> so the shell can use it too:
+   the wash fades toward the left, staying a hint behind the title rather than
+   a background pattern. */
+.crm-wash-mask {
+  -webkit-mask-image: linear-gradient(
+    to left,
+    #000 0%,
+    rgba(0, 0, 0, 0.55) 45%,
+    transparent 85%
+  );
+  mask-image: linear-gradient(
+    to left,
+    #000 0%,
+    rgba(0, 0, 0, 0.55) 45%,
+    transparent 85%
+  );
+}
+
+.crm-dialog__body {
+  overflow-y: auto;
+  padding: var(--space-6);
+  background: var(--crm-surface);
+}
+.crm-dialog__body--flush {
+  padding: 0;
+}
+
+.crm-dialog__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+  padding: 12px 20px;
+  border-top: 1px solid var(--crm-border);
+  background: var(--crm-surface);
+}
+.crm-dialog__footer--end {
+  justify-content: flex-end;
+}
+.crm-dialog__footer--between {
+  justify-content: space-between;
+}
+
+@media (max-width: 639px) {
+  .crm-dialog__header,
+  .crm-dialog__footer {
+    padding-inline: 16px;
+  }
+  .crm-dialog__body {
+    padding: var(--space-5);
+  }
+  .crm-dialog__body--flush {
+    padding: 0;
+  }
+}
+
+/* Event reminder toasts. They are teleported to <body>, so the `#app …` rules
+   earlier in this file never reach them and they kept frappe-ui's own surface.
+   Not a dialog — no overlay, no chrome — but the same card vocabulary. */
+.crm-toast {
+  background: var(--crm-surface);
+  border: 1px solid var(--crm-border);
+  border-radius: var(--crm-dialog-radius);
+  box-shadow: var(--crm-shadow-lg);
+  color: var(--crm-text);
+}

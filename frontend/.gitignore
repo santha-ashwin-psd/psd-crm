@@ -1,0 +1,10 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+components.d.ts
+# Playwright
+e2e/.auth/
+test-results/
+playwright-report/

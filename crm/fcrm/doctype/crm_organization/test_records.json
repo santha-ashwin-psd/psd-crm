@@ -1,0 +1,266 @@
+[
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Acme Corp"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Tech Solutions"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Global Enterprises"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "StartUp Inc"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Innovation Labs"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Digital Corp"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Cloud Systems"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Data Inc"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Smart Solutions"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Future Tech"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Alpha Industries"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Beta Corp"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Gamma Systems"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Delta Solutions"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Epsilon Tech"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Zeta Corp"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Eta Systems"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Theta Inc"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Iota Labs"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Kappa Tech"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Lambda Corp"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Mu Systems"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Nu Solutions"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Xi Tech"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Omicron Inc"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Pi Labs"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Rho Corp"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Sigma Systems"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Tau Solutions"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Upsilon Tech"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Phi Corp"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Chi Systems"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Tech Innovations Inc"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Global Solutions Ltd"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Digital Marketing Co"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Enterprise Systems"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Cloud Services Inc"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Data Analytics Corp"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Startup Ventures"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Consulting Group"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Business Solutions"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Tech Corp"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Software Systems"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Digital Solutions"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Enterprise Tech"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Cloud Innovations"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "AI Systems"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Mobile Apps Inc"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Security Solutions"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Data Services"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Analytics Corp"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Platform Tech"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "IoT Solutions"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Blockchain Corp"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "DevOps Services"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Network Systems"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Database Solutions"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Web Services"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "API Systems"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Testing Labs"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "UX Design Co"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Frontend Systems"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Backend Solutions"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Full Stack Corp"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Architecture Firm"
+	},
+	{
+		"doctype": "CRM Organization",
+		"organization_name": "Microservices Inc"
+	}
+]

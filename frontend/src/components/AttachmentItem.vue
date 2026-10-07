@@ -1,0 +1,81 @@
+<template>
+  <span>
+    <a :href="isShowable ? null : url" target="_blank">
+      <Button
+        :label="label"
+        theme="gray"
+        variant="outline"
+        :iconLeft="getIcon()"
+        @click="toggleDialog()"
+      >
+        <template #suffix>
+          <slot name="suffix" />
+        </template>
+      </Button>
+    </a>
+    <CrmDialog
+      v-model:open="showDialog"
+      size="4xl"
+      icon="lucide-paperclip"
+      :title="label"
+    >
+      <template #default>
+        <div
+          v-if="isText"
+          class="prose prose-sm max-w-none whitespace-pre-wrap"
+        >
+          {{ content }}
+        </div>
+        <img v-if="isImage" :src="url" class="m-auto rounded border" />
+      </template>
+    </CrmDialog>
+  </span>
+</template>
+
+<script setup>
+import CrmDialog from '@/components/Modals/CrmDialog.vue'
+import { ref } from 'vue'
+import mime from 'mime'
+import FileTypeIcon from '@/components/Icons/FileTypeIcon.vue'
+import FileImageIcon from '@/components/Icons/FileImageIcon.vue'
+import FileTextIcon from '@/components/Icons/FileTextIcon.vue'
+import FileSpreadsheetIcon from '@/components/Icons/FileSpreadsheetIcon.vue'
+import FileIcon from '@/components/Icons/FileIcon.vue'
+
+const props = defineProps({
+  label: { type: String, default: null },
+  url: { type: String, default: null },
+})
+
+const showDialog = ref(false)
+const mimeType = mime.getType(props.label) || ''
+const isImage = mimeType.startsWith('image/')
+const isPdf = mimeType === 'application/pdf'
+const isSpreadsheet = mimeType.includes('spreadsheet')
+const isText = mimeType === 'text/plain'
+const isShowable = props.url && (isText || isImage)
+const content = ref('')
+
+function getIcon() {
+  if (isText) return FileTypeIcon
+  else if (isImage) return FileImageIcon
+  else if (isPdf) return FileTextIcon
+  else if (isSpreadsheet) return FileSpreadsheetIcon
+  else return FileIcon
+}
+
+function toggleDialog() {
+  if (!isShowable) return
+  if (isText) {
+    // Unguarded before: a failed fetch rejected into nothing while the dialog
+    // opened anyway, showing an empty preview with no indication why.
+    fetch(props.url)
+      .then((res) => res.text())
+      .then((t) => (content.value = t))
+      .catch(() => {
+        content.value = __('Could not load this file.')
+      })
+  }
+  showDialog.value = !showDialog.value
+}
+</script>

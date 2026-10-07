@@ -1,0 +1,137 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-10-03 10:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "result",
+  "crm_company",
+  "key_name",
+  "column_break_head",
+  "lead",
+  "form_type",
+  "client_ip",
+  "submission_hash",
+  "payload_section",
+  "payload",
+  "error_section",
+  "message",
+  "traceback"
+ ],
+ "fields": [
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Result",
+   "options": "success\nduplicate\nerror",
+   "reqd": 1
+  },
+  {
+   "fieldname": "crm_company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "CRM Company",
+   "options": "CRM Company",
+   "description": "Empty when the request failed before the key could be resolved."
+  },
+  {
+   "fieldname": "key_name",
+   "fieldtype": "Data",
+   "label": "Key Name",
+   "description": "Name of the CRM Web Lead Key record. The secret itself is never logged."
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "lead",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Lead",
+   "options": "CRM Lead",
+   "description": "The lead created, or the existing lead matched on a duplicate."
+  },
+  {
+   "fieldname": "form_type",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Form Type"
+  },
+  {
+   "fieldname": "client_ip",
+   "fieldtype": "Data",
+   "label": "Client IP"
+  },
+  {
+   "fieldname": "submission_hash",
+   "fieldtype": "Data",
+   "label": "Submission Hash",
+   "read_only": 1,
+   "search_index": 1,
+   "description": "Fingerprint of key + form type + email/mobile. Used to recognise a caller retrying the same inquiry; every request looks this up, hence the index."
+  },
+  {
+   "fieldname": "payload_section",
+   "fieldtype": "Section Break",
+   "label": "Inbound Payload"
+  },
+  {
+   "fieldname": "payload",
+   "fieldtype": "Code",
+   "label": "Raw Payload",
+   "options": "JSON",
+   "description": "Exactly what the website posted, so a failed submission can be replayed."
+  },
+  {
+   "fieldname": "error_section",
+   "fieldtype": "Section Break",
+   "label": "Outcome"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Small Text",
+   "label": "Message"
+  },
+  {
+   "fieldname": "traceback",
+   "fieldtype": "Code",
+   "label": "Traceback"
+  }
+ ],
+ "grid_page_length": 50,
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-03 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "FCRM",
+ "name": "CRM Web Lead Log",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}
