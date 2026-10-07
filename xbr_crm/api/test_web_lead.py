@@ -313,7 +313,8 @@ class TestWebLead(FrappeTestCase):
 		self.assertEqual(deal.last_name, "Kumar")
 		self.assertEqual(deal.custom_city, "Chennai")
 		self.assertEqual(deal.custom_form_type, "consultation")
-		self.assertEqual(deal.custom_utm_source, "google")
+		# utm_* is not part of this API: sent, but not stored.
+		self.assertFalse(deal.custom_utm_source)
 		self.assertEqual(deal.custom_page_url, "https://ieagents.co.in/")
 		self.assertEqual(deal.source, "Website")
 		self.assertEqual(deal.custom_created_via, "Website")
@@ -443,17 +444,11 @@ class TestWebLead(FrappeTestCase):
 			frappe.db.commit()
 			getattr(frappe.local, "request_cache", {}).clear()
 
-	def test_form_encoded_and_nested_payloads_both_work(self):
-		"""A caller may post flat fields or {"data": {...}}."""
-		result, status = self.post(
-			{
-				"data": json.dumps(
-					self.consultation_payload(email="nested@example.com", mobile_no="9876500099")
-				)
-			}
-		)
+	def test_numbers_sent_as_json_numbers_work(self):
+		"""A PHP array encoded with json_encode may send the mobile as a number."""
+		result, status = self.post(self.consultation_payload(mobile_no=9876500099, email="num@example.com"))
 		self.assertEqual(status, 200)
-		self.assertEqual(frappe.db.get_value("CRM Deal", result["pipeline"], "email"), "nested@example.com")
+		self.assertEqual(frappe.db.get_value("CRM Deal", result["pipeline"], "mobile_no"), "+919876500099")
 
 	def test_forecasting_does_not_reject_website_pipelines(self):
 		"""Forecasting makes value and close date mandatory; an inquiry has neither."""
@@ -492,6 +487,24 @@ class TestWebLead(FrappeTestCase):
 		result, status = self.post(self.consultation_payload(email="not-an-email"))
 		self.assertEqual(status, 400)
 		self.assertIn("Email", result["message"])
+
+	def test_overlong_field_is_400(self):
+		result, status = self.post(self.consultation_payload(first_name="A" * 141))
+		self.assertEqual(status, 400)
+		self.assertEqual(result["code"], "field_too_long")
+
+	def test_overlong_page_url_is_trimmed_not_rejected(self):
+		"""page_url is context only; a long tracking URL must not lose the inquiry."""
+		long_url = "https://ieagents.co.in/?" + "x" * 300
+		result, status = self.post(self.consultation_payload(page_url=long_url))
+		self.assertEqual(status, 200)
+		stored = frappe.db.get_value("CRM Deal", result["pipeline"], "custom_page_url")
+		self.assertEqual(stored, long_url[:140])
+
+	def test_non_text_field_is_400(self):
+		result, status = self.post(self.consultation_payload(first_name={"x": 1}))
+		self.assertEqual(status, 400)
+		self.assertEqual(result["code"], "invalid_field")
 
 	def test_email_is_optional(self):
 		result, status = self.post(self.consultation_payload(email=""))
@@ -571,8 +584,6 @@ class TestWebLead(FrappeTestCase):
 		self.assertEqual(status, 200)
 		self.assertEqual(result["contact"], existing.name)
 		self.assertFalse(result["duplicate"], "a contact with no open pipeline gets a new one")
-		# A missing email is filled in; nothing is overwritten.
-		self.assertEqual(frappe.db.get_value("Contact", existing.name, "email_id"), "new.address@example.com")
 
 	def test_existing_contact_is_reused_by_email(self):
 		existing = frappe.get_doc(
@@ -666,11 +677,9 @@ class TestWebLead(FrappeTestCase):
 				self.assertEqual(code, 200)
 				self.assertFalse(second["duplicate"])
 				self.assertNotEqual(second["pipeline"], first["pipeline"])
-				# Same person, so the same contact...
+				# Same person, so the same contact.
 				self.assertEqual(second["contact"], first["contact"])
 				self.assertEqual(self.deal_count(), 2)
-				# ...and the new pipeline points back at the old one.
-				self.assertTrue(any(first["pipeline"] in n for n in self.notes_on(second["pipeline"])))
 
 	def test_dedup_is_scoped_to_the_tenant(self):
 		"""Another company's open pipeline for the same person is not a duplicate."""
@@ -878,45 +887,31 @@ class TestWebLead(FrappeTestCase):
 		_result, status = self.post(self.consultation_payload(), api_key=secret)
 		self.assertEqual(status, 200)
 
-	# -- caller tolerance (Zapier) ----------------------------------------
+	# -- caller tolerance -------------------------------------------------
 
 	def test_unknown_fields_are_ignored_not_rejected(self):
-		"""Zapier sends its own bookkeeping fields alongside the mapped ones."""
+		"""Extra form fields (captcha tokens, CSRF tokens, buttons) are ignored."""
 		result, status = self.post(
-			self.consultation_payload(
-				zap_id="01HXYZ", zap_meta="whatever", attempt="2", **{"Raw Body": "{...}"}
-			)
+			self.consultation_payload(captcha="abc123", csrf_token="xyz", submit="Send", utm_campaign="x")
 		)
 		self.assertEqual(status, 200)
 		self.assertTrue(result["success"])
 
 	def test_empty_strings_are_treated_as_missing(self):
-		"""An unmapped Zapier field arrives as "" rather than being absent."""
-		result, status = self.post(self.consultation_payload(last_name="", email="", city="", utm_source=""))
+		"""PHP sends "" for an empty form input rather than leaving it out."""
+		result, status = self.post(self.consultation_payload(last_name="", email="", city=""))
 		self.assertEqual(status, 200)
 		deal = frappe.get_doc("CRM Deal", result["pipeline"])
 		self.assertFalse(deal.last_name)
 		self.assertFalse(deal.email)
 		self.assertFalse(deal.custom_city)
 
-	def test_blank_words_are_treated_as_missing(self):
-		"""A Zap that stringifies an absent value sends the word, not "".
-
-		Storing the literal text "null" in a pipeline's city is worse than storing
-		nothing, and it would also defeat the email/mobile validation below.
-		"""
-		result, status = self.post(self.consultation_payload(city="null", email="undefined"))
-		self.assertEqual(status, 200, "a blank-word email must not fail validation")
-		deal = frappe.get_doc("CRM Deal", result["pipeline"])
-		self.assertFalse(deal.custom_city)
-		self.assertFalse(deal.email)
-
 	def test_whitespace_only_required_field_is_rejected(self):
 		_result, status = self.post(self.consultation_payload(first_name="   "))
 		self.assertEqual(status, 400)
 
 	def test_errors_carry_a_machine_readable_code(self):
-		"""A Zap filter needs something stabler than a translated sentence."""
+		"""The website can log or branch on `code`; `message` may be reworded."""
 		for payload, expected in [
 			(self.consultation_payload(first_name=""), "missing_first_name"),
 			(self.consultation_payload(mobile_no="12345"), "invalid_mobile"),
@@ -933,7 +928,7 @@ class TestWebLead(FrappeTestCase):
 	# -- retries ----------------------------------------------------------
 
 	def test_retry_replays_the_original_pipeline_without_a_second_note(self):
-		"""Zapier re-POSTs after a timeout. The second call must be inert."""
+		"""The website re-POSTs after a timeout. The second call must be inert."""
 		payload = self.consultation_payload()
 		first, _ = self.post(payload)
 		notes_before = len(self.notes_on(first["pipeline"]))
@@ -971,7 +966,7 @@ class TestWebLead(FrappeTestCase):
 
 		A closed pipeline normally means "create a new one". A retry means "we
 		already answered this". Inside the window the retry wins, because the
-		alternative is a fresh pipeline for every Zapier retry.
+		alternative is a fresh pipeline for every retried request.
 		"""
 		payload = self.consultation_payload()
 		first, _ = self.post(payload)

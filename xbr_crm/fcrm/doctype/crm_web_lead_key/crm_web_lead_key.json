@@ -17,30 +17,26 @@
   "default_lead_owner",
   "source_section",
   "website_url",
-  "allowed_ips",
-  "captcha_section",
-  "verify_captcha",
-  "captcha_provider",
-  "captcha_secret"
+  "allowed_ips"
  ],
  "fields": [
   {
+   "description": "Human label, e.g. \"IEA Agents Website\". This is the record name, never the secret.",
    "fieldname": "key_name",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Key Name",
    "reqd": 1,
-   "unique": 1,
-   "description": "Human label, e.g. \"IEA Agents Website\". This is the record name, never the secret."
+   "unique": 1
   },
   {
+   "description": "Tenant that leads from this key belong to. Stamped onto every lead.",
    "fieldname": "crm_company",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "CRM Company",
    "options": "CRM Company",
-   "reqd": 1,
-   "description": "Tenant that leads from this key belong to. Stamped onto every lead."
+   "reqd": 1
   },
   {
    "default": "1",
@@ -54,25 +50,25 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Generated automatically on creation. Shown once, then encrypted at rest. Use xbr_crm.api.web_lead.rotate_key to replace it.",
    "fieldname": "api_key",
    "fieldtype": "Password",
    "label": "API Key",
-   "description": "Generated automatically on creation. Shown once, then encrypted at rest. Use xbr_crm.api.web_lead.rotate_key to replace it.",
    "read_only": 1
   },
   {
+   "description": "When the secret was last replaced. Empty means it is the original.",
    "fieldname": "last_rotated_on",
    "fieldtype": "Datetime",
    "label": "Last Rotated On",
-   "read_only": 1,
-   "description": "When the secret was last replaced. Empty means it is the original."
+   "read_only": 1
   },
   {
+   "description": "Used only when no assignment rule claims the lead. Falls back to the CRM Company's owner_user.",
    "fieldname": "default_lead_owner",
    "fieldtype": "Link",
    "label": "Default Lead Owner",
-   "options": "User",
-   "description": "Used only when no assignment rule claims the lead. Falls back to the CRM Company's owner_user."
+   "options": "User"
   },
   {
    "fieldname": "source_section",
@@ -80,47 +76,22 @@
    "label": "Source Website"
   },
   {
+   "description": "Informational only, e.g. https://ieagents.co.in",
    "fieldname": "website_url",
    "fieldtype": "Data",
-   "label": "Website URL",
-   "description": "Informational only, e.g. https://ieagents.co.in"
+   "label": "Website URL"
   },
   {
+   "description": "Optional allowlist, one IP or CIDR per line (comma-separated also accepted). Empty means any IP may post with this key.",
    "fieldname": "allowed_ips",
    "fieldtype": "Small Text",
-   "label": "Allowed IPs",
-   "description": "Optional allowlist, one IP or CIDR per line (comma-separated also accepted). Empty means any IP may post with this key."
-  },
-  {
-   "fieldname": "captcha_section",
-   "fieldtype": "Section Break",
-   "label": "Captcha"
-  },
-  {
-   "default": "0",
-   "fieldname": "verify_captcha",
-   "fieldtype": "Check",
-   "label": "Verify Captcha Server-Side",
-   "description": "Off by default. The website validates its own captcha before calling us."
-  },
-  {
-   "depends_on": "verify_captcha",
-   "fieldname": "captcha_provider",
-   "fieldtype": "Select",
-   "label": "Captcha Provider",
-   "options": "recaptcha\nhcaptcha"
-  },
-  {
-   "depends_on": "verify_captcha",
-   "fieldname": "captcha_secret",
-   "fieldtype": "Password",
-   "label": "Captcha Secret"
+   "label": "Allowed IPs"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-03 10:00:00.000000",
+ "modified": "2026-10-07 19:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Web Lead Key",

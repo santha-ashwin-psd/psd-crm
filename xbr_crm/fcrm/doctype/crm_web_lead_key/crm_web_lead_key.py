@@ -3,7 +3,7 @@
 
 """One API key per tenant website.
 
-The key is the only thing standing between the public internet and a lead insert
+The key is the only thing standing between the public internet and a pipeline insert
 that runs with `ignore_permissions=True`, so resolution is deliberately strict:
 the record must exist, be active, and the presented secret must match. There is
 no partial-credit path.
@@ -16,8 +16,8 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
-# 32 bytes of entropy, URL-safe so it survives being pasted into a header, a
-# Zapier field or a shell command without escaping.
+# 32 bytes of entropy, URL-safe so it survives being pasted into a header, an
+# environment variable or a shell command without escaping.
 SECRET_BYTES = 32
 
 
@@ -36,13 +36,10 @@ class CRMWebLeadKey(Document):
 
 		allowed_ips: DF.SmallText | None
 		api_key: DF.Password
-		captcha_provider: DF.Literal["recaptcha", "hcaptcha"]
-		captcha_secret: DF.Password | None
 		crm_company: DF.Link
 		default_lead_owner: DF.Link | None
 		is_active: DF.Check
 		key_name: DF.Data
-		verify_captcha: DF.Check
 		website_url: DF.Data | None
 	# end: auto-generated types
 
@@ -69,12 +66,11 @@ class CRMWebLeadKey(Document):
 
 	def validate(self):
 		self.validate_allowed_ips()
-		self.validate_captcha_config()
 
 	def validate_allowed_ips(self):
 		"""Fail at save time, not at request time.
 
-		A typo in the allowlist is otherwise invisible until the website's leads
+		A typo in the allowlist is otherwise invisible until the website's inquiries
 		start silently 403-ing in production.
 		"""
 		for entry in parse_ip_list(self.allowed_ips):
@@ -84,14 +80,6 @@ class CRMWebLeadKey(Document):
 				frappe.throw(
 					frappe._("{0} is not a valid IP address or CIDR range").format(frappe.bold(entry))
 				)
-
-	def validate_captcha_config(self):
-		if not self.verify_captcha:
-			return
-		if not self.captcha_provider:
-			frappe.throw(frappe._("Select a Captcha Provider to verify captcha server-side"))
-		if not self.get_password("captcha_secret", raise_exception=False):
-			frappe.throw(frappe._("Captcha Secret is required to verify captcha server-side"))
 
 	def rotate(self) -> str:
 		"""Replace the secret and return the new one.

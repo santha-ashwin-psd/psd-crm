@@ -127,9 +127,6 @@ class Runner:
 			"mobile_no": self.unique_mobile(),
 			"city": "Chennai",
 			"page_url": "https://ieagents.co.in/",
-			"utm_source": "google",
-			"utm_medium": "cpc",
-			"utm_campaign": "study-abroad-2026",
 		}
 		payload.update(overrides)
 		return payload
