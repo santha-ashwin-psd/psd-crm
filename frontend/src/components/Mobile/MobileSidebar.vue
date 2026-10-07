@@ -107,6 +107,7 @@ import LogOutIcon from '~icons/lucide/log-out'
 import { sessionStore } from '@/stores/session'
 import { viewsStore } from '@/stores/views'
 import { getSettings } from '@/stores/settings'
+import { isLeadsEnabled } from '@/utils/leads'
 import { computed, h } from 'vue'
 import { mobileSidebarOpened as sidebarOpened } from '@/composables/settings'
 
@@ -158,7 +159,7 @@ const allViews = computed(() => {
       name: 'All Views',
       hideLabel: true,
       opened: true,
-      views: links,
+      views: links.filter((link) => link.to !== 'Leads' || isLeadsEnabled()),
     },
   ]
   if (getPublicViews().length) {

@@ -210,6 +210,12 @@ def create_lead_from_incoming_email(doc: Communication, method: str | None = Non
 	if not create_lead_enabled:
 		return
 
+	from xbr_crm.utils.leads import leads_enabled
+
+	# While Leads are switched off nobody could see the new lead, so don't create it.
+	if not leads_enabled():
+		return
+
 	if frappe.db.exists("CRM Lead", {"email": doc.sender}):
 		return
 

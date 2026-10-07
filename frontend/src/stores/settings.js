@@ -1,5 +1,6 @@
 import { createDocumentResource } from 'frappe-ui'
 import { reactive, ref } from 'vue'
+import { setLeadsEnabled } from '@/utils/leads'
 
 const settings = ref({})
 const brand = reactive({})
@@ -9,6 +10,7 @@ const _settings = createDocumentResource({
   name: 'FCRM Settings',
   onSuccess: (data) => {
     settings.value = data
+    setLeadsEnabled(data?.enable_leads)
     getSettings().setupBrand()
     return data
   },

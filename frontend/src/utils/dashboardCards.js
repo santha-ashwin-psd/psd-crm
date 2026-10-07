@@ -1,3 +1,5 @@
+import { isLeadsEnabled } from '@/utils/leads'
+
 /**
  * Presentation logic for the dashboard's KPI cards and chart panels.
  *
@@ -272,11 +274,15 @@ export const EMPTY_CHART_COPY = {
   }),
   sales_trend: () => ({
     title: __('No activity in this period'),
-    description: __('Leads and deals created in this range will appear here.'),
+    description: isLeadsEnabled()
+      ? __('Leads and deals created in this range will appear here.')
+      : __('Deals created in this range will appear here.'),
   }),
   funnel_conversion: () => ({
     title: __('No conversions yet'),
-    description: __('Convert a lead to a deal to see the funnel.'),
+    description: isLeadsEnabled()
+      ? __('Convert a lead to a deal to see the funnel.')
+      : __('Move deals through their stages to see the funnel.'),
   }),
   deals_by_stage: () => ({
     title: __('No open deals'),

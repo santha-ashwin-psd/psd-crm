@@ -7,6 +7,7 @@ import LogoSparkpost from '@/images/sparkpost.webp'
 import LogoYahoo from '@/images/yahoo.png'
 import LogoYandex from '@/images/yandex.png'
 import LogoFrappeMail from '@/images/frappe-mail.svg'
+import { isLeadsEnabled } from '@/utils/leads'
 
 const fixedFields = [
   {
@@ -61,7 +62,8 @@ export const incomingOutgoingFields = [
     description: __(
       'If enabled, a lead will be automatically created when an incoming email is received from an unknown contact.',
     ),
-    condition: (state) => state.enable_incoming,
+    // Leads switched off: nothing would ever see the lead, so don't offer it.
+    condition: (state) => state.enable_incoming && isLeadsEnabled(),
   },
 ]
 

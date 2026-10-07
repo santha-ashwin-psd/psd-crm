@@ -16,9 +16,13 @@
           </div>
           <p class="text-p-base text-ink-gray-6">
             {{
-              __(
-                'Auto-assign leads/deals to the right sales user based on predefined conditions.',
-              )
+              isLeadsEnabled()
+                ? __(
+                    'Auto-assign leads/deals to the right sales user based on predefined conditions.',
+                  )
+                : __(
+                    'Auto-assign deals to the right sales user based on predefined conditions.',
+                  )
             }}
           </p>
         </div>
@@ -44,6 +48,7 @@ import AssignmentRulesList from './AssignmentRulesList.vue'
 import LucideSlidersHorizontal from '~icons/lucide/sliders-horizontal'
 import { createResource } from 'frappe-ui'
 import { inject, provide } from 'vue'
+import { isLeadsEnabled } from '@/utils/leads'
 
 const updateStep = inject('updateStep')
 

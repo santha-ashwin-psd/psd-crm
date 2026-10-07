@@ -50,6 +50,7 @@ import CrmDialog from '@/components/Modals/CrmDialog.vue'
 import { getRandom } from '@/utils'
 import { createResource, FormControl } from 'frappe-ui'
 import { ref, reactive, inject } from 'vue'
+import { isLeadsEnabled } from '@/utils/leads'
 
 const show = defineModel({
   type: Boolean,
@@ -73,26 +74,31 @@ const chartTypes = [
   { label: __('Donut Chart'), value: 'donut_chart' },
 ]
 
-// Defaults to the first option, as the axis and donut pickers do. It was an
-// empty string, so choosing "Number Chart" and pressing Add without opening
-// the second dropdown asked the server for a chart with no name.
-const numberChart = ref('total_leads')
+// Lead charts are only offered while Leads are switched on.
+const leadsEnabled = isLeadsEnabled()
+const leadChart = (chart) => (leadsEnabled ? [chart] : [])
+
 const numberCharts = [
-  { label: __('Total Leads'), value: 'total_leads' },
+  ...leadChart({ label: __('Total Leads'), value: 'total_leads' }),
   { label: __('Ongoing Deals'), value: 'ongoing_deals' },
   { label: __('Avg Ongoing Deal Value'), value: 'average_ongoing_deal_value' },
   { label: __('Won Deals'), value: 'won_deals' },
   { label: __('Avg Won Deal Value'), value: 'average_won_deal_value' },
   { label: __('Avg Deal Value'), value: 'average_deal_value' },
-  {
+  ...leadChart({
     label: __('Avg Time to Close a Lead'),
     value: 'average_time_to_close_a_lead',
-  },
+  }),
   {
     label: __('Avg Time to Close a Deal'),
     value: 'average_time_to_close_a_deal',
   },
 ]
+
+// Defaults to the first option, as the axis and donut pickers do. It was an
+// empty string, so choosing "Number Chart" and pressing Add without opening
+// the second dropdown asked the server for a chart with no name.
+const numberChart = ref(numberCharts[0].value)
 
 const axisChart = ref('sales_trend')
 const axisCharts = [
@@ -108,7 +114,7 @@ const axisCharts = [
 const donutChart = ref('deals_by_stage_donut')
 const donutCharts = [
   { label: __('Deals by Stage'), value: 'deals_by_stage_donut' },
-  { label: __('Leads by Source'), value: 'leads_by_source' },
+  ...leadChart({ label: __('Leads by Source'), value: 'leads_by_source' }),
   { label: __('Deals by Source'), value: 'deals_by_source' },
 ]
 

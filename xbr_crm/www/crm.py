@@ -1,13 +1,16 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # GNU GPLv3 License. See license.txt
 
+from urllib.parse import quote_plus
+
 import frappe
 from frappe import _, get_installed_apps
 from frappe.integrations.frappe_providers.frappecloud_billing import is_fc_site
 from frappe.translate import get_messages_for_boot, get_translated_doctypes
 from frappe.utils import cint, get_system_timezone
 from frappe.utils.telemetry import capture
-from urllib.parse import quote_plus
+
+from xbr_crm.utils.leads import leads_enabled
 
 no_cache = 1
 
@@ -56,6 +59,7 @@ def get_boot():
 			"sysdefaults": frappe.defaults.get_defaults(),
 			"is_fc_site": is_fc_site(),
 			"show_sales_hierarchy_banner": frappe.db.count("CRM Lead") > 0,
+			"enable_leads": leads_enabled(),
 			"translated_doctypes": get_translated_doctypes(),
 			"translated_messages": get_messages_for_boot(),
 			"timezone": {

@@ -90,7 +90,10 @@
 
           <!-- What this note is attached to. -->
           <button
-            v-if="note.reference_docname"
+            v-if="
+              note.reference_docname &&
+              (note.reference_doctype !== 'CRM Lead' || isLeadsEnabled())
+            "
             class="note-ref"
             :title="__('Open {0}', [note.reference_docname])"
             @click.stop="openReference(note)"
@@ -157,6 +160,7 @@ import { useDoctypeModal } from '@/composables/doctypeModal'
 import EmptyState from '@/components/ListViews/EmptyState.vue'
 import { usersStore } from '@/stores/users'
 import { useRouter } from 'vue-router'
+import { isLeadsEnabled } from '@/utils/leads'
 import { timeAgo, formatDate } from '@/utils'
 import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
 import { TextEditor, call, Dropdown, Tooltip, FeatherIcon } from 'frappe-ui'

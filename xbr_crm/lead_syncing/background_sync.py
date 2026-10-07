@@ -2,6 +2,12 @@ import frappe
 
 
 def sync_leads_from_all_enabled_sources(frequency: str | None = None) -> None:
+	from xbr_crm.utils.leads import leads_enabled
+
+	# While Leads are switched off nobody could see a synced lead, so don't create any.
+	if not leads_enabled():
+		return
+
 	enabled_sources = frappe.get_all(
 		"Lead Sync Source", filters={"enabled": 1, "background_sync_frequency": frequency}, pluck="name"
 	)

@@ -100,11 +100,11 @@
         </div>
       </div>
       <div
-        v-if="_event.referenceDocname"
+        v-if="showReference"
         class="mx-4.5 my-2.5 border-t border-outline-gray-1"
       />
       <div
-        v-if="_event.referenceDocname"
+        v-if="showReference"
         class="flex items-center px-4.5 py-1 text-ink-gray-7"
       >
         <component
@@ -412,22 +412,11 @@
               v-model="_event.referenceDoctype"
               class="w-full"
               type="select"
-              :options="[
-                {
-                  label: '',
-                  value: '',
-                },
-                {
-                  label: __('Lead'),
-                  value: 'CRM Lead',
-                },
-                {
-                  label: __('Deal'),
-                  value: 'CRM Deal',
-                },
-              ]"
+              :options="referenceDoctypeOptions"
               variant="outline"
-              :placeholder="__('Add Lead or Deal')"
+              :placeholder="
+                leadsEnabled ? __('Add Lead or Deal') : __('Add Deal')
+              "
               @update:modelValue="
                 () => {
                   _event.referenceDocname = ''
@@ -590,6 +579,7 @@ import {
 } from 'frappe-ui'
 import { ref, computed, watch, h, inject } from 'vue'
 import { useRouter } from 'vue-router'
+import { isLeadsEnabled } from '@/utils/leads'
 
 const props = defineProps({
   mode: { type: String, default: 'details' },
@@ -615,6 +605,20 @@ const event = defineModel('event', { type: Object, default: () => ({}) })
 const events = inject('events')
 
 const _event = ref({})
+
+const leadsEnabled = isLeadsEnabled()
+const referenceDoctypeOptions = [
+  { label: '', value: '' },
+  ...(leadsEnabled ? [{ label: __('Lead'), value: 'CRM Lead' }] : []),
+  { label: __('Deal'), value: 'CRM Deal' },
+]
+// An event linked to a lead keeps its link, but it isn't shown or opened while
+// Leads are switched off.
+const showReference = computed(
+  () =>
+    Boolean(_event.value.referenceDocname) &&
+    (_event.value.referenceDoctype !== 'CRM Lead' || leadsEnabled),
+)
 
 const readonly = computed(() => _event.value?.owner?.value !== user)
 

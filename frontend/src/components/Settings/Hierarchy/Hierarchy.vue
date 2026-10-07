@@ -24,9 +24,13 @@
             </div>
             <p class="text-p-base text-ink-gray-6">
               {{
-                __(
-                  'Restrict visibility of Leads and Deals based on a reporting tree.',
-                )
+                isLeadsEnabled()
+                  ? __(
+                      'Restrict visibility of Leads and Deals based on a reporting tree.',
+                    )
+                  : __(
+                      'Restrict visibility of Deals based on a reporting tree.',
+                    )
               }}
             </p>
           </div>
@@ -269,6 +273,7 @@ import {
   toast,
 } from 'frappe-ui'
 import { computed, ref } from 'vue'
+import { isLeadsEnabled } from '@/utils/leads'
 
 const DOCTYPE = 'CRM Sales Hierarchy'
 
@@ -313,9 +318,13 @@ function toggleEnable(currentlyEnabled) {
   if (currentlyEnabled) {
     $dialog({
       title: __('Disable Sales Hierarchy'),
-      message: __(
-        'Lead and deal visibility will no longer be restricted by the reporting tree. Are you sure?',
-      ),
+      message: isLeadsEnabled()
+        ? __(
+            'Lead and deal visibility will no longer be restricted by the reporting tree. Are you sure?',
+          )
+        : __(
+            'Deal visibility will no longer be restricted by the reporting tree. Are you sure?',
+          ),
       actions: [
         {
           label: __('Disable'),

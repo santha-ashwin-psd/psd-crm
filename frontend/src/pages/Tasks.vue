@@ -139,7 +139,11 @@
         <div class="flex gap-2 items-center justify-between">
           <div>
             <Button
-              v-if="getRow(itemName, 'reference_docname').label"
+              v-if="
+                getRow(itemName, 'reference_docname').label &&
+                (getRow(itemName, 'reference_doctype').label == 'CRM Deal' ||
+                  isLeadsEnabled())
+              "
               class="-ml-2"
               variant="ghost"
               size="sm"
@@ -242,6 +246,7 @@ import {
 } from 'frappe-ui'
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import { isLeadsEnabled } from '@/utils/leads'
 
 const { getFormattedPercent, getFormattedFloat, getFormattedCurrency } =
   getMeta('CRM Task')

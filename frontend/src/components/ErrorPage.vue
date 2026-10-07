@@ -16,8 +16,8 @@
       <div class="pt-2 w-full flex justify-center">
         <Button
           variant="solid"
-          :label="__('Go to Leads')"
-          :route="{ name: 'Leads' }"
+          :label="isLeadsEnabled() ? __('Go to Leads') : __('Go to Deals')"
+          :route="{ name: isLeadsEnabled() ? 'Leads' : 'Deals' }"
           class="w-full sm:w-auto"
         />
       </div>
@@ -27,6 +27,7 @@
 
 <script setup>
 import { sanitizeHTML } from '@/utils'
+import { isLeadsEnabled } from '@/utils/leads'
 defineProps({
   errorTitle: { type: String, required: true },
   errorMessage: { type: String, required: true },

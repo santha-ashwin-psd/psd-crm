@@ -9,6 +9,7 @@ from pypika.functions import Function
 from xbr_crm.fcrm.doctype.crm_dashboard.crm_dashboard import create_default_manager_dashboard
 from xbr_crm.permissions.tenancy import tenant_criterion
 from xbr_crm.utils import sales_user_only
+from xbr_crm.utils.leads import LEAD_DASHBOARD_CARDS, leads_enabled
 
 
 def _scoped(query, table):
@@ -62,6 +63,11 @@ def get_dashboard(from_date: str | None = None, to_date: str | None = None, user
 	else:
 		layout = json.loads(frappe.db.get_value("CRM Dashboard", "Manager Dashboard", "layout") or "[]")
 
+	# Hidden, not deleted: the stored layout keeps its lead cards for when Leads
+	# are switched back on.
+	if not leads_enabled():
+		layout = [l for l in layout if l.get("name") not in LEAD_DASHBOARD_CARDS]
+
 	for l in layout:
 		method_name = f"get_{l['name']}"
 		if hasattr(frappe.get_attr("xbr_crm.api.dashboard"), method_name):
@@ -91,6 +97,9 @@ def get_chart(
 
 	if is_sales_user:
 		user = frappe.session.user
+
+	if name in LEAD_DASHBOARD_CARDS and not leads_enabled():
+		return {"error": _("Leads are disabled")}
 
 	method_name = f"get_{name}"
 	if hasattr(frappe.get_attr("xbr_crm.api.dashboard"), method_name):
@@ -617,8 +626,11 @@ def get_sales_trend(from_date: str | None = None, to_date: str | None = None, us
 
 	deals_query = deals_query.groupby(Date(Deal.creation))
 
-	# Combine with UNION ALL and aggregate by date
-	union_query = leads_query.union_all(deals_query)
+	show_leads = leads_enabled()
+
+	# Combine with UNION ALL and aggregate by date. Without Leads the deals query
+	# stands alone; it already carries a zero `leads` column for the outer select.
+	union_query = leads_query.union_all(deals_query) if show_leads else deals_query
 
 	# Wrap in outer query to aggregate by date
 	daily = (
@@ -645,10 +657,22 @@ def get_sales_trend(from_date: str | None = None, to_date: str | None = None, us
 		for row in result
 	]
 
+	series = [
+		{"name": "leads", "type": "line", "showDataPoints": True},
+		{"name": "deals", "type": "line", "showDataPoints": True},
+		{"name": "won_deals", "type": "line", "showDataPoints": True},
+	]
+	if not show_leads:
+		series = series[1:]
+		for row in sales_trend:
+			row.pop("leads")
+
 	return {
 		"data": sales_trend,
 		"title": _("Sales trend"),
-		"subtitle": _("Daily performance of leads, deals, and wins"),
+		"subtitle": _("Daily performance of leads, deals, and wins")
+		if show_leads
+		else _("Daily performance of deals and wins"),
 		"xAxis": {
 			"title": _("Date"),
 			"key": "date",
@@ -658,11 +682,7 @@ def get_sales_trend(from_date: str | None = None, to_date: str | None = None, us
 		"yAxis": {
 			"title": _("Count"),
 		},
-		"series": [
-			{"name": "leads", "type": "line", "showDataPoints": True},
-			{"name": "deals", "type": "line", "showDataPoints": True},
-			{"name": "won_deals", "type": "line", "showDataPoints": True},
-		],
+		"series": series,
 	}
 
 
@@ -774,6 +794,7 @@ def get_funnel_conversion(from_date: str | None = None, to_date: str | None = No
 		deal_filters["user"] = user
 
 	result = []
+	show_leads = leads_enabled()
 
 	# Get total leads using Query Builder
 	CRMLead = DocType("CRM Lead")
@@ -790,14 +811,15 @@ def get_funnel_conversion(from_date: str | None = None, to_date: str | None = No
 	total_leads = query.run(as_dict=True)
 	total_leads_count = total_leads[0].count if total_leads else 0
 
-	result.append({"stage": "Leads", "count": total_leads_count})
+	if show_leads:
+		result.append({"stage": "Leads", "count": total_leads_count})
 
 	result += get_deal_status_change_counts(from_date, to_date, deal_conds, deal_filters)
 
 	return {
 		"data": result or [],
 		"title": _("Funnel conversion"),
-		"subtitle": _("Lead to deal conversion pipeline"),
+		"subtitle": _("Lead to deal conversion pipeline") if show_leads else _("Deal conversion pipeline"),
 		"xAxis": {
 			"title": _("Stage"),
 			"key": "stage",

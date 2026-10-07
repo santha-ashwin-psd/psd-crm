@@ -28,7 +28,11 @@
             v-model="query"
             type="text"
             class="flex-1 bg-transparent border-0 outline-none text-[var(--crm-text-2)] placeholder-[var(--crm-text-4)] text-base font-sans"
-            :placeholder="__('Search leads, deals, contacts, organizations...')"
+            :placeholder="
+              leadsEnabled
+                ? __('Search leads, deals, contacts, organizations...')
+                : __('Search deals, contacts, organizations...')
+            "
             aria-label="Global search"
             @keydown.down.prevent="navigateDown"
             @keydown.up.prevent="navigateUp"
@@ -88,7 +92,11 @@
               {{ __('Type to search across CRM records') }}
             </p>
             <p class="text-xs text-[var(--crm-text-4)] mt-1">
-              {{ __('Leads, Deals, Contacts, and Organizations') }}
+              {{
+                leadsEnabled
+                  ? __('Leads, Deals, Contacts, and Organizations')
+                  : __('Deals, Contacts, and Organizations')
+              }}
             </p>
           </div>
 
@@ -176,6 +184,7 @@ import { useRouter } from 'vue-router'
 import { call, Avatar, Badge } from 'frappe-ui'
 import { watchDebounced } from '@vueuse/core'
 import { isCommandPaletteOpen as isOpen } from '@/composables/commandPalette'
+import { isLeadsEnabled } from '@/utils/leads'
 
 const router = useRouter()
 
@@ -183,6 +192,8 @@ const query = ref('')
 const isLoading = ref(false)
 const modalRef = ref(null)
 const inputRef = ref(null)
+
+const leadsEnabled = isLeadsEnabled()
 
 const results = ref({
   Leads: [],
@@ -301,16 +312,18 @@ watchDebounced(
 
     try {
       const [leadsRes, dealsRes, contactsRes, orgsRes] = await Promise.all([
-        call('frappe.client.get_list', {
-          doctype: 'CRM Lead',
-          fields: ['name', 'lead_name', 'email', 'status', 'image'],
-          or_filters: {
-            lead_name: ['like', `%${val}%`],
-            name: ['like', `%${val}%`],
-            email: ['like', `%${val}%`],
-          },
-          limit_page_length: 5,
-        }),
+        leadsEnabled
+          ? call('frappe.client.get_list', {
+              doctype: 'CRM Lead',
+              fields: ['name', 'lead_name', 'email', 'status', 'image'],
+              or_filters: {
+                lead_name: ['like', `%${val}%`],
+                name: ['like', `%${val}%`],
+                email: ['like', `%${val}%`],
+              },
+              limit_page_length: 5,
+            })
+          : [],
         call('frappe.client.get_list', {
           doctype: 'CRM Deal',
           fields: ['name', 'deal_name', 'status', 'stage'],

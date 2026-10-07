@@ -167,7 +167,10 @@
     <!-- v-if on the slot itself, not on a button inside it: the shell renders
          the footer bar only when the slot is actually provided, so a call that
          already has a lead or deal gets no empty bar. -->
-    <template v-if="!callLog?.data?._lead && !callLog?.data?._deal" #footer>
+    <template
+      v-if="isLeadsEnabled() && !callLog?.data?._lead && !callLog?.data?._deal"
+      #footer
+    >
       <Button variant="solid" :label="__('Create Lead')" @click="createLead" />
     </template>
   </CrmDialog>
@@ -196,6 +199,7 @@ import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
 import { FeatherIcon, Dropdown, Avatar, call, toast } from 'frappe-ui'
 import { ref, computed, h, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { isLeadsEnabled } from '@/utils/leads'
 
 const router = useRouter()
 
@@ -271,6 +275,9 @@ const detailFields = computed(() => {
   for (const key in data) {
     data[key] = getCallLogDetail(key, data)
   }
+
+  // A call linked to a lead has nowhere to go while Leads are switched off.
+  const showLead = Boolean(data._lead) && isLeadsEnabled()
   let details = [
     {
       icon: h(FeatherIcon, {
@@ -289,11 +296,11 @@ const detailFields = computed(() => {
       },
     },
     {
-      icon: data._lead ? LeadsIcon : Dealsicon,
+      icon: showLead ? LeadsIcon : Dealsicon,
       name: 'reference_doc',
-      value: data._lead ? 'Lead' : 'Deal',
+      value: showLead ? 'Lead' : 'Deal',
       link: () => {
-        if (data._lead) {
+        if (showLead) {
           router.push({
             name: 'Lead',
             params: { leadId: data._lead },
@@ -305,7 +312,8 @@ const detailFields = computed(() => {
           })
         }
       },
-      condition: () => data._lead || data._deal,
+      // A call linked to a lead has nowhere to go while Leads are switched off.
+      condition: () => showLead || data._deal,
     },
     {
       icon: CalendarIcon,

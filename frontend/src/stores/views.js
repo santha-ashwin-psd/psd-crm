@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { createResource } from 'frappe-ui'
 import { reactive, ref } from 'vue'
+import { isLeadsEnabled } from '@/utils/leads'
 
 export const viewsStore = defineStore('crm-views', (doctype) => {
   if (typeof doctype !== 'string') {
@@ -56,14 +57,20 @@ export const viewsStore = defineStore('crm-views', (doctype) => {
     return viewsByName[view]
   }
 
+  // Saved views on CRM Lead stay stored but are not offered while Leads are off.
+  function visible(list) {
+    if (isLeadsEnabled()) return list
+    return list.filter((view) => view.dt !== 'CRM Lead')
+  }
+
   function getPinnedViews() {
     if (!pinnedViews.value?.length) return []
-    return pinnedViews.value
+    return visible(pinnedViews.value)
   }
 
   function getPublicViews() {
     if (!publicViews.value?.length) return []
-    return publicViews.value
+    return visible(publicViews.value)
   }
 
   async function reload() {

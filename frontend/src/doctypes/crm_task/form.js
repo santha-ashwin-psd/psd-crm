@@ -1,6 +1,13 @@
+import { isLeadsEnabled } from '@/utils/leads'
+
 export class CRMTask {
   onRender() {
-    if (this.doc.reference_doctype && this.doc.reference_docname) {
+    if (
+      this.doc.reference_doctype &&
+      this.doc.reference_docname &&
+      // No "Open Lead" action while Leads are switched off.
+      (this.doc.reference_doctype !== 'CRM Lead' || isLeadsEnabled())
+    ) {
       let label = this.doc.reference_doctype.replace('CRM ', '')
 
       this.actions = [

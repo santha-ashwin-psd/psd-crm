@@ -152,6 +152,7 @@ import { useBroadcast } from '@/composables/useBroadcast'
 import { TextInput, FormControl, Switch, Dropdown, toast } from 'frappe-ui'
 import { ref, computed, inject } from 'vue'
 import { ConfirmDelete } from '../../../utils'
+import { leadDealDoctypeOptions } from '@/utils/leads'
 
 const emit = defineEmits(['updateStep'])
 
@@ -165,8 +166,7 @@ const confirmDelete = ref(false)
 
 const doctypeOptions = [
   { label: __('All Types'), value: 'All' },
-  { label: __('Lead'), value: 'CRM Lead' },
-  { label: __('Deal'), value: 'CRM Deal' },
+  ...leadDealDoctypeOptions(),
 ]
 
 const templatesList = computed(() => {

@@ -320,7 +320,7 @@
                       v-model="doctypeModel"
                       type="select"
                       :label="__('Maps to')"
-                      :options="targetOptions"
+                      :options="selectableTargets"
                     />
                     <FormControl
                       v-model="form.submit_button_label"
@@ -666,6 +666,7 @@ import { useTelemetry } from 'frappe-ui/frappe'
 import { copyToClipboard } from '@/utils'
 import { formatError } from '@/utils/formatError'
 import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { defaultLeadDealDoctype, leadDealDoctypeOptions } from '@/utils/leads'
 
 const { $dialog } = globalStore()
 const { capture } = useTelemetry()
@@ -680,6 +681,16 @@ const targetOptions = [
   { label: 'Deal', value: 'CRM Deal' },
 ]
 const docLabel = (dt) => targetOptions.find((o) => o.value === dt)?.label || dt
+// A form already mapped to Lead keeps that option while Leads are switched off,
+// so it reads correctly and can be moved over to Deal.
+const selectableTargets = computed(() => {
+  const options = leadDealDoctypeOptions()
+  if (!options.some((o) => o.value === form.document_type)) {
+    const current = targetOptions.find((o) => o.value === form.document_type)
+    if (current) options.unshift(current)
+  }
+  return options
+})
 
 const loaded = ref(false)
 const saving = ref(false)
@@ -893,7 +904,7 @@ const form = reactive({
   name: props.name,
   title: '',
   route: '',
-  document_type: 'CRM Lead',
+  document_type: defaultLeadDealDoctype(),
   description: '',
   submit_button_label: 'Submit',
   success_message: '',
@@ -919,7 +930,7 @@ const publicUrl = computed(
 const embeddingDomains = computed(() =>
   (form.allowed_embedding_domains || '').split(/\s+/).filter(Boolean),
 )
-// mirror the server's ALLOWED_EMBEDDING_DOMAIN_RE (crm/www/crm_form.py): bare host,
+// mirror the server's ALLOWED_EMBEDDING_DOMAIN_RE (xbr_crm/www/crm_form.py): bare host,
 // optional scheme/port, optional leading "*." wildcard. Anything else is dropped
 // from the CSP header server-side, so flag it here instead of failing silently.
 const EMBEDDING_DOMAIN_RE =
@@ -1163,7 +1174,7 @@ createResource({
   onSuccess: (doc) => {
     form.title = doc.title || ''
     form.route = doc.route || ''
-    form.document_type = doc.document_type || 'CRM Lead'
+    form.document_type = doc.document_type || defaultLeadDealDoctype()
     form.description = doc.description || ''
     form.submit_button_label = doc.submit_button_label || 'Submit'
     form.success_message = doc.success_message || ''

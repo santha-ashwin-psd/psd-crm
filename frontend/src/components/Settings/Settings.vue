@@ -147,6 +147,7 @@ import { ref, markRaw, computed, watch, h } from 'vue'
 import AssignmentRulePage from './AssignmentRules/AssignmentRulePage.vue'
 import ShieldCheck from '~icons/lucide/shield-check'
 import SlaConfig from './Sla/SlaConfig.vue'
+import { isLeadsEnabled } from '@/utils/leads'
 
 const { isManager, getUser } = usersStore()
 
@@ -301,7 +302,7 @@ const tabs = computed(() => {
           label: __('Lead Syncing'),
           icon: 'refresh-cw',
           component: markRaw(LeadSyncSourcePage),
-          condition: () => isManager(),
+          condition: () => isManager() && isLeadsEnabled(),
         },
       ],
     },

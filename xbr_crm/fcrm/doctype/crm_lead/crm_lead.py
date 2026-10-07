@@ -14,6 +14,7 @@ from xbr_crm.fcrm.doctype.crm_status_change_log.crm_status_change_log import (
 	add_status_change_log,
 )
 from xbr_crm.fcrm.doctype.utils import add_or_remove_lost_reason_section_in_sidepanel
+from xbr_crm.utils.leads import guard_lead_write, throw_if_leads_disabled
 
 LEAD_DEAL_FIELD_MAP = {"lead_owner": "deal_owner"}
 
@@ -85,6 +86,7 @@ class CRMLead(Document):
 		self.set_sla()
 
 	def validate(self):
+		guard_lead_write(self)
 		self.validate_status()
 		self.set_full_name()
 		self.set_lead_name()
@@ -110,6 +112,9 @@ class CRMLead(Document):
 
 	def before_save(self):
 		self.apply_sla()
+
+	def on_trash(self):
+		guard_lead_write(self)
 
 	def validate_status(self):
 		if self.is_new() and not self.status:
@@ -528,6 +533,8 @@ def convert_to_deal(
 		"CRM Lead", "write", lead
 	):
 		frappe.throw(_("Not allowed to convert Lead to Deal"), frappe.PermissionError)
+	if not (doc and doc.flags.get("ignore_permissions")):
+		throw_if_leads_disabled()
 
 	lead = frappe.get_cached_doc("CRM Lead", lead)
 	if frappe.db.exists("CRM Lead Status", "Qualified"):

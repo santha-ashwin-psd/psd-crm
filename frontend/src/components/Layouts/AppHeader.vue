@@ -92,6 +92,7 @@ import PlusIcon from '~icons/lucide/plus'
 import { isMobileView as isMobile, mobileSidebarOpened } from '@/composables/settings'
 import { isCommandPaletteOpen } from '@/composables/commandPalette'
 import { createDocument } from '@/composables/document'
+import { isLeadsEnabled } from '@/utils/leads'
 import { Dropdown } from 'frappe-ui'
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
@@ -133,10 +134,14 @@ const quickCreateOptions = [
     group: 'Create New',
     hideLabel: true,
     items: [
-      {
-        label: __('Lead'),
-        onClick: () => createDocument('CRM Lead'),
-      },
+      ...(isLeadsEnabled()
+        ? [
+            {
+              label: __('Lead'),
+              onClick: () => createDocument('CRM Lead'),
+            },
+          ]
+        : []),
       {
         label: __('Deal'),
         onClick: () => createDocument('CRM Deal'),

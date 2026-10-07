@@ -13,6 +13,7 @@ from pypika import Criterion
 from xbr_crm.api.views import get_views
 from xbr_crm.fcrm.doctype.crm_form_script.crm_form_script import get_form_script
 from xbr_crm.utils import is_frappe_version
+from xbr_crm.utils.leads import hidden_lead_fields
 
 COUNT_NAME = (
 	{"COUNT": "name", "as": "total_count"}
@@ -23,8 +24,11 @@ COUNT_NAME = (
 
 @frappe.whitelist()
 def sort_options(doctype: str):
+	hidden = hidden_lead_fields(doctype)
 	fields = frappe.get_meta(doctype).fields
-	fields = [field for field in fields if field.fieldtype not in no_value_fields]
+	fields = [
+		field for field in fields if field.fieldtype not in no_value_fields and field.fieldname not in hidden
+	]
 	fields = [
 		{
 			"label": _(field.label),
@@ -76,6 +80,7 @@ def get_filterable_fields(doctype: str):
 	restricted_fields = []
 	if hasattr(c, "get_non_filterable_fields"):
 		restricted_fields = c.get_non_filterable_fields()
+	restricted_fields = [*restricted_fields, *hidden_lead_fields(doctype)]
 
 	fields = []
 
@@ -125,11 +130,14 @@ def get_group_by_fields(doctype: str):
 		"Datetime",
 	]
 
+	hidden = hidden_lead_fields(doctype)
 	fields = frappe.get_meta(doctype).fields
 	fields = [
 		field
 		for field in fields
-		if field.fieldtype not in no_value_fields and field.fieldtype in allowed_fieldtypes
+		if field.fieldtype not in no_value_fields
+		and field.fieldtype in allowed_fieldtypes
+		and field.fieldname not in hidden
 	]
 	fields = [
 		{
@@ -450,8 +458,13 @@ def get_data(
 
 			data.append({"column": kc, "fields": kanban_fields, "data": column_data})
 
+	hidden = hidden_lead_fields(doctype)
+	if hidden and columns:
+		columns = [column for column in columns if column.get("key") not in hidden]
 	fields = frappe.get_meta(doctype).fields
-	fields = [field for field in fields if field.fieldtype not in no_value_fields]
+	fields = [
+		field for field in fields if field.fieldtype not in no_value_fields and field.fieldname not in hidden
+	]
 	fields = [
 		{
 			"label": _(field.label),
@@ -635,11 +648,16 @@ def get_fields(doctype: str, allow_all_fieldtypes: bool = False):
 	if allow_all_fieldtypes:
 		not_allowed_fieldtypes = []
 	fields = frappe.get_meta(doctype).fields
+	hidden = hidden_lead_fields(doctype)
 
 	_fields = []
 
 	for field in fields:
-		if field.fieldtype not in not_allowed_fieldtypes and field.fieldname:
+		if (
+			field.fieldtype not in not_allowed_fieldtypes
+			and field.fieldname
+			and field.fieldname not in hidden
+		):
 			_fields.append(field)
 
 	return _fields

@@ -85,6 +85,7 @@ import { formatError } from '@/utils/formatError'
 import { usersStore } from '@/stores/users'
 import { createResource, toast, FeatherIcon } from 'frappe-ui'
 import { ref, computed } from 'vue'
+import { isLeadsEnabled } from '@/utils/leads'
 
 const { users, isAdmin } = usersStore()
 
@@ -99,8 +100,9 @@ const description = computed(() => {
       'Can manage all aspects of the CRM, including user management, customizations and settings.',
     'Sales Manager':
       'Can manage and invite new users, and create public & private views (reports).',
-    'Sales User':
-      'Can work with leads and deals and create private views (reports).',
+    'Sales User': isLeadsEnabled()
+      ? 'Can work with leads and deals and create private views (reports).'
+      : 'Can work with deals and create private views (reports).',
   }[role.value]
 })
 

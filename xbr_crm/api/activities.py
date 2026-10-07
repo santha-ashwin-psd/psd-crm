@@ -8,13 +8,14 @@ from frappe.query_builder import JoinType
 from frappe.translate import get_translated_doctypes
 
 from xbr_crm.fcrm.doctype.crm_call_log.crm_call_log import parse_call_log
+from xbr_crm.utils.leads import leads_enabled
 
 
 @frappe.whitelist()
 def get_activities(name: str):
 	if frappe.db.exists("CRM Deal", name):
 		return get_deal_activities(name)
-	elif frappe.db.exists("CRM Lead", name):
+	elif frappe.db.exists("CRM Lead", name) and leads_enabled():
 		return get_lead_activities(name)
 	else:
 		frappe.throw(_("Document not found"), frappe.DoesNotExistError)
@@ -51,7 +52,10 @@ def get_deal_activities(name: str):
 
 	if lead:
 		activities, calls, notes, tasks, attachments = get_lead_activities(lead)
-		creation_text = _("converted the lead to this deal")
+		if leads_enabled():
+			creation_text = _("converted the lead to this deal")
+		else:
+			activities = _without_lead_history(activities)
 
 	activities.append(
 		{
@@ -172,6 +176,27 @@ def get_deal_activities(name: str):
 	activities = handle_multiple_versions(activities)
 
 	return activities, calls, notes, tasks, attachments
+
+
+# Lead-only timeline entries: the lead's own creation and its field edits.
+_LEAD_HISTORY_TYPES = {"creation", "changed", "added", "removed"}
+
+
+def _without_lead_history(activities: list) -> list:
+	"""Keep what happened with the customer, drop the lead's own record-keeping.
+
+	With Leads switched off, a converted deal still shows the emails, comments and
+	attachments from its lead stage — those are the customer's history — but not
+	"created this lead" or the lead's field changes, which would point at a
+	record the user can no longer open.
+	"""
+	kept = []
+	for activity in activities:
+		if activity.get("is_lead") and activity.get("activity_type") in _LEAD_HISTORY_TYPES:
+			continue
+		activity["is_lead"] = False
+		kept.append(activity)
+	return kept
 
 
 def get_lead_activities(name: str):

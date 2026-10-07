@@ -54,16 +54,7 @@
             type="select"
             size="md"
             :label="__('For')"
-            :options="[
-              {
-                label: __('Deal'),
-                value: 'CRM Deal',
-              },
-              {
-                label: __('Lead'),
-                value: 'CRM Lead',
-              },
-            ]"
+            :options="leadDealDoctypeOptions()"
             :placeholder="__('Deal')"
           />
         </div>
@@ -141,6 +132,7 @@ import {
   createResource,
 } from 'frappe-ui'
 import { computed, inject, onMounted, ref } from 'vue'
+import { leadDealDoctypeOptions } from '@/utils/leads'
 
 const props = defineProps({
   templateData: { type: Object, required: true },

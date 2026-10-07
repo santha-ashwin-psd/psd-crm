@@ -193,7 +193,7 @@
             @click="showTaskWindow"
           />
           <Button
-            v-if="contact.deal || contact.lead"
+            v-if="contact.deal || (contact.lead && isLeadsEnabled())"
             class="bg-surface-gray-9 text-ink-base hover:bg-surface-gray-8"
             size="md"
             :iconRight="ArrowUpRightIcon"
@@ -240,6 +240,7 @@ import { sessionStore } from '@/stores/session'
 import { useDraggable, useWindowSize } from '@vueuse/core'
 import { TextEditor, Avatar, Button, createResource, toast } from 'frappe-ui'
 import { ref, onBeforeUnmount, watch, nextTick } from 'vue'
+import { isLeadsEnabled } from '@/utils/leads'
 import { useRouter } from 'vue-router'
 
 const { $socket } = globalStore()

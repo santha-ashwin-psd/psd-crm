@@ -71,16 +71,7 @@
             <FormLabel :label="__('Apply On')" required />
             <Select
               v-model="slaData.apply_on"
-              :options="[
-                {
-                  label: 'Lead',
-                  value: 'CRM Lead',
-                },
-                {
-                  label: 'Deal',
-                  value: 'CRM Deal',
-                },
-              ]"
+              :options="leadDealDoctypeOptions()"
             />
           </div>
           <div class="space-y-0.5">
@@ -104,7 +95,11 @@
               __('Assignment conditions')
             }}</span>
             <span class="text-p-sm text-ink-gray-6">
-              {{ __('Choose which leads/deals are affected by this policy.') }}
+              {{
+                isLeadsEnabled()
+                  ? __('Choose which leads/deals are affected by this policy.')
+                  : __('Choose which deals are affected by this policy.')
+              }}
             </span>
           </div>
           <div class="mt-3">
@@ -289,6 +284,7 @@ import { convertToConditions } from '../../../utils'
 import { formatError } from '../../../utils/formatError'
 import SlaHolidays from './SlaHolidays.vue'
 import SlaPriorityList from './SlaPriorityList.vue'
+import { isLeadsEnabled, leadDealDoctypeOptions } from '@/utils/leads'
 
 const isDirty = ref(false)
 const initialData = ref(null)

@@ -1,12 +1,43 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import json
+
 import frappe
 from frappe.model.document import Document
 
 
 class CRMDashboard(Document):
-	pass
+	def validate(self):
+		self.keep_hidden_lead_cards()
+
+	def keep_hidden_lead_cards(self):
+		"""Carry lead cards through a save made while Leads are switched off.
+
+		The dashboard API leaves lead cards out of the layout it sends, so the
+		layout saved back from the editor no longer has them. Re-append them from
+		the stored version so that turning Leads back on restores the dashboard.
+		"""
+		from xbr_crm.utils.leads import LEAD_DASHBOARD_CARDS, leads_enabled
+
+		if self.is_new() or leads_enabled() or not self.has_value_changed("layout"):
+			return
+
+		previous = self.get_doc_before_save()
+		try:
+			old_layout = json.loads(previous.layout or "[]") if previous else []
+			new_layout = json.loads(self.layout or "[]")
+		except ValueError:
+			return
+
+		present = {card.get("name") for card in new_layout}
+		hidden = [
+			card
+			for card in old_layout
+			if card.get("name") in LEAD_DASHBOARD_CARDS and card.get("name") not in present
+		]
+		if hidden:
+			self.layout = json.dumps(new_layout + hidden)
 
 
 def default_manager_dashboard_layout():

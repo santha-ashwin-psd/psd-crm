@@ -171,6 +171,7 @@ import {
   ErrorMessage,
 } from 'frappe-ui'
 import { ref, computed } from 'vue'
+import { isLeadsEnabled } from '@/utils/leads'
 
 const { updateOnboardingStep } = useOnboarding('frappecrm')
 const { users, isAdmin } = usersStore()
@@ -220,9 +221,9 @@ const description = computed(() => {
     'Sales Manager': __(
       'Can manage and invite new users, and create public & private views (reports).',
     ),
-    'Sales User': __(
-      'Can work with leads and deals and create private views (reports).',
-    ),
+    'Sales User': isLeadsEnabled()
+      ? __('Can work with leads and deals and create private views (reports).')
+      : __('Can work with deals and create private views (reports).'),
   }[role.value]
 })
 

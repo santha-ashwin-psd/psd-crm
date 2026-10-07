@@ -1,6 +1,8 @@
 import frappe
 from frappe.query_builder import Order
 
+from xbr_crm.utils.leads import leads_enabled
+
 
 @frappe.whitelist()
 def get_notifications():
@@ -12,6 +14,10 @@ def get_notifications():
 		.orderby("creation", order=Order.desc)
 	)
 	notifications = query.run(as_dict=True)
+
+	# Lead notifications stay stored but are not shown while Leads are switched off.
+	if not leads_enabled():
+		notifications = [n for n in notifications if n.reference_doctype != "CRM Lead"]
 
 	_notifications = []
 	for notification in notifications:

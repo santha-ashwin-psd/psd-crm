@@ -16,9 +16,13 @@
           </div>
           <p class="text-p-base text-ink-gray-6">
             {{
-              __(
-                'Capture leads and deals from public forms you embed on your website.',
-              )
+              isLeadsEnabled()
+                ? __(
+                    'Capture leads and deals from public forms you embed on your website.',
+                  )
+                : __(
+                    'Capture deals from public forms you embed on your website.',
+                  )
             }}
           </p>
         </div>
@@ -45,7 +49,11 @@
       <EmptyState
         v-else-if="forms.data?.length === 0"
         :title="__('No web forms yet')"
-        :description="__('Create one to start capturing leads.')"
+        :description="
+          isLeadsEnabled()
+            ? __('Create one to start capturing leads.')
+            : __('Create one to start capturing deals.')
+        "
         :icon="h(LucideTextCursorInput)"
       />
       <div v-else class="flex flex-col gap-3 overflow-y-auto">
@@ -118,7 +126,7 @@
           v-model="draft.document_type"
           type="select"
           :label="__('Maps to')"
-          :options="targetOptions"
+          :options="leadDealDoctypeOptions()"
         />
         <div>
           <div class="crm-field-label">{{ __('Route') }}</div>
@@ -168,6 +176,11 @@ import LucideTextCursorInput from '~icons/lucide/text-cursor-input'
 import { ref, reactive, h } from 'vue'
 import { ConfirmDelete, copyToClipboard } from '../../../utils'
 import { formatError } from '../../../utils/formatError'
+import {
+  defaultLeadDealDoctype,
+  isLeadsEnabled,
+  leadDealDoctypeOptions,
+} from '@/utils/leads'
 
 const emit = defineEmits(['open'])
 const { capture } = useTelemetry()
@@ -190,7 +203,11 @@ const forms = createResource({
 const showCreate = ref(false)
 const creating = ref(false)
 const createError = ref('')
-const draft = reactive({ title: '', route: '', document_type: 'CRM Lead' })
+const draft = reactive({
+  title: '',
+  route: '',
+  document_type: defaultLeadDealDoctype(),
+})
 let routeEdited = false
 
 function slugify(v) {
@@ -204,7 +221,7 @@ function slugify(v) {
 function openCreate() {
   draft.title = ''
   draft.route = ''
-  draft.document_type = 'CRM Lead'
+  draft.document_type = defaultLeadDealDoctype()
   routeEdited = false
   createError.value = ''
   showCreate.value = true

@@ -7,6 +7,7 @@
  "field_order": [
   "defaults_tab",
   "restore_defaults",
+  "enable_leads",
   "enable_forecasting",
   "enable_sales_hierarchy",
   "auto_update_expected_deal_value",
@@ -80,6 +81,13 @@
    "fieldname": "favicon",
    "fieldtype": "Attach",
    "label": "Favicon"
+  },
+  {
+   "default": "0",
+   "description": "Show Leads across the CRM. When off, Leads are hidden everywhere and cannot be created or edited; existing lead data is kept.",
+   "fieldname": "enable_leads",
+   "fieldtype": "Check",
+   "label": "Enable Leads"
   },
   {
    "default": "0",
@@ -243,7 +251,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-27 18:02:14.802197",
+ "modified": "2026-10-07 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "FCRM Settings",

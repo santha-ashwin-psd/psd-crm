@@ -66,7 +66,9 @@ import LucideCornerUpLeft from '~icons/lucide/corner-up-left'
 import LucideMail from '~icons/lucide/mail'
 import LucideCalendarClock from '~icons/lucide/calendar-clock'
 import LucideArrowUpDown from '~icons/lucide/arrow-up-down'
+import LucideUserPlus from '~icons/lucide/user-plus'
 import { getSettings } from '@/stores/settings'
+import { isLeadsEnabled } from '@/utils/leads'
 import { FormControl, Switch, FeatherIcon, toast } from 'frappe-ui'
 import { markRaw } from 'vue'
 
@@ -81,33 +83,61 @@ const sortOrderOptions = [
   { label: __('Newest First'), value: 'Newest First' },
 ]
 
+// Copy below names "lead/deal" only while Leads are in use.
+const leadsEnabled = isLeadsEnabled()
+
 const rows = [
+  {
+    field: 'enable_leads',
+    type: 'switch',
+    icon: markRaw(LucideUserPlus),
+    title: __('Enable Leads'),
+    description: __(
+      'Show Leads across the CRM. When off, Leads are hidden everywhere and cannot be created or edited; existing lead data is kept.',
+    ),
+  },
   {
     field: 'update_timestamp_on_new_communication',
     type: 'switch',
     icon: markRaw(LucideClock),
     title: __('Update timestamp on new communication'),
-    description: __(
-      'Update the modified timestamp on new email communication & comments for leads & deals',
-    ),
+    description: leadsEnabled
+      ? __(
+          'Update the modified timestamp on new email communication & comments for leads & deals',
+        )
+      : __(
+          'Update the modified timestamp on new email communication & comments for deals',
+        ),
   },
   {
     field: 'auto_mark_replied_on_response',
     type: 'switch',
     icon: markRaw(LucideCornerUpLeft),
-    title: __('Mark lead/deal as replied on response'),
-    description: __(
-      'Automatically sets Communication Status to "Replied" for the lead or deal when a response is received. Applies only when SLA is enabled',
-    ),
+    title: leadsEnabled
+      ? __('Mark lead/deal as replied on response')
+      : __('Mark deal as replied on response'),
+    description: leadsEnabled
+      ? __(
+          'Automatically sets Communication Status to "Replied" for the lead or deal when a response is received. Applies only when SLA is enabled',
+        )
+      : __(
+          'Automatically sets Communication Status to "Replied" for the deal when a response is received. Applies only when SLA is enabled',
+        ),
   },
   {
     field: 'auto_reopen_on_new_communication',
     type: 'switch',
     icon: markRaw(LucideMail),
-    title: __('Reopen lead/deal on new communication'),
-    description: __(
-      'Automatically sets Communication Status to "Open" for the lead or deal when a new communication is created. Applies only when SLA is enabled',
-    ),
+    title: leadsEnabled
+      ? __('Reopen lead/deal on new communication')
+      : __('Reopen deal on new communication'),
+    description: leadsEnabled
+      ? __(
+          'Automatically sets Communication Status to "Open" for the lead or deal when a new communication is created. Applies only when SLA is enabled',
+        )
+      : __(
+          'Automatically sets Communication Status to "Open" for the deal when a new communication is created. Applies only when SLA is enabled',
+        ),
   },
   {
     field: 'crm_timeline_timestamp_format',
@@ -136,12 +166,16 @@ const rows = [
 function onToggle(field, val) {
   settings.doc[field] = val
   settings.save.submit(null, {
-    onSuccess: () =>
+    onSuccess: () => {
       toast.success(
         val
           ? __('Setting enabled successfully')
           : __('Setting disabled successfully'),
-      ),
+      )
+      // Navigation, menus and routes are all built from this flag; reload so
+      // every part of the app picks up the change at once.
+      if (field === 'enable_leads') setTimeout(() => window.location.reload(), 600)
+    },
   })
 }
 

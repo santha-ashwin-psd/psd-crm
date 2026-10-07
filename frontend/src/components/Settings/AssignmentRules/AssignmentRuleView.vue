@@ -133,16 +133,7 @@
           <FormLabel :label="__('Apply On')" />
           <Select
             v-model="assignmentRuleData.documentType"
-            :options="[
-              {
-                label: 'Lead',
-                value: 'CRM Lead',
-              },
-              {
-                label: 'Deal',
-                value: 'CRM Deal',
-              },
-            ]"
+            :options="leadDealDoctypeOptions()"
           />
         </div>
       </div>
@@ -385,6 +376,7 @@ import { globalStore } from '@/stores/global'
 import { disableSettingModalOutsideClick } from '@/composables/settings'
 import { convertToConditions, validateConditions } from '@/utils'
 import { formatError } from '@/utils/formatError'
+import { defaultLeadDealDoctype, leadDealDoctypeOptions } from '@/utils/leads'
 
 const isDirty = ref(false)
 const initialData = ref(null)
@@ -432,7 +424,7 @@ const assignmentRuleData = ref({
   name: '',
   assignmentRuleName: '',
   assignmentDays: defaultAssignmentDays,
-  documentType: 'CRM Lead',
+  documentType: defaultLeadDealDoctype(),
 })
 
 const validateAssignmentRule = (key, skipConditionCheck = false) => {
@@ -530,7 +522,7 @@ const resetAssignmentRuleData = () => {
     name: '',
     assignmentRuleName: '',
     assignmentDays: defaultAssignmentDays,
-    documentType: 'CRM Lead',
+    documentType: defaultLeadDealDoctype(),
   }
 }
 

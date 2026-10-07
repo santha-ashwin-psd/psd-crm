@@ -200,8 +200,9 @@ describe('GeneralSettings', () => {
   })
 
   describe('the rows it offers', () => {
-    it('covers the three automation switches and two timeline choices', () => {
+    it('covers the Leads switch, three automation switches and two timeline choices', () => {
       expect(mount(GeneralSettings).vm.rows.map((r) => r.field)).toEqual([
+        'enable_leads',
         'update_timestamp_on_new_communication',
         'auto_mark_replied_on_response',
         'auto_reopen_on_new_communication',

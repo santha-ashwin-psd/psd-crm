@@ -20,6 +20,9 @@ import { useTelemetry } from 'frappe-ui/frappe'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { PERSONA_DONE_KEY } from '@/router'
+import { isLeadsEnabled } from '@/utils/leads'
+
+const leadsEnabled = isLeadsEnabled()
 
 const router = useRouter()
 const { capture } = useTelemetry()
@@ -67,7 +70,9 @@ const questions = computed(() => [
   },
   {
     key: 'lead_sources',
-    title: __('How do new leads usually come to you?'),
+    title: leadsEnabled
+      ? __('How do new leads usually come to you?')
+      : __('How do new customers usually come to you?'),
     multiple: true,
     options: [
       { label: __('Website forms'), value: 'website_forms' },
@@ -87,7 +92,12 @@ const questions = computed(() => [
     title: __('What are your biggest challenges with sales today?'),
     multiple: true,
     options: [
-      { label: __('Capturing leads'), value: 'capturing_leads' },
+      {
+        label: leadsEnabled
+          ? __('Capturing leads')
+          : __('Finding new customers'),
+        value: 'capturing_leads',
+      },
       { label: __('Following up consistently'), value: 'following_up' },
       {
         label: __('Keeping my pipeline organized'),
@@ -119,7 +129,9 @@ const questions = computed(() => [
     optional: true,
     options: [
       { label: __('Import my existing data'), value: 'import_data' },
-      { label: __('Capture my first lead'), value: 'capture_lead' },
+      ...(leadsEnabled
+        ? [{ label: __('Capture my first lead'), value: 'capture_lead' }]
+        : []),
       { label: __('Set up my sales pipeline'), value: 'setup_pipeline' },
       { label: __('Organize my contacts'), value: 'organize_contacts' },
       { label: __('Invite my team'), value: 'invite_team' },

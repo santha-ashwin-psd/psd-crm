@@ -12,6 +12,9 @@ globalThis.__ = (msg, args) => {
 
 globalThis.window = globalThis.window || {}
 globalThis.window.sysdefaults = { currency: 'USD' }
+// Boot flag for FCRM Settings → enable_leads. The existing suites were written
+// for the product with Leads switched on; tests of the switch itself override it.
+globalThis.window.enable_leads = true
 
 // Page size is persisted per device (composables/pageLength.js), so a test that
 // calls setPageSize() leaves the value behind for every test that follows it in

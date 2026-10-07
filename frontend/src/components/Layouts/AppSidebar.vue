@@ -180,6 +180,7 @@ import SidebarLink from '@/components/SidebarLink.vue'
 import BrandLogo from '@/components/BrandLogo.vue'
 import Settings from '@/components/Settings/Settings.vue'
 import { getSettings } from '@/stores/settings'
+import { isLeadsEnabled } from '@/utils/leads'
 import SalesHierarchyBanner from '@/components/SalesHierarchyBanner.vue'
 import { viewsStore } from '@/stores/views'
 import { usersStore } from '@/stores/users'
@@ -222,6 +223,7 @@ const links = [
     label: 'Leads',
     icon: LeadsIcon,
     to: 'Leads',
+    condition: () => isLeadsEnabled(),
   },
   {
     label: 'Deals',
@@ -334,6 +336,7 @@ const steps = reactive([
       send('trigger_lead_create', true)
       capture('onboarding_step_clicked_create_first_lead')
     },
+    condition: () => isLeadsEnabled(),
   },
   {
     name: 'invite_your_team',
@@ -375,6 +378,7 @@ const steps = reactive([
       }
       showIntermediateModal.value = true
     },
+    condition: () => isLeadsEnabled(),
   },
   {
     name: 'create_first_task',
@@ -534,7 +538,7 @@ const articles = ref([
     title: __('Masters'),
     opened: false,
     subArticles: [
-      { name: 'lead', title: __('Lead') },
+      ...(isLeadsEnabled() ? [{ name: 'lead', title: __('Lead') }] : []),
       { name: 'deal', title: __('Deal') },
       { name: 'contact', title: __('Contact') },
       { name: 'organization', title: __('Organization') },
@@ -545,7 +549,7 @@ const articles = ref([
     ],
   },
   {
-    title: __('Capturing Leads'),
+    title: isLeadsEnabled() ? __('Capturing Leads') : __('Web Forms'),
     opened: false,
     subArticles: [{ name: 'web-form', title: __('Web Form') }],
   },

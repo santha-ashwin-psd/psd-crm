@@ -3,6 +3,7 @@ import { call } from 'frappe-ui'
 import { usersStore } from '@/stores/users'
 import { sessionStore } from '@/stores/session'
 import { viewsStore } from '@/stores/views'
+import { isLeadsEnabled } from '@/utils/leads'
 
 let personaChecked = false
 export const PERSONA_DONE_KEY = 'crm_persona_captured'
@@ -207,6 +208,12 @@ router.beforeEach(async (to, from, next) => {
     // Preserve the deep link so sign-in returns the user where they were going.
     window.location.href =
       '/login?redirect-to=' + encodeURIComponent(to.fullPath)
+  } else if (['Leads', 'Lead'].includes(to.name) && !isLeadsEnabled()) {
+    // Leads are switched off: every lead URL (list, view, record) lands on Deals.
+    next({ name: 'Deals' })
+  } else if (to.name === 'Welcome' && !isLeadsEnabled()) {
+    // The welcome page is a "create your first lead" flow.
+    next({ name: 'Dashboard' })
   } else if (['Deal', 'Lead'].includes(to.name) && !to.hash) {
     let storageKey = to.name === 'Deal' ? 'lastDealTab' : 'lastLeadTab'
     const activeTab = localStorage.getItem(storageKey) || 'activity'
