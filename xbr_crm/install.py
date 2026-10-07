@@ -682,7 +682,7 @@ def create_assignment_rule_custom_fields():
 
 
 # ---------------------------------------------------------------------------
-# Website inquiry capture (crm/api/web_lead.py)
+# Website inquiry capture (xbr_crm/api/web_lead.py)
 # ---------------------------------------------------------------------------
 
 # Fields the client website can send that CRM Lead has no home for. All optional:
@@ -785,7 +785,7 @@ def add_web_lead_side_panel_section():
 
 
 # ---------------------------------------------------------------------------
-# How a lead got here (crm/api/lead_origin.py)
+# How a lead got here (xbr_crm/api/lead_origin.py)
 # ---------------------------------------------------------------------------
 
 # Deliberately separate from `source`. `source` is a BUSINESS field — the sales

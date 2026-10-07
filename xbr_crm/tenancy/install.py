@@ -1,7 +1,7 @@
 """Idempotent tenancy setup: the `crm_company` custom fields and the default company.
 
-Split out of crm/install.py so the whole feature can be reverted by deleting the
-`crm/tenancy` package and two hook entries.
+Split out of xbr_crm/install.py so the whole feature can be reverted by deleting the
+`xbr_crm/tenancy` package and two hook entries.
 """
 
 import click

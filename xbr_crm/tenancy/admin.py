@@ -15,7 +15,7 @@ from xbr_crm.tenancy import emails
 from xbr_crm.tenancy.auth import signin_url
 
 # "Company Admin" deliberately does not map to System Manager — that role bypasses
-# tenancy entirely (see crm/permissions/tenancy.py), so handing it to a tenant
+# tenancy entirely (see xbr_crm/permissions/tenancy.py), so handing it to a tenant
 # would let them read every other company's data.
 ASSIGNABLE_ROLES = ("Company Admin", "Sales Manager", "Sales User")
 
@@ -78,7 +78,7 @@ def invite_user(
 	user.send_welcome_email = 0  # we send our own, via the system SMTP
 	user.flags.ignore_password_policy = True
 
-	# See crm/tenancy/auth.py: Frappe's "no roles enabled" warning links into the
+	# See xbr_crm/tenancy/auth.py: Frappe's "no roles enabled" warning links into the
 	# blocked desk, and the member row below grants the roles a moment later.
 	muted = frappe.flags.mute_messages
 	frappe.flags.mute_messages = True

@@ -26,7 +26,7 @@ def get_context(context):
 	context.redirect_to = redirect_to
 
 	# Guest sessions get a CSRF token too; every POST from this page sends it.
-	# Same pattern as crm/www/crm_form.py.
+	# Same pattern as xbr_crm/www/crm_form.py.
 	try:
 		context.csrf_token = frappe.sessions.get_csrf_token()
 	except Exception:

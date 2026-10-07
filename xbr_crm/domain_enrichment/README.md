@@ -38,7 +38,7 @@ itself; it loads rules and executes them.
 
 ```
 DESK ADMIN (data)                         ENGINE (code, rule-agnostic)        RESULT (data)
- CRM Enrichment Settings (Single) ─┐       crm/domain_enrichment/
+ CRM Enrichment Settings (Single) ─┐       xbr_crm/domain_enrichment/
  CRM Enrichment Rule (+Pattern) ───┼─►get_config()──► config.py              CRM Enrichment Run
  CRM Enrichment Field Mapping ─────┘      http.py (session+SSRF+cap)           (Dynamic Link to
                                           crawler.py (BFS; caps from cfg)       Lead/Deal/Org)
@@ -49,7 +49,7 @@ DESK ADMIN (data)                         ENGINE (code, rule-agnostic)        RE
    Lead/Deal/Organization                                                      the record (policy)
 ```
 
-### Module map (`crm/domain_enrichment/`)
+### Module map (`xbr_crm/domain_enrichment/`)
 
 | File | Responsibility |
 |---|---|
@@ -301,7 +301,7 @@ write back to the Organization. The field-writing reuses `mapper.apply_to_docume
 
 ## Tests
 
-Framework-native tests live in `crm/domain_enrichment/tests/` and are discoverable by
+Framework-native tests live in `xbr_crm/domain_enrichment/tests/` and are discoverable by
 `bench run-tests --app crm`:
 
 - **Pure unit (`frappe.tests.UnitTestCase`, no DB, offline fixtures):**

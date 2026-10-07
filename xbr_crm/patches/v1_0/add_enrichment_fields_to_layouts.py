@@ -1,7 +1,7 @@
 """Expose the Domain Enrichment fields on existing sites.
 
 The enrichment fields (company_description, linkedin, twitter, facebook) were added
-to the default Lead/Deal/Organization layouts in ``crm/install.py``, but that seeder
+to the default Lead/Deal/Organization layouts in ``xbr_crm/install.py``, but that seeder
 is skip-if-exists -- so sites installed before this feature never get them and users
 can't see what enrichment writes. This patch injects any missing enrichment field
 into the relevant Side Panel / Data Fields / Quick Entry layouts (the Lead/Deal/

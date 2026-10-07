@@ -5,7 +5,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 # Skip tests that import erpnext when it isn't installed. CI only installs
-# ERPNext when integration code under crm/integrations/erpnext/** is touched.
+# ERPNext when integration code under xbr_crm/integrations/erpnext/** is touched.
 ERPNEXT_INSTALLED = find_spec("erpnext") is not None
 
 # Doctypes whose sync behaviour moved from override_doctype_class to doc_events

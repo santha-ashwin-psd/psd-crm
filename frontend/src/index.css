@@ -228,7 +228,7 @@ body,
 
 /* =====================================================
    Re-base frappe-ui's blue token family → Books blue (#2563eb)
-   The linked @framework/ui (Tailwind v4 / OKLCH) exposes surface/ink/
+   frappe-ui exposes surface/ink/
    outline-blue-1..10 + ink-blue-link. We remap the light-mode ramp to
    the brand blue so every blue accent (links, blue buttons, toggle "on",
    active-tab underline, focus rings) reads #2563eb. Unlayered :root so it

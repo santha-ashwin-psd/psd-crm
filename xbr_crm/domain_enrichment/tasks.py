@@ -31,7 +31,7 @@ TOTAL_STEPS = len(PROGRESS_STEPS)
 
 
 def _publish(reference_doctype, reference_name, status, message="", step=0, payload=None, user=None):
-	"""Emit a single progress/terminal event. Mirrors crm/api/whatsapp.py shape:
+	"""Emit a single progress/terminal event. Mirrors xbr_crm/api/whatsapp.py shape:
 	always carries the reference, plus step/total/message/status and an optional
 	payload (terminal events put filled_fields/notes/result.flat() in the payload).
 	Never raises -- realtime is best-effort."""

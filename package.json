@@ -2,17 +2,9 @@
 	"private": true,
 	"type": "module",
 	"name": "xbr-crm",
-	"description": "Frappe CRM helps you work, not slow you down. Open-source, intuitive, and free from extra costs.",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/frappe/crm.git"
-	},
-	"homepage": "https://frappe.io/crm",
+	"description": "XBR CRM",
 	"author": "Frappe Technologies Pvt. Ltd.",
-	"license": "GPL-3.0",
-	"bugs": {
-		"url": "https://github.com/frappe/crm/issues"
-	},
+	"license": "AGPL-3.0",
 	"scripts": {
 		"postinstall": "cd frontend && yarn install --check-files",
 		"dev": "cd frontend && yarn dev",

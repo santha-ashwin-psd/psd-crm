@@ -3,7 +3,7 @@ name = "xbr_crm"
 authors = [
     { name = "Frappe Technologies Pvt. Ltd.", email = "shariq@frappe.io"}
 ]
-description = "Kick-ass Open Source CRM"
+description = "XBR CRM"
 requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]

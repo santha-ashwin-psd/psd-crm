@@ -1,11 +1,11 @@
 app_name = "xbr_crm"
 app_title = "XBR CRM"
 app_publisher = "Frappe Technologies Pvt. Ltd."
-app_description = "Kick-ass Open Source CRM"
+app_description = "XBR CRM"
 app_email = "shariq@frappe.io"
 app_license = "AGPLv3"
 app_icon_url = "/assets/xbr_crm/images/logo.svg"
-app_icon_title = "CRM"
+app_icon_title = "XBR CRM"
 app_icon_route = "/"
 
 # Apps
@@ -16,7 +16,7 @@ add_to_apps_screen = [
 	{
 		"name": "crm",
 		"logo": "/assets/xbr_crm/images/logo.svg",
-		"title": "CRM",
+		"title": "XBR CRM",
 		"route": "/",
 		"has_permission": "xbr_crm.api.check_app_permission",
 	}
@@ -39,7 +39,7 @@ require_type_annotated_api_methods = True
 # web_include_js = "/assets/xbr_crm/js/crm.js"
 
 # include custom scss in every website theme (without file extension ".scss")
-# website_theme_scss = "crm/public/scss/website"
+# website_theme_scss = "xbr_crm/public/scss/website"
 
 # include js, css files in header of web form
 # webform_include_js = {"doctype": "public/js/doctype.js"}

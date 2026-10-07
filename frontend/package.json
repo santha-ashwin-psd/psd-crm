@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --base=/assets/xbr_crm/frontend/ && npm run copy-html-entry",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 vite build --base=/assets/xbr_crm/frontend/ && npm run copy-html-entry",
     "copy-html-entry": "cp ../xbr_crm/public/frontend/index.html ../xbr_crm/www/crm.html",
     "serve": "vite preview",
     "test": "vitest",
@@ -17,7 +17,6 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@framework/ui": "link:../../frappe/ui",
     "@tiptap/core": "^3.26.0",
     "@tiptap/extension-paragraph": "^3.26.0",
     "@tiptap/pm": "^3.26.0",

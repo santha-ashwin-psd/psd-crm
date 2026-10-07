@@ -13,7 +13,7 @@ would be readable by anyone who opened devtools if it were called from the page.
 
 How this relates to the existing forms feature
 ----------------------------------------------
-`crm/api/form.py` serves CRM-hosted Web Forms and stamps source "Web Form".
+`xbr_crm/api/form.py` serves CRM-hosted Web Forms and stamps source "Web Form".
 This module is the opposite direction — the form lives on someone else's site —
 and stamps source "Website", so the two paths stay distinguishable in reporting.
 They do not interact: `enrich_form_submission` is gated on
@@ -21,7 +21,7 @@ They do not interact: `enrich_form_submission` is gated on
 
 Tenancy
 -------
-`crm/permissions/tenancy.py` stamps `crm_company` in `before_insert` from the
+`xbr_crm/permissions/tenancy.py` stamps `crm_company` in `before_insert` from the
 SESSION user. Our session is Guest, which maps to no company, and
 `FCRM Settings.default_crm_company` may be unset — so a lead inserted without
 intervention is born with `crm_company = NULL` and, under `tenancy_strict`,

@@ -41,7 +41,7 @@ class CRMFallbackPage:
 		return True
 
 	def render(self):
-		# TemplatePage("crm") runs crm/www/crm.py::get_context, which bounces
+		# TemplatePage("crm") runs xbr_crm/www/crm.py::get_context, which bounces
 		# Guests to /login. That raise propagates to website/serve.py, which does
 		# know how to turn frappe.Redirect into a RedirectPage.
 		return TemplatePage("crm", self.http_status_code).render()

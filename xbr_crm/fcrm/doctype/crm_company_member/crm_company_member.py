@@ -11,7 +11,7 @@ from frappe.utils import now_datetime
 # rewritten by _sync_user_role() whenever this row changes.
 #
 # Note "Company Admin" maps to Sales Manager, NOT System Manager: System Manager
-# is the tenancy *bypass* role (see crm/permissions/tenancy.py), so granting it to
+# is the tenancy *bypass* role (see xbr_crm/permissions/tenancy.py), so granting it to
 # a tenant admin would let them read every other company's data.
 ROLE_MAP = {
 	"Company Admin": ("Sales Manager", "Sales User"),

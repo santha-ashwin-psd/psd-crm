@@ -69,16 +69,8 @@ export default defineConfig(async ({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
-        // point at the package src dir (not index.ts) so subpath imports like
-        // `@framework/ui/components/Notifications` resolve. Importing subpaths avoids the
-        // barrel, which `export *`s components (Grid/Phone/FormLayout) that need a newer
-        // frappe-ui (`frappe-ui/internals`) than this app pins.
-        '@framework/ui': path.resolve(__dirname, '../../frappe/ui/src'),
       },
-      // ensure the linked framework package reuses the host app's single copy of each peer.
-      // `dompurify` is an implicit dep of @framework/ui's sanitize util (not declared in its
-      // package.json); dedupe resolves it to the host's copy since the symlinked source has
-      // no node_modules of its own.
+      // ensure a locally linked frappe-ui reuses the host app's single copy of each peer.
       dedupe: ['vue', 'vue-router', 'frappe-ui', 'dompurify'],
     },
     optimizeDeps: {
@@ -93,8 +85,8 @@ export default defineConfig(async ({ mode }) => {
     },
     server: {
       fs: {
-        // allow the bench `apps/` dir so Vite can serve linked local packages
-        // (frappe-ui, @framework/ui) that live in sibling app repos
+        // allow the parent dir so Vite can serve a locally linked frappe-ui
+        // that lives in a sibling repo
         allow: [path.resolve(__dirname, '../..')],
       },
     },
