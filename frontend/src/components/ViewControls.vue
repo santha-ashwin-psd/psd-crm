@@ -457,7 +457,7 @@ usePageMeta(() => {
   let label = currentView.value.label
   if (currentView.value.is_standard) {
     let routeName = route.name
-    label = `${routeName} - ${label}`
+    label = `${__(routeName)} - ${__(label)}`
   }
   return {
     title: label,

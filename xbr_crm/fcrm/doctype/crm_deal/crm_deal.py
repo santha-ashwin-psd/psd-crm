@@ -54,7 +54,7 @@ class CRMDeal(Document):
 		lost_notes: DF.Text | None
 		lost_reason: DF.Link | None
 		mobile_no: DF.Data | None
-		naming_series: DF.Literal["CRM-DEAL-.YYYY.-"]
+		naming_series: DF.Literal["PIPE-.YYYY.-"]
 		net_total: DF.Currency
 		next_step: DF.Data | None
 		no_of_employees: DF.Literal["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"]

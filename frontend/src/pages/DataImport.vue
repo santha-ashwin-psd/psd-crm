@@ -19,33 +19,33 @@ const doctypeMap = {
   ...(isLeadsEnabled()
     ? {
         'CRM Lead': {
-          title: 'Leads',
+          title: __('Leads'),
           listRoute: '/leads',
           pageRoute: `/leads/docname`,
         },
       }
     : {}),
   'CRM Deal': {
-    title: 'Deals',
-    listRoute: '/deals',
-    pageRoute: `/deals/docname`,
+    title: __('Deals'),
+    listRoute: '/pipeline',
+    pageRoute: `/pipeline/docname`,
   },
   Contact: {
-    title: 'Contacts',
+    title: __('Contacts'),
     listRoute: '/contacts',
     pageRoute: `/contacts/docname`,
   },
   'CRM Task': {
-    title: 'Tasks',
+    title: __('Tasks'),
     listRoute: '/tasks',
   },
   'CRM Organization': {
-    title: 'Organizations',
+    title: __('Organizations'),
     listRoute: '/organizations',
     pageRoute: `/organizations/docname`,
   },
   'CRM Call Log': {
-    title: 'Call Log',
+    title: __('Call Log'),
     listRoute: '/call-logs',
   },
 }

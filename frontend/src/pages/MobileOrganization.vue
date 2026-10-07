@@ -123,7 +123,7 @@
           </div>
         </div>
         <DealsListView
-          v-if="tab.label === 'Deals' && rows.length"
+          v-if="tab.name === 'Deals' && rows.length"
           class="mt-4"
           :rows="rows"
           :columns="columns"
@@ -142,7 +142,13 @@
         >
           <div class="flex flex-col items-center justify-center space-y-3">
             <component :is="tab.icon" class="!h-10 !w-10" />
-            <div>{{ __('No {0} Found', [__(tab.label)]) }}</div>
+            <div>
+              {{
+                tab.name === 'Deals'
+                  ? __('No deals found')
+                  : __('No {0} Found', [__(tab.label)])
+              }}
+            </div>
           </div>
         </div>
       </template>

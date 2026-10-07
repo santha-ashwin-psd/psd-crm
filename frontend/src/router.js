@@ -52,16 +52,33 @@ const routes = [
     props: true,
   },
   {
-    alias: '/deals',
-    path: '/deals/view/:viewType?',
+    // Deals are shown to users as "Pipeline". Route names and the `dealId`
+    // param keep their internal names; only the URL changed.
+    alias: '/pipeline',
+    path: '/pipeline/view/:viewType?',
     name: 'Deals',
     component: () => import('@/pages/Deals.vue'),
   },
   {
-    path: '/deals/:dealId',
+    path: '/pipeline/:dealId',
     name: 'Deal',
     component: () => import(`@/pages/${handleMobileView('Deal')}.vue`),
     props: true,
+  },
+  // Old /deals URLs (bookmarks, emailed links) keep working.
+  { path: '/deals', redirect: { name: 'Deals' } },
+  {
+    path: '/deals/view/:viewType?',
+    redirect: (to) => ({ name: 'Deals', params: to.params, query: to.query }),
+  },
+  {
+    path: '/deals/:dealId',
+    redirect: (to) => ({
+      name: 'Deal',
+      params: to.params,
+      query: to.query,
+      hash: to.hash,
+    }),
   },
   {
     alias: '/notes',

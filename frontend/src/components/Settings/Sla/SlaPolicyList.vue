@@ -97,7 +97,7 @@
 
               <!-- Apply On -->
               <div class="w-24 shrink-0 text-sm text-ink-gray-6">
-                {{ sla.apply_on == 'CRM Lead' ? 'Lead' : 'Deal' }}
+                {{ sla.apply_on == 'CRM Lead' ? __('Lead') : __('Deal') }}
               </div>
 
               <!-- Toggle + Dropdown -->

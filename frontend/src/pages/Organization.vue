@@ -248,6 +248,12 @@
                 v-if="!rows.length"
                 :icon="tab.icon"
                 :name="__(tab.label)"
+                :title="tab.label === 'Deals' ? __('No deals found') : ''"
+                :description="
+                  tab.label === 'Deals'
+                    ? __('Deals linked to this organization will appear here.')
+                    : ''
+                "
               />
             </div>
           </template>

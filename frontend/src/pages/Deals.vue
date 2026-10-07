@@ -23,7 +23,7 @@
       doctype="CRM Deal"
       :statuses="dealStatuses.data"
       :maxStatuses="4"
-      totalLabel="Total Deals"
+      :totalLabel="__('Total Deals')"
       :activeStatus="activeStatus"
       :refreshToken="deals?.data?.total_count"
       :show="showStatusBand"
@@ -138,7 +138,7 @@
       v-else-if="!deals.data"
       class="flex min-h-0 flex-1 flex-col mt-3"
       aria-busy="true"
-      aria-label="Loading deals"
+      :aria-label="__('Loading deals')"
     >
       <SkeletonLoader type="table" />
     </div>

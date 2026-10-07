@@ -176,7 +176,7 @@
                           doctype="User"
                           :filters="field.filters"
                           :placeholder="
-                            __('Select') + ' ' + field.label + '...'
+                            __('Select') + ' ' + __(field.label) + '...'
                           "
                           :hideMe="true"
                           @change="(v) => fieldChange(v, field)"

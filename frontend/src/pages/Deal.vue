@@ -496,7 +496,7 @@
   <SkeletonLoader
     v-else-if="!errorTitle"
     type="detail-page"
-    aria-label="Loading deal details"
+    :aria-label="__('Loading deal details')"
   />
   <ErrorPage
     v-else-if="errorTitle"

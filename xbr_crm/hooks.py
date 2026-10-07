@@ -85,6 +85,9 @@ website_route_rules = [
 	{"from_route": "/notifications", "to_route": "crm"},
 	{"from_route": "/leads", "to_route": "crm"},
 	{"from_route": "/leads/<path:path>", "to_route": "crm"},
+	{"from_route": "/pipeline", "to_route": "crm"},
+	{"from_route": "/pipeline/<path:path>", "to_route": "crm"},
+	# Old Deals URLs: serve the SPA so its router can redirect them to /pipeline.
 	{"from_route": "/deals", "to_route": "crm"},
 	{"from_route": "/deals/<path:path>", "to_route": "crm"},
 	{"from_route": "/notes", "to_route": "crm"},

@@ -298,7 +298,7 @@ const detailFields = computed(() => {
     {
       icon: showLead ? LeadsIcon : Dealsicon,
       name: 'reference_doc',
-      value: showLead ? 'Lead' : 'Deal',
+      value: showLead ? __('Lead') : __('Deal'),
       link: () => {
         if (showLead) {
           router.push({

@@ -583,7 +583,7 @@ describe('Mobile organization page', () => {
       wrapper.vm.tabIndex = 1
       await nextTick()
       expect(wrapper.findComponent(DealsListViewStub).exists()).toBe(false)
-      expect(wrapper.text()).toContain('No Deals Found')
+      expect(wrapper.text()).toContain('No deals found')
     })
   })
 })

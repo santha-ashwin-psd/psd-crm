@@ -236,7 +236,44 @@ export function headlessConfig(item) {
     }))
     config.colors = [SERIES_COLORS.leads]
   }
-  return config
+  return withTranslatedSeries(config)
+}
+
+/**
+ * Chart legends and tooltips are drawn from the series *key* ("won_deals" →
+ * "Won Deals"), which never passes through the translation layer. Where a key's
+ * label has a translation (in the "Chart series" context, so a legend can read
+ * "Pipelines" while the module is "Pipeline"), rename the key in the series and
+ * in every data row so the chart shows the translated label.
+ *
+ * @param {object} config - An axis chart config.
+ * @returns {object} The config, with translated series keys where they apply.
+ */
+function withTranslatedSeries(config) {
+  const renames = {}
+  for (const s of config.series || []) {
+    const label = s.name
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+    const translated = __(label, null, 'Chart series')
+    if (translated !== label) renames[s.name] = translated
+  }
+  if (!Object.keys(renames).length) return config
+
+  return {
+    ...config,
+    series: config.series.map((s) => ({
+      ...s,
+      name: renames[s.name] || s.name,
+    })),
+    data: (config.data || []).map((row) => {
+      const out = {}
+      for (const [key, value] of Object.entries(row))
+        out[renames[key] || key] = value
+      return out
+    }),
+  }
 }
 
 /**

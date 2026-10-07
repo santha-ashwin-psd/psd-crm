@@ -1,0 +1,145 @@
+Add Deal,Add Pipeline
+Add Lead or Deal,Add Lead or Pipeline
+Add deals with an expected value and close date to see your forecast.,Add pipelines with an expected value and close date to see your forecast.
+Are you sure you want to convert {0} lead(s) to deal(s)?,Are you sure you want to convert {0} lead(s) to pipeline(s)?
+Auto Update Expected Deal Value,Auto Update Expected Pipeline Value
+Auto update Expected Deal Value,Auto update Expected Pipeline Value
+Auto-assign deals to the right sales user based on predefined conditions.,Auto-assign pipelines to the right sales user based on predefined conditions.
+Auto-assign leads/deals to the right sales user based on predefined conditions.,Auto-assign leads/pipelines to the right sales user based on predefined conditions.
+"Automatically sets Communication Status to ""Open"" for the deal when a new communication is created. Applies only when SLA is enabled","Automatically sets Communication Status to ""Open"" for the pipeline when a new communication is created. Applies only when SLA is enabled"
+"Automatically sets Communication Status to ""Open"" for the lead or deal when a new communication is created. Applies only when SLA is enabled","Automatically sets Communication Status to ""Open"" for the lead or pipeline when a new communication is created. Applies only when SLA is enabled"
+"Automatically sets Communication Status to ""Replied"" for the deal when a response is received. Applies only when SLA is enabled","Automatically sets Communication Status to ""Replied"" for the pipeline when a response is received. Applies only when SLA is enabled"
+"Automatically sets Communication Status to ""Replied"" for the lead or deal when a response is received. Applies only when SLA is enabled","Automatically sets Communication Status to ""Replied"" for the lead or pipeline when a response is received. Applies only when SLA is enabled"
+Automatically sets Communication Status to “Open” for the lead or deal when a new communication is created. Applies only when SLA is enabled,Automatically sets Communication Status to “Open” for the lead or pipeline when a new communication is created. Applies only when SLA is enabled
+Automatically sets Communication Status to “Replied” for the lead or deal when a response is received. Applies only when SLA is enabled,Automatically sets Communication Status to “Replied” for the lead or pipeline when a response is received. Applies only when SLA is enabled
+"Automatically update ""Expected Deal Value"" based on the total value of associated products in a deal","Automatically update ""Expected Pipeline Value"" based on the total value of associated products in a pipeline"
+Average deal value of non won/lost deals,Average pipeline value of non won/lost pipelines
+Average deal value of ongoing & won deals,Average pipeline value of open & won pipelines
+Average deal value of won deals,Average pipeline value of won pipelines
+Average time taken from deal creation to deal closure,Average time taken from pipeline creation to pipeline closure
+Average time taken from lead creation to deal closure,Average time taken from lead creation to pipeline closure
+Avg Deal Value,Avg Pipeline Value
+Avg Ongoing Deal Value,Avg Open Pipeline Value
+Avg Time to Close a Deal,Avg Time to Close a Pipeline
+Avg Won Deal Value,Avg Won Pipeline Value
+Avg. deal close,Avg. pipeline close
+Avg. deal value,Avg. pipeline value
+Avg. ongoing deal value,Avg. open pipeline value
+Avg. time to close a deal,Avg. time to close a pipeline
+Avg. won deal value,Avg. won pipeline value
+Back to Deals,Back to Pipeline
+CRM Deal,Pipeline
+CRM Deal Status,Pipeline Status
+Can work with deals and create private views (reports).,Can work with pipelines and create private views (reports).
+Can work with leads and deals and create private views (reports).,Can work with leads and pipelines and create private views (reports).
+Capture deals from public forms you embed on your website.,Capture pipelines from public forms you embed on your website.
+Capture leads and deals from public forms you embed on your website.,Capture leads and pipelines from public forms you embed on your website.
+Change deal status,Change pipeline status
+Choose which deals are affected by this policy.,Choose which pipelines are affected by this policy.
+Choose which leads/deals are affected by this policy.,Choose which leads/pipelines are affected by this policy.
+Close my first deal,Close my first pipeline
+Common reasons for losing deals,Common reasons for losing pipelines
+Convert a lead to a deal to see the funnel.,Convert a lead to a pipeline to see the funnel.
+Convert lead to deal,Convert lead to pipeline
+Convert to Deal,Convert to Pipeline
+Copy deal ID,Copy pipeline ID
+Create Deal,Create Pipeline
+Create customer in ERPNext when the deal status is changed,Create customer in ERPNext when the pipeline status is changed
+Create one to start capturing deals.,Create one to start capturing pipelines.
+Create quotation button on deal page and auto customer creation on deal status change will be disabled. Are you sure?,Create quotation button on pipeline page and auto customer creation on pipeline status change will be disabled. Are you sure?
+Daily performance of deals and wins,Daily performance of pipelines and wins
+"Daily performance of leads, deals, and wins","Daily performance of leads, pipelines, and wins"
+Deal,Pipeline
+Deal Owner,Pipeline Owner
+Deal Status,Pipeline Status
+Deal Value,Pipeline Value
+Deal conversion pipeline,Conversion by stage
+Deal generation channel analysis,Pipeline generation channel analysis
+Deal stage,Pipeline stage
+Deal status is required,Pipeline status is required
+Deal value,Pipeline value
+Deal visibility will no longer be restricted by the reporting tree. Are you sure?,Pipeline visibility will no longer be restricted by the reporting tree. Are you sure?
+Deals,Pipeline
+Deals by Ongoing & Won Stage,Pipelines by Open & Won Stage
+Deals by Salesperson,Pipelines by Salesperson
+Deals by Source,Pipelines by Source
+Deals by Stage,Pipelines by Stage
+Deals by Territory,Pipelines by Territory
+Deals by ongoing & won stage,Pipelines by open & won stage
+Deals by salesperson,Pipelines by salesperson
+Deals by source,Pipelines by source
+Deals by stage,Pipelines by stage
+Deals by territory,Pipelines by territory
+Deals created in this range will appear here.,Pipelines created in this range will appear here.
+Deals linked to this contact will appear here.,Pipelines linked to this contact will appear here.
+Deals linked to this organization will appear here.,Pipelines linked to this organization will appear here.
+Deals will be grouped by their stage here.,Pipelines will be grouped by their stage here.
+"Deals, Contacts, and Organizations","Pipelines, Contacts, and Organizations"
+Delete deal,Delete pipeline
+Edit deal's mandatory fields layout,Edit pipeline's mandatory fields layout
+Enable for CRM Deal,Enable for Pipeline
+Enter details to establish a new pipeline deal,Enter details to create a new pipeline
+Error converting to deal: {0},Error converting to pipeline: {0}
+Expected Deal Value,Expected Pipeline Value
+Expected deal value is required.,Expected pipeline value is required.
+For open deals,For open pipelines
+Geographic distribution of deals and revenue,Geographic distribution of pipelines and revenue
+Go to Deals,Go to Pipeline
+"It will make deal's ""Expected Closure Date"" & ""Expected Deal Value"" mandatory to get accurate forecasting insights","It will make pipeline's ""Expected Closure Date"" & ""Expected Pipeline Value"" mandatory to get accurate forecasting insights"
+Lead and deal visibility will no longer be restricted by the reporting tree. Are you sure?,Lead and pipeline visibility will no longer be restricted by the reporting tree. Are you sure?
+Lead to deal conversion pipeline,Lead to pipeline conversion
+Leads and deals created in this range will appear here.,Leads and pipelines created in this range will appear here.
+"Leads, Deals, Contacts, and Organizations","Leads, Pipelines, Contacts, and Organizations"
+Link or create the organization and contact for this deal,Link or create the organization and contact for this pipeline
+Loading deal details,Loading pipeline details
+Loading deals,Loading pipelines
+Lost Deal Reasons,Lost Pipeline Reasons
+Lost deal reasons,Lost pipeline reasons
+"Makes ""Expected Closure Date"" and ""Expected Deal Value"" mandatory for deal value forecasting","Makes ""Expected Closure Date"" and ""Expected Pipeline Value"" mandatory for pipeline value forecasting"
+Mark deal as replied on response,Mark pipeline as replied on response
+Mark lead/deal as replied on response,Mark lead/pipeline as replied on response
+Move deals through their stages to see the funnel.,Move pipelines through their stages to see the funnel.
+My Open Deals,My Open Pipelines
+No deal sources recorded,No pipeline sources recorded
+No deals found,No pipelines found
+No deals match these filters,No pipelines match these filters
+No open deals,No open pipelines
+Not allowed to add contact to Deal,Not allowed to add contact to Pipeline
+Not allowed to convert Lead to Deal,Not allowed to convert Lead to Pipeline
+Not allowed to remove contact from Deal,Not allowed to remove contact from Pipeline
+Not allowed to set primary contact for Deal,Not allowed to set primary contact for Pipeline
+Number of deals,Number of pipelines
+Number of deals and total value per salesperson,Number of pipelines and total value per salesperson
+Ongoing Deals,Open Pipelines
+Ongoing deals,Open pipelines
+Per open deal,Per open pipeline
+Per won deal,Per won pipeline
+Please specify a reason for losing the deal.,Please specify a reason for losing the pipeline.
+Please specify the reason for losing the deal.,Please specify the reason for losing the pipeline.
+Projected vs actual revenue based on deal probability,Projected vs actual revenue based on pipeline probability
+Reopen deal on new communication,Reopen pipeline on new communication
+Reopen lead/deal on new communication,Reopen lead/pipeline on new communication
+Restrict Lead and Deal visibility based on the Sales Hierarchy tree. Managers can see all records owned by or assigned to their reports.,Restrict Lead and Pipeline visibility based on the Sales Hierarchy tree. Managers can see all records owned by or assigned to their reports.
+Restrict visibility of Deals based on a reporting tree.,Restrict visibility of Pipelines based on a reporting tree.
+Restrict visibility of Leads and Deals based on a reporting tree.,Restrict visibility of Leads and Pipelines based on a reporting tree.
+"Search deals, contacts, organizations...","Search pipelines, contacts, organizations..."
+"Search leads, deals, contacts, organizations...","Search leads, pipelines, contacts, organizations..."
+Select the deal status to trigger the auto customer creation in ERPNext,Select the pipeline status to trigger the auto customer creation in ERPNext
+Set a source on your deals to see this breakdown.,Set a source on your pipelines to see this breakdown.
+The rate used to convert the deal’s currency to your crm's base currency (set in CRM Settings). It is set once when the currency is first added and doesn't change automatically.,The rate used to convert the pipeline’s currency to your crm's base currency (set in CRM Settings). It is set once when the currency is first added and doesn't change automatically.
+Total Deals,Total Pipelines
+Total number of non won/lost deals,Total number of non won/lost pipelines
+Total number of won deals based on its closure date,Total number of won pipelines based on its closure date
+Try changing or clearing the filters to see more deals.,Try changing or clearing the filters to see more pipelines.
+Untitled deal,Untitled pipeline
+Update the modified timestamp on new email communication & comment for leads & deals,Update the modified timestamp on new email communication & comment for leads & pipelines
+Update the modified timestamp on new email communication & comments for deals,Update the modified timestamp on new email communication & comments for pipelines
+Update the modified timestamp on new email communication & comments for leads & deals,Update the modified timestamp on new email communication & comments for leads & pipelines
+Won Deals,Won Pipelines
+Won deals,Won pipelines
+converted the lead to this deal,converted the lead to this pipeline
+created this deal,created this pipeline
+deal,pipeline
+deals,pipelines
+Deals,Pipelines,Chart series
+Won Deals,Won Pipelines,Chart series

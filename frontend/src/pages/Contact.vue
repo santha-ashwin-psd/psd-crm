@@ -240,7 +240,13 @@
                 :columns="columns"
                 :options="{ selectable: false, showTooltip: false }"
               />
-              <EmptyState v-if="!rows.length" :icon="tab.icon" name="Deals" />
+              <EmptyState
+                v-if="!rows.length"
+                :icon="tab.icon"
+                name="Deals"
+                :title="__('No deals found')"
+                :description="__('Deals linked to this contact will appear here.')"
+              />
             </div>
           </template>
         </Tabs>

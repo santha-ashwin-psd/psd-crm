@@ -360,7 +360,7 @@ watchDebounced(
         title: l.lead_name || l.name,
         subtitle: l.email || l.status,
         image: l.image,
-        badge: 'Lead',
+        badge: __('Lead'),
         route: { name: 'Lead', params: { leadId: l.name } },
       }))
 
@@ -368,7 +368,7 @@ watchDebounced(
         id: `deal-${d.name}`,
         title: d.deal_name || d.name,
         subtitle: d.stage || d.status,
-        badge: 'Deal',
+        badge: __('Deal'),
         route: { name: 'Deal', params: { dealId: d.name } },
       }))
 
@@ -377,7 +377,7 @@ watchDebounced(
         title: `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.name,
         subtitle: c.email_id,
         image: c.image,
-        badge: 'Contact',
+        badge: __('Contact'),
         route: { name: 'Contact', params: { contactId: c.name } },
       }))
 
@@ -386,7 +386,7 @@ watchDebounced(
         title: o.organization_name || o.name,
         subtitle: o.industry || __('Organization'),
         image: o.image,
-        badge: 'Organization',
+        badge: __('Organization'),
         route: { name: 'Organization', params: { organizationId: o.name } },
       }))
     } catch (err) {
