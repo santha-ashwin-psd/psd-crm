@@ -490,7 +490,7 @@ describe('Call Logs page', () => {
       wrapper.vm.showCallLog('CALL-1')
       expect(wrapper.vm.showCallLogDetailModal).toBe(true)
       expect(api.createResource).toHaveBeenCalledWith({
-        url: 'crm.fcrm.doctype.crm_call_log.crm_call_log.get_call_log',
+        url: 'xbr_crm.fcrm.doctype.crm_call_log.crm_call_log.get_call_log',
         params: { name: 'CALL-1' },
         cache: ['call_log', 'CALL-1'],
         auto: true,

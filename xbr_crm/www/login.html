@@ -1,0 +1,1458 @@
+{% raw %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sign In — Frappe CRM</title>
+{% endraw %}
+<meta name="csrf-token" content="{{ csrf_token | e }}"/>
+{% raw %}
+<link rel="icon" href="/assets/xbr_crm/images/logo.svg" type="image/svg+xml"/>
+<!-- This page is served by the website renderer, NOT the Vue bundle, so it does not
+     inherit the app's fonts. The app's own `InterVar` face lives at a build-hashed
+     filename that changes on every `yarn build`, so it cannot be linked from here.
+     Frappe ships the same typeface at a stable, unhashed path — use that. -->
+<link rel="preconnect" href="/"/>
+<link rel="stylesheet" href="/assets/frappe/css/fonts/inter/inter.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* Matched to the app's own tokens (index.css) so the login page and the CRM
+     read as one product: navy sidebar, #2563eb accent. */
+  --ink:#0f1320;--ink2:#1a1f33;--surface:#ffffff;
+  --accent:#1d4ed8;--accentL:#2563eb;--accentS:#dbeafe;
+  --border:#e5e7eb;--border2:#d1d5db;--muted:#6b7280;--muted2:#9ca3af;
+  --text:#111827;--text2:#374151;--red:#dc2626;--green:#16a34a;
+  /* InterVariable is Frappe's name for the variable face; InterVar is the app
+     bundle's name for the identical typeface. Listing both means whichever is
+     loaded wins, and the page matches the CRM either way. */
+  --font:'InterVariable','InterVar','Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+html,body{height:100%;font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased;background:var(--ink);
+  font-feature-settings:normal;letter-spacing:-.005em}
+input,button{font-family:var(--font)}
+
+.shell{display:flex;height:100vh;overflow:hidden}
+
+/* ── Left brand panel ── */
+.brand-panel{
+  width:44%;flex-shrink:0;background:var(--ink);
+  display:flex;flex-direction:column;padding:48px 52px;
+  position:relative;overflow:hidden;
+}
+.brand-panel::before{
+  content:"";position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:48px 48px;pointer-events:none;
+}
+.brand-panel::after{
+  content:"";position:absolute;width:480px;height:480px;border-radius:50%;
+  background:radial-gradient(circle,rgba(37,99,235,.32) 0%,transparent 68%);
+  bottom:-160px;left:-100px;pointer-events:none;
+}
+.glow2{position:absolute;width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle,rgba(96,165,250,.16) 0%,transparent 70%);
+  top:-80px;right:-60px;pointer-events:none}
+
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:auto;position:relative;z-index:1}
+.logo-mark{width:40px;height:40px;border-radius:10px;
+  background:linear-gradient(135deg,#3b82f6,#1d4ed8);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 20px rgba(37,99,235,.45)}
+.logo-name{font-size:20px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.logo-tag{font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.05em}
+
+.brand-hero{position:relative;z-index:1;margin-top:auto}
+.brand-display{font-size:50px;font-weight:800;color:#fff;line-height:1.06;margin-bottom:22px;letter-spacing:-1.4px}
+/* Italic echoes the reference's accent treatment. Inter ships a real italic
+   (InterVariable-Italic), so this is a true italic, not a synthesised slant. */
+.brand-display em{font-style:italic;letter-spacing:-1.6px;
+  background:linear-gradient(135deg,#60a5fa,#bfdbfe);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+/* 340px keeps the sub to three even lines; at 360 the first line ran long and
+   left an awkward one-word rag. */
+.brand-sub{font-size:15px;color:rgba(255,255,255,.5);line-height:1.7;max-width:340px;margin-bottom:42px}
+
+.pipeline{display:flex;align-items:flex-start;gap:0;margin-bottom:42px}
+.pipe-step{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative}
+.pipe-step::after{content:"";position:absolute;top:16px;left:55%;width:90%;height:2px;
+  background:linear-gradient(90deg,rgba(37,99,235,.65),rgba(37,99,235,.12));z-index:0}
+.pipe-step:last-child::after{display:none}
+.pipe-dot{width:32px;height:32px;border-radius:50%;z-index:1;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.pipe-lbl{font-size:10px;color:rgba(255,255,255,.45);text-align:center;white-space:nowrap}
+
+.features{display:flex;flex-direction:column;gap:13px}
+.feat{display:flex;align-items:center;gap:12px}
+.feat-dot{width:28px;height:28px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center}
+.feat-text{font-size:13px;color:rgba(255,255,255,.5);line-height:1.45}
+.feat-text b{color:rgba(255,255,255,.85);font-weight:600}
+
+/* Occupies the slot the mockup gave a customer testimonial. Deliberately factual
+   rather than a quote: see the note in the markup. */
+.brand-foot{margin-top:36px;padding-top:22px;position:relative;z-index:1;
+  border-top:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;gap:9px}
+.bf-item{display:flex;align-items:center;gap:9px;font-size:12.5px;color:rgba(255,255,255,.4);line-height:1.5}
+.bf-item svg{flex-shrink:0;color:rgba(96,165,250,.75)}
+.bf-item b{color:rgba(255,255,255,.62);font-weight:600}
+
+/* ── Right auth panel ── */
+/* Three bands: the form centres in the space the footer leaves, rather than
+   floating in an unanchored white field. min-height:0 keeps .auth-main from
+   refusing to shrink when a tall step (signup) overflows. */
+.auth-panel{flex:1;background:var(--surface);display:flex;flex-direction:column;
+  align-items:center;padding:40px 48px;overflow-y:auto}
+.auth-main{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+.auth-box{width:100%;max-width:416px}
+
+/* The only branding lives in .brand-panel, which is hidden under 900px — without
+   this the page would carry no logo at all on a phone. */
+.mini-brand{display:none;align-items:center;gap:10px;margin-bottom:28px}
+.mini-brand .logo-mark{width:34px;height:34px;border-radius:9px}
+.mini-brand-name{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+
+.panel-foot{flex-shrink:0;width:100%;max-width:416px;padding-top:32px;
+  font-size:11.5px;color:var(--muted2);text-align:center;line-height:1.6}
+.panel-foot a{color:var(--muted);text-decoration:none;font-weight:500}
+.panel-foot a:hover{color:var(--accentL);text-decoration:underline}
+.auth-step{display:none}
+.auth-step.active{display:block;animation:stepIn .25s ease}
+@keyframes stepIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.step-eye{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--accentL);margin-bottom:8px}
+.step-title{font-size:26px;font-weight:700;color:var(--text);margin-bottom:6px;letter-spacing:-.3px}
+.step-sub{font-size:13.5px;color:var(--muted);margin-bottom:28px;line-height:1.5}
+
+.fg{margin-bottom:16px}
+.fl{display:block;font-size:11.5px;font-weight:700;color:var(--text2);margin-bottom:6px}
+.fi-wrap{position:relative}
+.fi{width:100%;border:1px solid var(--border);border-radius:10px;padding:12px 14px;
+  font-size:14px;color:var(--text);background:#fff;outline:none;height:44px;
+  transition:border-color .2s,box-shadow .2s}
+.fi:focus{border-color:var(--accentL);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.fi::placeholder{color:var(--muted2)}
+.fi.has-icon{padding-left:40px}
+.fi-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted2);pointer-events:none;transition:color .15s}
+.fi-wrap:focus-within .fi-icon{color:var(--accentL)}
+.fi-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--muted2);padding:4px;transition:color .15s}
+.fi-toggle:hover{color:var(--accentL)}
+.fi-err{border-color:var(--red)!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)!important}
+
+.err-msg{font-size:12px;color:var(--red);margin-top:6px;display:none;align-items:center;gap:5px;line-height:1.4}
+.err-msg.show{display:flex}
+
+.btn-primary{width:100%;padding:13px;border-radius:10px;border:none;cursor:pointer;height:46px;
+  background:var(--accentL);color:#fff;font-size:14.5px;font-weight:600;
+  transition:background .2s,box-shadow .2s,transform .1s;position:relative;overflow:hidden}
+.btn-primary:hover{background:var(--accent);box-shadow:0 6px 20px rgba(37,99,235,.3)}
+.btn-primary:active{transform:translateY(1px)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.btn-primary .spinner{display:none;width:16px;height:16px;border:2px solid rgba(255,255,255,.35);
+  border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;
+  position:absolute;left:50%;top:50%;margin:-8px 0 0 -8px}
+.btn-primary.loading .spinner{display:block}
+.btn-primary.loading .btn-text{opacity:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.btn-ghost{background:none;border:1px solid var(--border);border-radius:10px;padding:11px 16px;
+  cursor:pointer;font-size:13.5px;font-weight:600;color:var(--text2);width:100%;transition:all .15s}
+.btn-ghost:hover{border-color:var(--accentL);color:var(--accentL);background:#eff6ff}
+
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border)}
+.divider span{font-size:12px;color:var(--muted);white-space:nowrap}
+
+.sso-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sso-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;height:44px;
+  border:1px solid var(--border);border-radius:10px;cursor:pointer;background:#fff;
+  font-size:13px;font-weight:600;color:var(--text2);transition:all .15s}
+.sso-btn:hover{border-color:var(--border2);background:#fafafa}
+
+.link{color:var(--accentL);font-weight:600;cursor:pointer;text-decoration:none;
+  background:none;border:none;font-family:var(--font);font-size:inherit;padding:0}
+.link:hover{color:var(--accent);text-decoration:underline}
+
+.forgot-row{display:flex;justify-content:flex-end;margin-top:-6px;margin-bottom:16px}
+.check-row{display:flex;align-items:center;gap:8px;margin-bottom:20px;cursor:pointer}
+.check-row input{width:16px;height:16px;accent-color:var(--accentL);cursor:pointer}
+.check-row span{font-size:13px;color:var(--text2)}
+
+.success-icon{width:60px;height:60px;border-radius:50%;
+  background:var(--accentS);border:2px solid rgba(37,99,235,.2);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 20px;
+  animation:popIn .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+
+.auth-footer{margin-top:28px;font-size:12.5px;color:var(--muted);text-align:center;line-height:1.6}
+.back-link{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--muted);
+  cursor:pointer;background:none;border:none;padding:0;margin-bottom:20px;transition:color .15s}
+.back-link:hover{color:var(--accentL)}
+
+.otp-wrap{display:flex;gap:8px;justify-content:space-between;margin-bottom:18px}
+.otp-digit{width:100%;max-width:56px;height:58px;border:1px solid var(--border);border-radius:10px;
+  text-align:center;font-size:22px;font-weight:700;font-family:var(--mono);
+  color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;caret-color:var(--accentL)}
+.otp-digit:focus{border-color:var(--accentL);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.otp-digit.filled{border-color:var(--accentL);background:var(--accentS)}
+
+.hint{font-size:12px;margin-top:6px;display:none;align-items:center;gap:5px;line-height:1.4}
+.hint.show{display:flex}
+.hint-ok{color:var(--green)}
+.hint-bad{color:var(--red)}
+.hint-busy{color:var(--muted)}
+
+.meter{display:flex;gap:4px;margin-top:8px}
+.meter i{flex:1;height:4px;border-radius:2px;background:var(--border);transition:background .2s}
+.meter-label{font-size:11.5px;margin-top:5px;color:var(--muted)}
+
+.user-chip{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.user-chip-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:700;color:#fff;font-size:16px;flex-shrink:0}
+
+*:focus-visible{outline:2px solid var(--accentL);outline-offset:2px}
+
+@media(max-width:900px){
+  .brand-panel{display:none}
+  .auth-panel{padding:32px 24px}
+  .mini-brand{display:flex}
+  .panel-foot{padding-top:24px}
+}
+/* .brand-panel is overflow:hidden, so whatever does not fit is cut off with no
+   scrollbar to reveal it — a half-sliced line of text. Shed the least essential
+   blocks as the viewport gets shorter instead. Laptops at 1440x900 land near
+   760px of usable height once browser chrome is subtracted. */
+@media(max-height:860px){
+  .brand-display{font-size:44px;margin-bottom:18px;letter-spacing:-1.1px}
+  .brand-sub{margin-bottom:32px}
+  .pipeline{margin-bottom:32px}
+  .brand-foot{margin-top:26px;padding-top:18px}
+}
+@media(max-height:770px){
+  .brand-panel{padding:40px 52px}
+  .brand-foot{display:none}
+}
+@media(max-height:620px){
+  .pipeline{display:none}
+  .brand-display{font-size:38px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── Left brand panel ── -->
+  <div class="brand-panel">
+    <div class="glow2"></div>
+
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div>
+        <div class="logo-name">Frappe CRM</div>
+        <div class="logo-tag">by PSD Books</div>
+      </div>
+    </div>
+
+    <div class="brand-hero">
+      <div class="brand-display">Close deals,<br><em>faster</em><br>than ever.</div>
+      <div class="brand-sub">
+        Pipeline management, lead tracking, follow-ups and sales analytics — all in one place.
+      </div>
+
+      <div class="pipeline">
+        <div class="pipe-step"><div class="pipe-dot" style="background:linear-gradient(135deg,#6366f1,#4f46e5)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.9 2.9M16.2 16.2l2.9 2.9M2 12h4M18 12h4M4.9 19.1l2.9-2.9M16.2 7.8l2.9-2.9"/></svg></div><div class="pipe-lbl">Lead</div></div>
+        <div class="pipe-step"><div class="pipe-dot" style="background:linear-gradient(135deg,#3b82f6,#2563eb)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pipe-lbl">Qualified</div></div>
+        <div class="pipe-step"><div class="pipe-dot" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="pipe-lbl">Proposal</div></div>
+        <div class="pipe-step"><div class="pipe-dot" style="background:linear-gradient(135deg,#ef4444,#dc2626)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11V3H7v8M3 11h18v10H3z"/></svg></div><div class="pipe-lbl">Negotiation</div></div>
+        <div class="pipe-step"><div class="pipe-dot" style="background:linear-gradient(135deg,#22c55e,#16a34a)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13.5 17 22l-5-3-5 3 1.5-8.5"/></svg></div><div class="pipe-lbl">Won</div></div>
+      </div>
+
+      <div class="features">
+        <div class="feat">
+          <div class="feat-dot" style="background:rgba(37,99,235,.2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+          <div class="feat-text"><b>Visual sales pipeline</b> with drag-and-drop stages</div>
+        </div>
+        <div class="feat">
+          <div class="feat-dot" style="background:rgba(96,165,250,.16)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+          <div class="feat-text"><b>Calls, emails &amp; reminders</b> in one timeline</div>
+        </div>
+        <div class="feat">
+          <div class="feat-dot" style="background:rgba(245,158,11,.16)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+          <div class="feat-text"><b>Targets &amp; leaderboards</b> updated in real time</div>
+        </div>
+        <div class="feat">
+          <div class="feat-dot" style="background:rgba(139,92,246,.16)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+          <div class="feat-text"><b>Books integration</b> — deal to invoice in one click</div>
+        </div>
+      </div>
+
+      <!-- The mockup put a customer testimonial here. It is left out on purpose:
+           it attributes a specific claim to a named person at a named company, and
+           publishing that on the live sign-in page would present an endorsement
+           that has not been given. These two lines are simply true of the deploy. -->
+      <div class="brand-foot">
+        <div class="bf-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <div><b>Self-hosted</b> — your data stays on your own server</div>
+        </div>
+        <div class="bf-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+          <div><b>Role-based access</b> — each company sees only its own pipeline</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right auth panel ── -->
+  <div class="auth-panel">
+    <div class="auth-main">
+    <div class="auth-box">
+
+      <!-- Shown only under 900px, where the brand panel is hidden. -->
+      <div class="mini-brand">
+        <div class="logo-mark">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="mini-brand-name">Frappe CRM</div>
+      </div>
+
+      <!-- Step: email -->
+      <div class="auth-step active" id="step-email">
+        <div class="step-eye">Welcome back</div>
+        <div class="step-title">Sign in to CRM</div>
+        <div class="step-sub">Enter your work email to continue</div>
+
+        <div id="sso-block" style="display:none">
+          <div class="sso-grid" id="sso-grid"></div>
+          <div class="divider"><span>or sign in with email</span></div>
+        </div>
+
+        <div class="fg">
+          <label class="fl" for="email-input">Work Email</label>
+          <div class="fi-wrap">
+            <svg class="fi-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <input class="fi has-icon" id="email-input" type="email" placeholder="you@company.com" autocomplete="username"/>
+          </div>
+          <div class="err-msg" id="email-err">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span id="email-err-text">Please enter a valid email address</span>
+          </div>
+          <!-- Live account-existence result. The CTA is a real button wired by
+               event listener — the email is never interpolated into markup. -->
+          <div class="hint" id="email-hint">
+            <span id="email-hint-text"></span>
+            <button class="link" id="email-hint-cta" type="button"
+              style="display:none;font-size:12px;vertical-align:baseline">Create an account →</button>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="email-btn" type="button">
+          <div class="btn-text">Continue</div><div class="spinner"></div>
+        </button>
+
+        <div class="auth-footer" id="signup-cta">
+          New to CRM? <button class="link" id="go-signup" type="button">Create an account</button>
+        </div>
+      </div>
+
+      <!-- Step: password -->
+      <div class="auth-step" id="step-password">
+        <button class="back-link" id="pw-back" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+
+        <div class="user-chip">
+          <div class="user-chip-avatar" id="user-avatar"></div>
+          <div style="min-width:0">
+            <div style="font-weight:700;font-size:15px;color:var(--text)" id="user-display-name">User</div>
+            <div style="font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis" id="user-display-email"></div>
+          </div>
+        </div>
+
+        <div class="step-title">Enter your password</div>
+        <div class="step-sub">Sign in to your CRM workspace</div>
+
+        <div class="fg">
+          <label class="fl" for="password-input">Password</label>
+          <div class="fi-wrap">
+            <svg class="fi-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input class="fi has-icon" id="password-input" type="password" placeholder="Your password" autocomplete="current-password"/>
+            <button class="fi-toggle" id="pw-toggle" type="button" title="Show password" aria-label="Show password">
+              <svg id="pw-eye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="err-msg" id="pw-err">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span id="pw-err-text">Incorrect password. Please try again.</span>
+          </div>
+        </div>
+
+        <div class="forgot-row">
+          <button class="link" style="font-size:12.5px" id="go-forgot" type="button">Forgot password?</button>
+        </div>
+
+        <button class="btn-primary" id="login-btn" type="button">
+          <div class="btn-text">Sign In to CRM</div><div class="spinner"></div>
+        </button>
+
+        <div class="divider"><span>or</span></div>
+        <button class="btn-ghost" id="go-login-otp" type="button">Email me a one-time code</button>
+      </div>
+
+      <!-- Step: sign in with a one-time code (no password) -->
+      <div class="auth-step" id="step-login-otp">
+        <button class="back-link" id="login-otp-back" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <div class="step-eye">One-time code</div>
+        <div class="step-title">Check your email</div>
+        <div class="step-sub">We sent a 6-digit code to <b id="login-otp-email" style="color:var(--text)"></b></div>
+
+        <div class="otp-wrap" id="login-otp-wrap">
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" autocomplete="one-time-code" aria-label="Digit 1"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 2"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 3"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 4"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 5"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 6"/>
+        </div>
+
+        <div class="err-msg" id="login-otp-err" style="justify-content:center;margin-bottom:14px">
+          <span id="login-otp-err-text">Invalid code. Please try again.</span>
+        </div>
+
+        <button class="btn-primary" id="login-otp-btn" type="button">
+          <div class="btn-text">Verify &amp; Sign In</div><div class="spinner"></div>
+        </button>
+
+        <div class="auth-footer">
+          <span id="login-resend-timer">Resend code in <b id="login-resend-count">30</b>s</span>
+          <button class="link" id="login-resend-btn" style="display:none" type="button">Resend code</button>
+        </div>
+      </div>
+
+
+      <!-- Step: signup (identity) -->
+      <div class="auth-step" id="step-signup">
+        <button class="back-link" id="signup-back" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to sign in
+        </button>
+        <div class="step-eye">Get started</div>
+        <div class="step-title">Create your account</div>
+        <div class="step-sub">You'll be the administrator of your company workspace</div>
+
+        <div class="fg">
+          <label class="fl" for="su-name">Full Name</label>
+          <div class="fi-wrap">
+            <svg class="fi-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input class="fi has-icon" id="su-name" type="text" placeholder="Priya Krishnan" autocomplete="name"/>
+          </div>
+          <div class="err-msg" id="su-name-err"><span id="su-name-err-text">Please enter your name</span></div>
+        </div>
+
+        <div class="fg">
+          <label class="fl" for="su-email">Work Email</label>
+          <div class="fi-wrap">
+            <svg class="fi-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <input class="fi has-icon" id="su-email" type="email" placeholder="you@company.com" autocomplete="email"/>
+          </div>
+          <div class="hint" id="su-email-hint"><span id="su-email-hint-text"></span></div>
+        </div>
+
+        <div class="fg">
+          <label class="fl" for="su-company">Company Name</label>
+          <div class="fi-wrap">
+            <svg class="fi-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
+            <input class="fi has-icon" id="su-company" type="text" placeholder="Acme Industries" autocomplete="organization"/>
+          </div>
+          <div class="hint" id="su-company-hint"><span id="su-company-hint-text"></span></div>
+        </div>
+
+        <button class="btn-primary" id="su-next" type="button">
+          <div class="btn-text">Continue</div><div class="spinner"></div>
+        </button>
+
+        <div class="auth-footer">
+          Already have an account? <button class="link" id="su-to-signin" type="button">Sign in</button>
+        </div>
+      </div>
+
+      <!-- Step: signup (password) -->
+      <div class="auth-step" id="step-signup-pw">
+        <button class="back-link" id="supw-back" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <div class="step-eye">Almost there</div>
+        <div class="step-title">Choose a password</div>
+        <div class="step-sub">At least 8 characters</div>
+
+        <div class="fg">
+          <label class="fl" for="su-pw">Password</label>
+          <div class="fi-wrap">
+            <svg class="fi-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input class="fi has-icon" id="su-pw" type="password" placeholder="Create a password" autocomplete="new-password"/>
+          </div>
+          <div class="meter" id="su-meter"><i></i><i></i><i></i><i></i></div>
+          <div class="meter-label" id="su-meter-label">&nbsp;</div>
+        </div>
+
+        <div class="fg">
+          <label class="fl" for="su-pw2">Confirm Password</label>
+          <div class="fi-wrap">
+            <svg class="fi-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input class="fi has-icon" id="su-pw2" type="password" placeholder="Re-enter password" autocomplete="new-password"/>
+          </div>
+          <!-- Live match feedback, so a mismatch is visible while typing rather
+               than only after Create Account is pressed. -->
+          <div class="hint" id="su-pw2-hint"><span id="su-pw2-hint-text"></span></div>
+          <div class="err-msg" id="su-pw-err"><span id="su-pw-err-text">Passwords do not match</span></div>
+        </div>
+
+        <label class="check-row">
+          <input type="checkbox" id="su-terms"/>
+          <span>I agree to the Terms of Service and Privacy Policy</span>
+        </label>
+
+        <button class="btn-primary" id="su-create" type="button">
+          <div class="btn-text">Create Account</div><div class="spinner"></div>
+        </button>
+      </div>
+
+      <!-- Step: verify email -->
+      <div class="auth-step" id="step-verify">
+        <button class="back-link" id="verify-back" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <div class="step-eye">Verify your email</div>
+        <div class="step-title">Enter the 6-digit code</div>
+        <div class="step-sub">We sent it to <b id="verify-email" style="color:var(--text)"></b></div>
+
+        <div class="otp-wrap" id="otp-wrap">
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" autocomplete="one-time-code" aria-label="Digit 1"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 2"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 3"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 4"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 5"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 6"/>
+        </div>
+
+        <div class="err-msg" id="otp-err" style="justify-content:center;margin-bottom:14px">
+          <span id="otp-err-text">Invalid code. Please try again.</span>
+        </div>
+
+        <button class="btn-primary" id="verify-btn" type="button">
+          <div class="btn-text">Verify &amp; Continue</div><div class="spinner"></div>
+        </button>
+
+        <div class="auth-footer">
+          <span id="signup-resend-timer">Resend code in <b id="signup-resend-count">30</b>s</span>
+          <button class="link" id="signup-resend-btn" style="display:none" type="button">Resend code</button>
+        </div>
+      </div>
+
+      <!-- Step: forgot -->
+      <div class="auth-step" id="step-forgot">
+        <button class="back-link" id="forgot-back" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to sign in
+        </button>
+        <div class="step-eye">Password reset</div>
+        <div class="step-title">Forgot your password?</div>
+        <div class="step-sub">We'll email you a 6-digit code to set a new one</div>
+
+        <div class="fg">
+          <label class="fl" for="reset-email">Email Address</label>
+          <div class="fi-wrap">
+            <svg class="fi-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <input class="fi has-icon" id="reset-email" type="email" placeholder="you@company.com" autocomplete="email"/>
+          </div>
+          <div class="err-msg" id="reset-err">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span id="reset-err-text">Please enter a valid email address</span>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="reset-btn" type="button">
+          <div class="btn-text">Send Code</div><div class="spinner"></div>
+        </button>
+      </div>
+
+      <!-- Step: reset — enter the emailed code -->
+      <div class="auth-step" id="step-reset-otp">
+        <button class="back-link" id="reset-otp-back" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <div class="step-eye">Password reset</div>
+        <div class="step-title">Enter the 6-digit code</div>
+        <div class="step-sub">We sent it to <b id="reset-email-display" style="color:var(--text)"></b></div>
+
+        <div class="otp-wrap" id="reset-otp-wrap">
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" autocomplete="one-time-code" aria-label="Digit 1"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 2"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 3"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 4"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 5"/>
+          <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" aria-label="Digit 6"/>
+        </div>
+
+        <div class="err-msg" id="reset-otp-err" style="justify-content:center;margin-bottom:14px">
+          <span id="reset-otp-err-text">Invalid code. Please try again.</span>
+        </div>
+
+        <button class="btn-primary" id="reset-otp-btn" type="button">
+          <div class="btn-text">Verify Code</div><div class="spinner"></div>
+        </button>
+
+        <div class="auth-footer">
+          <span id="reset-resend-timer">Resend code in <b id="reset-resend-count">30</b>s</span>
+          <button class="link" id="reset-resend-btn" style="display:none" type="button">Resend code</button>
+        </div>
+      </div>
+
+      <!-- Step: reset — choose the new password -->
+      <div class="auth-step" id="step-new-password">
+        <button class="back-link" id="newpw-back" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <div class="step-eye">Almost done</div>
+        <div class="step-title">Create a new password</div>
+        <div class="step-sub">At least 8 characters</div>
+
+        <div class="fg">
+          <label class="fl" for="new-pw">New Password</label>
+          <div class="fi-wrap">
+            <svg class="fi-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input class="fi has-icon" id="new-pw" type="password" placeholder="Create a password" autocomplete="new-password"/>
+          </div>
+          <div class="meter" id="new-meter"><i></i><i></i><i></i><i></i></div>
+          <div class="meter-label" id="new-meter-label">&nbsp;</div>
+        </div>
+
+        <div class="fg">
+          <label class="fl" for="new-pw2">Confirm New Password</label>
+          <div class="fi-wrap">
+            <svg class="fi-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input class="fi has-icon" id="new-pw2" type="password" placeholder="Re-enter password" autocomplete="new-password"/>
+          </div>
+          <div class="hint" id="new-pw2-hint"><span id="new-pw2-hint-text"></span></div>
+          <div class="err-msg" id="new-pw-err"><span id="new-pw-err-text">Passwords do not match</span></div>
+        </div>
+
+        <button class="btn-primary" id="new-pw-btn" type="button">
+          <div class="btn-text">Reset Password</div><div class="spinner"></div>
+        </button>
+      </div>
+
+      <!-- Step: success -->
+      <div class="auth-step" id="step-success">
+        <div style="text-align:center;padding:20px 0">
+          <div class="success-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="step-title" style="text-align:center">Welcome back!</div>
+          <div class="step-sub" style="text-align:center;margin-bottom:28px" id="success-msg">Opening your CRM workspace…</div>
+          <div style="height:4px;background:var(--accentS);border-radius:2px;overflow:hidden;margin-bottom:24px">
+            <div id="progress-bar" style="height:100%;background:var(--accentL);border-radius:2px;width:0%;transition:width .12s linear"></div>
+          </div>
+          <div style="font-size:13px;color:var(--muted)" id="loading-msg">Loading your pipeline…</div>
+        </div>
+      </div>
+
+    </div>
+    </div>
+
+    <!-- No privacy/terms page exists on this site yet; linking one would be a dead
+         or misleading link, so the footer carries only what is real. -->
+    <div class="panel-foot">
+      Secure sign-in &middot; Frappe CRM by PSD Books<br/>
+      <a href="mailto:devteam@psdigitise.com">Need help signing in?</a>
+    </div>
+  </div>
+</div>
+
+<script>
+{% endraw %}
+const REDIRECT_TO = "{{ redirect_to | e }}";
+const PAGE_CSRF   = "{{ csrf_token | e }}";
+{% raw %}
+
+const AVATAR_COLORS = ["#2563eb","#7c3aed","#0891b2","#d97706","#16a34a","#e11d48","#4f46e5"];
+let currentStep = "email";
+
+/* ── helpers ─────────────────────────────────────────────────────────── */
+function $(id){ return document.getElementById(id) }
+
+function getCsrf(){
+  if (PAGE_CSRF) return PAGE_CSRF;
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  if (meta && meta.content) return meta.content;
+  const m = document.cookie.match(/csrf_token=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : "";
+}
+
+/** POST to a Frappe endpoint, unwrapping the server's error shape into an Error. */
+async function postFrappe(url, data){
+  const csrf = getCsrf();
+  const body = new URLSearchParams(data);
+  if (csrf) body.append("csrf_token", csrf);
+  const r = await fetch(url, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "X-Frappe-CSRF-Token": csrf || "",
+      "Accept": "application/json",
+    },
+    body: body.toString(),
+  });
+  let j = {};
+  try { j = await r.json() } catch { /* non-JSON error page */ }
+
+  if (j.exc || j.exc_type || !r.ok) {
+    // Frappe returns the traceback in `exc`; the last "SomeError: message" line
+    // is the only part worth showing a user.
+    const excStr = (j.exc || "").replace(/\\n/g, "\n").replace(/\\"/g, '"');
+    const match = excStr.match(/frappe\.\w+[\w.]*:\s*([^\n]+)/);
+    if (match && match[1].trim()) throw new Error(match[1].trim());
+    if (j._server_messages) {
+      try {
+        const msgs = JSON.parse(j._server_messages);
+        if (msgs.length) {
+          const first = JSON.parse(msgs[0]);
+          throw new Error(first.message || first);
+        }
+      } catch (e) { if (e instanceof Error && e.message) throw e }
+    }
+    throw new Error(j.message || j.exc_type || "Something went wrong. Please try again.");
+  }
+  return j.message !== undefined ? j.message : j;
+}
+
+function goStep(step){
+  $("step-" + currentStep).classList.remove("active");
+  currentStep = step;
+  $("step-" + step).classList.add("active");
+  const inp = document.querySelector("#step-" + step + " input");
+  if (inp) setTimeout(() => inp.focus(), 60);
+  // Re-derive the match hint on entry: returning from the verify step (or from
+  // Back) leaves the fields populated, so a stale verdict must not linger.
+  if (step === "signup-pw") paintMatch();
+}
+
+function showErr(id, msg){
+  const el = $(id);
+  if (!el) return;
+  const textEl = $(id + "-text");
+  if (textEl && msg) textEl.textContent = msg;
+  el.classList.add("show");
+}
+function hideErr(id){ const el = $(id); if (el) el.classList.remove("show") }
+function setFiErr(id, on){ const el = $(id); if (el) el.classList.toggle("fi-err", on) }
+function setLoading(btn, on){ btn.classList.toggle("loading", on); btn.disabled = on }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// "Administrator" is a username, not an email — it must skip the format check or
+// the site owner can never sign in through this page.
+const isAdminLogin = (v) => (v || "").trim().toLowerCase() === "administrator";
+
+function setAvatar(email){
+  const initials = email.slice(0, 2).toUpperCase();
+  const sum = email.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const av = $("user-avatar");
+  av.textContent = initials;
+  av.style.background = AVATAR_COLORS[Math.abs(sum) % AVATAR_COLORS.length];
+}
+
+/* ── step: email → password ──────────────────────────────────────────── */
+async function continueToPassword(){
+  const input = $("email-input");
+  const email = input.value.trim();
+  const admin = isAdminLogin(email);
+
+  if (!email || (!admin && !EMAIL_RE.test(email))) {
+    setFiErr("email-input", true);
+    showErr("email-err", "Please enter a valid email address");
+    input.focus();
+    return;
+  }
+  setFiErr("email-input", false);
+  hideErr("email-err");
+
+  // Confirm the account exists before asking for a password.
+  if (!admin) {
+    const btn = $("email-btn");
+    if (signinEmailKnown === null) {
+      btn.classList.add("loading"); btn.disabled = true;
+      let res;
+      try { res = await probe("email", email) }
+      finally { btn.classList.remove("loading"); btn.disabled = false }
+
+      if (res === "taken") signinEmailKnown = true;        // registered
+      else if (res === true) signinEmailKnown = false;     // no such account
+      // Anything else means the probe could not tell (offline, rate-limited).
+      // Let them through rather than lock them out — the password step does the
+      // real authentication. This is the one place we diverge from Books, which
+      // blocks on a failed check.
+      else signinEmailKnown = true;
+    }
+    if (signinEmailKnown === false) {
+      setFiErr("email-input", true);
+      setSigninHint("bad", "No account found for this email.", true);
+      input.focus();
+      return;
+    }
+  }
+  setSigninHint(null);
+
+  if (admin) {
+    const av = $("user-avatar");
+    av.textContent = "A";
+    av.style.background = "#dc2626";
+    $("user-display-name").textContent = "Administrator";
+    $("user-display-email").textContent = "System Administrator";
+  } else {
+    setAvatar(email);
+    $("user-display-email").textContent = email;
+    $("user-display-name").textContent =
+      email.split("@")[0].replace(/[._-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  try { localStorage.setItem("crm_last_email", email) } catch {}
+  goStep("password");
+}
+
+/* ── sign in ─────────────────────────────────────────────────────────── */
+async function submitLogin(){
+  const email = $("email-input").value.trim();
+  const password = $("password-input").value;
+  const btn = $("login-btn");
+  const input = $("password-input");
+
+  if (!password) {
+    setFiErr("password-input", true);
+    showErr("pw-err", "Please enter your password");
+    input.focus();
+    return;
+  }
+  setFiErr("password-input", false);
+  hideErr("pw-err");
+  setLoading(btn, true);
+
+  try {
+    await postFrappe("/api/method/login", { usr: email, pwd: password });
+    // Only a real 2xx with no exc reaches here.
+    $("success-msg").textContent =
+      "Welcome back, " + $("user-display-name").textContent + "! Opening your workspace…";
+    goStep("success");
+    animateProgress();
+  } catch (err) {
+    setLoading(btn, false);
+    setFiErr("password-input", true);
+    // Frappe's message for bad credentials varies; anything that isn't a clear
+    // server-side sentence gets the generic form so we never leak internals.
+    const msg = (err && err.message) || "";
+    const clean = /[{}]|Traceback|<\w+/.test(msg) || !msg
+      ? "Incorrect email or password. Please try again."
+      : msg;
+    showErr("pw-err", clean);
+    input.focus();
+    input.select();
+  }
+}
+
+const LOADING_MSGS = ["Loading your pipeline…","Fetching leads & deals…","Syncing activities…","Almost ready…"];
+function animateProgress(){
+  const bar = $("progress-bar");
+  let pct = 0, idx = 0;
+  const iv = setInterval(() => {
+    pct += Math.random() * 9 + 4;
+    if (pct > 95) pct = 95;
+    bar.style.width = pct + "%";
+    if (idx < LOADING_MSGS.length - 1 && pct > idx * 25 + 25) {
+      idx++; $("loading-msg").textContent = LOADING_MSGS[idx];
+    }
+    if (pct >= 95) {
+      clearInterval(iv);
+      setTimeout(() => { bar.style.width = "100%"; window.location.href = REDIRECT_TO || "/dashboard" }, 400);
+    }
+  }, 90);
+}
+
+/* ── forgot password — emails a 6-digit code, not a link ─────────────── */
+async function sendResetOtp(){
+  const input = $("reset-email");
+  const email = input.value.trim();
+  const btn = $("reset-btn");
+
+  if (!email || !EMAIL_RE.test(email)) {
+    setFiErr("reset-email", true);
+    showErr("reset-err", "Please enter a valid email address");
+    input.focus();
+    return;
+  }
+  setFiErr("reset-email", false);
+  hideErr("reset-err");
+  setLoading(btn, true);
+
+  try {
+    // The sign-in step already discloses whether an address is registered, so
+    // checking here reveals nothing new and saves the user waiting on a code
+    // that will never arrive.
+    const known = await probe("email", email);
+    if (known === true) {
+      setFiErr("reset-email", true);
+      showErr("reset-err", "No account found for this email.");
+      input.focus();
+      return;
+    }
+    await postFrappe("/api/method/xbr_crm.tenancy.auth.send_password_reset_otp", { email });
+  } catch (err) {
+    showErr("reset-err", (err && err.message) || "Could not send the code. Please try again.");
+    return;
+  } finally {
+    setLoading(btn, false);
+  }
+
+  reset.email = email;
+  reset.otp = "";
+  $("reset-email-display").textContent = email;
+  clearOtp("reset-otp-wrap");
+  hideErr("reset-otp-err");
+  goStep("reset-otp");
+  startResend("reset");
+}
+
+/* ── SSO (only rendered when providers are actually configured) ──────── */
+const SSO_ICONS = {
+  google: '<svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>',
+};
+async function loadSSO(){
+  try {
+    const providers = await postFrappe("/api/method/xbr_crm.api.auth.oauth_providers", {});
+    if (!Array.isArray(providers) || !providers.length) return;
+    const grid = $("sso-grid");
+    grid.innerHTML = "";
+    providers.slice(0, 4).forEach((p) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "sso-btn";
+      b.innerHTML = (SSO_ICONS[(p.name || "").toLowerCase()] || "") + "<span>" + (p.provider_name || p.name) + "</span>";
+      b.addEventListener("click", () => { window.location.href = p.auth_url });
+      grid.appendChild(b);
+    });
+    if (providers.length === 1) grid.style.gridTemplateColumns = "1fr";
+    $("sso-block").style.display = "";
+  } catch { /* no providers configured — the email form is the whole page */ }
+}
+
+
+/* ── signup ──────────────────────────────────────────────────────────── */
+const signup = { email: "", password: "", available: { email: null, company: null } };
+let resendTimer = null;
+
+function debounce(fn, ms){
+  let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms) };
+}
+
+function setHint(id, state, msg){
+  const el = $(id), txt = $(id + "-text");
+  if (!el) return;
+  el.className = "hint show " + (state === "ok" ? "hint-ok" : state === "bad" ? "hint-bad" : "hint-busy");
+  if (txt) txt.textContent = msg;
+}
+function clearHint(id){ const el = $(id); if (el) el.className = "hint" }
+
+/** Live availability probe. Returns true/false, or null when it couldn't tell. */
+async function probe(kind, value){
+  try {
+    const url = kind === "email"
+      ? "/api/method/xbr_crm.tenancy.auth.check_email"
+      : "/api/method/xbr_crm.tenancy.auth.check_company_name";
+    const payload = kind === "email" ? { email: value } : { company_name: value };
+    const r = await postFrappe(url, payload);
+    return r && r.available === true ? true : r && r.reason ? r.reason : false;
+  } catch { return null }
+}
+
+/* ── Sign-in: live account lookup ──────────────────────────────────────────
+   Tell the user the account does not exist while they are still on the email
+   field, instead of accepting an email, a password, and only then failing.
+   Mirrors the Books sign-in flow.
+
+   null = not checked yet · true = registered · false = no such account. */
+let signinEmailKnown = null;
+
+function setSigninHint(state, msg, cta){
+  const btn = $("email-hint-cta");
+  if (!state) { clearHint("email-hint"); if (btn) btn.style.display = "none"; return }
+  setHint("email-hint", state, msg);
+  if (btn) btn.style.display = cta ? "inline" : "none";
+}
+
+const checkSigninEmail = debounce(async () => {
+  const v = $("email-input").value.trim();
+  signinEmailKnown = null;
+  // Administrator is a username, not an address, and has no CRM Company row.
+  if (!v || isAdminLogin(v)) return setSigninHint(null);
+  // Stay quiet until the address is well-formed — nagging mid-typing is noise.
+  if (!EMAIL_RE.test(v)) return setSigninHint(null);
+
+  setSigninHint("busy", "Checking…", false);
+  const res = await probe("email", v);
+  // The address may have changed while the request was in flight.
+  if ($("email-input").value.trim() !== v) return;
+
+  if (res === "taken") { signinEmailKnown = true; setSigninHint("ok", "Account found.", false) }
+  else if (res === true) { signinEmailKnown = false; setSigninHint("bad", "No account found for this email.", true) }
+  else setSigninHint(null);   // invalid or unreachable — say nothing
+}, 350);
+
+function onSigninEmailInput(){ checkSigninEmail() }
+
+const checkSignupEmail = debounce(async () => {
+  const v = $("su-email").value.trim();
+  signup.available.email = null;
+  if (!v) return clearHint("su-email-hint");
+  if (!EMAIL_RE.test(v)) { signup.available.email = false; return setHint("su-email-hint","bad","Please enter a valid email address") }
+  setHint("su-email-hint", "busy", "Checking availability…");
+  const res = await probe("email", v);
+  if (res === true) { signup.available.email = true; setHint("su-email-hint","ok","This email is available") }
+  else if (res === "taken") { signup.available.email = false; setHint("su-email-hint","bad","An account with this email already exists") }
+  else if (res === null) { clearHint("su-email-hint") }
+  else { signup.available.email = false; setHint("su-email-hint","bad","Please enter a valid email address") }
+}, 350);
+
+const checkCompany = debounce(async () => {
+  const v = $("su-company").value.trim();
+  signup.available.company = null;
+  if (!v) return clearHint("su-company-hint");
+  if (v.length < 2) { signup.available.company = false; return setHint("su-company-hint","bad","Company name must be at least 2 characters") }
+  setHint("su-company-hint", "busy", "Checking availability…");
+  const res = await probe("company", v);
+  if (res === true) { signup.available.company = true; setHint("su-company-hint","ok","This company name is available") }
+  else if (res === "taken") { signup.available.company = false; setHint("su-company-hint","bad","This company name is already registered") }
+  else if (res === null) { clearHint("su-company-hint") }
+  else { signup.available.company = false; setHint("su-company-hint","bad","Company name must be at least 2 characters") }
+}, 350);
+
+async function signupNext(){
+  const name = $("su-name").value.trim();
+  const email = $("su-email").value.trim();
+  const company = $("su-company").value.trim();
+  const btn = $("su-next");
+
+  hideErr("su-name-err"); setFiErr("su-name", false);
+  if (!name) { setFiErr("su-name", true); showErr("su-name-err","Please enter your name"); $("su-name").focus(); return }
+  if (!EMAIL_RE.test(email)) { setHint("su-email-hint","bad","Please enter a valid email address"); $("su-email").focus(); return }
+  if (company.length < 2) { setHint("su-company-hint","bad","Company name must be at least 2 characters"); $("su-company").focus(); return }
+
+  // If a debounced probe hasn't resolved yet, settle it now rather than
+  // letting the user through on an unknown.
+  setLoading(btn, true);
+  if (signup.available.email === null) {
+    const r = await probe("email", email);
+    signup.available.email = r === true;
+    if (r === "taken") setHint("su-email-hint","bad","An account with this email already exists");
+  }
+  if (signup.available.company === null) {
+    const r = await probe("company", company);
+    signup.available.company = r === true;
+    if (r === "taken") setHint("su-company-hint","bad","This company name is already registered");
+  }
+  setLoading(btn, false);
+
+  if (signup.available.email === false) { $("su-email").focus(); return }
+  if (signup.available.company === false) { $("su-company").focus(); return }
+
+  signup.email = email;
+  goStep("signup-pw");
+}
+
+function scorePassword(pw){
+  let n = 0;
+  if (pw.length >= 8) n++;
+  if (/[A-Z]/.test(pw)) n++;
+  if (/[0-9]/.test(pw)) n++;
+  if (/[^A-Za-z0-9]/.test(pw)) n++;
+  return n;
+}
+function paintMeter(){
+  const pw = $("su-pw").value;
+  const n = pw ? scorePassword(pw) : 0;
+  const colors = ["", "#dc2626", "#d97706", "#2563eb", "#16a34a"];
+  const labels = [" ", "Weak", "Fair", "Good", "Strong"];
+  [...$("su-meter").children].forEach((bar, i) => {
+    bar.style.background = i < n ? colors[n] : "var(--border)";
+  });
+  $("su-meter-label").textContent = pw ? labels[n] : " ";
+}
+
+/** Live "do the two passwords agree" indicator under Confirm Password. */
+function paintMatch(){
+  const pw = $("su-pw").value, pw2 = $("su-pw2").value;
+  // Say nothing until they have started confirming — flagging a "mismatch" on
+  // the first keystroke of an empty field is just noise.
+  if (!pw2) return clearHint("su-pw2-hint");
+  if (pw === pw2) setHint("su-pw2-hint", "ok", "Passwords match");
+  else setHint("su-pw2-hint", "bad", "Passwords do not match");
+}
+
+async function submitSignup(){
+  const pw = $("su-pw").value, pw2 = $("su-pw2").value, btn = $("su-create");
+  hideErr("su-pw-err"); setFiErr("su-pw", false); setFiErr("su-pw2", false);
+
+  if (pw.length < 8) { setFiErr("su-pw", true); showErr("su-pw-err","Password must be at least 8 characters"); return }
+  if (pw !== pw2) { setFiErr("su-pw2", true); showErr("su-pw-err","Passwords do not match"); return }
+  if (!$("su-terms").checked) { showErr("su-pw-err","Please accept the Terms of Service to continue"); return }
+
+  setLoading(btn, true);
+  try {
+    await postFrappe("/api/method/xbr_crm.tenancy.auth.signup_user", {
+      first_name: $("su-name").value.trim(),
+      email: signup.email,
+      password: pw,
+      company_name: $("su-company").value.trim(),
+    });
+    signup.password = pw;
+    $("verify-email").textContent = signup.email;
+    goStep("verify");
+    startResend("signup");
+  } catch (err) {
+    showErr("su-pw-err", (err && err.message) || "Could not create your account. Please try again.");
+  }
+  setLoading(btn, false);
+}
+
+/* OTP inputs */
+/* Three separate 6-digit inputs exist (signup verify, sign-in code, password
+   reset), so every helper is scoped to its wrapper id and told what to call on
+   completion. */
+function otpDigits(wrap){ return [...document.querySelectorAll("#" + wrap + " .otp-digit")] }
+function otpValue(wrap){ return otpDigits(wrap).map(d => d.value).join("") }
+function wireOtp(wrap, onComplete){
+  const digits = otpDigits(wrap);
+  digits.forEach((d, i) => {
+    d.addEventListener("input", () => {
+      d.value = d.value.replace(/\D/g, "").slice(0, 1);
+      d.classList.toggle("filled", !!d.value);
+      if (d.value && i < digits.length - 1) digits[i + 1].focus();
+      if (otpValue(wrap).length === 6) onComplete();
+    });
+    d.addEventListener("keydown", (e) => {
+      if (e.key === "Backspace" && !d.value && i > 0) { digits[i - 1].focus(); e.preventDefault() }
+      if (e.key === "ArrowLeft" && i > 0) digits[i - 1].focus();
+      if (e.key === "ArrowRight" && i < digits.length - 1) digits[i + 1].focus();
+    });
+    d.addEventListener("paste", (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData("text").replace(/\D/g, "").slice(0, 6);
+      text.split("").forEach((c, k) => { if (digits[k]) { digits[k].value = c; digits[k].classList.add("filled") } });
+      if (text.length === 6) onComplete(); else if (digits[text.length]) digits[text.length].focus();
+    });
+  });
+}
+function clearOtp(wrap){
+  const d = otpDigits(wrap);
+  d.forEach((x) => { x.value = ""; x.classList.remove("filled") });
+  if (d[0]) d[0].focus();
+}
+
+async function submitVerify(){
+  const code = otpValue("otp-wrap");
+  if (code.length < 6) return;
+  const btn = $("verify-btn");
+  hideErr("otp-err");
+  setLoading(btn, true);
+  try {
+    await postFrappe("/api/method/xbr_crm.tenancy.auth.verify_signup_otp", { email: signup.email, otp: code });
+    // Account exists now — sign in with the password captured during signup.
+    await postFrappe("/api/method/login", { usr: signup.email, pwd: signup.password });
+    signup.password = "";
+    $("success-msg").textContent = "Your workspace is ready. Opening CRM…";
+    goStep("success");
+    animateProgress();
+  } catch (err) {
+    setLoading(btn, false);
+    showErr("otp-err", (err && err.message) || "Invalid code. Please try again.");
+    clearOtp("otp-wrap");
+  }
+}
+
+/* ── one-time codes ───────────────────────────────────────────────────────
+   Three independent 30s resend countdowns; each keeps its own interval handle
+   so starting one cannot cancel another's. Every group follows the id
+   convention <group>-resend-{timer,btn,count}. */
+const resendHandles = {};
+function startResend(group){
+  let t = 30;
+  const timer = $(group + "-resend-timer"),
+        btn   = $(group + "-resend-btn"),
+        cnt   = $(group + "-resend-count");
+  if (!timer || !btn || !cnt) return;
+  timer.style.display = ""; btn.style.display = "none"; cnt.textContent = t;
+  clearInterval(resendHandles[group]);
+  resendHandles[group] = setInterval(() => {
+    t--; cnt.textContent = t;
+    if (t <= 0) { clearInterval(resendHandles[group]); timer.style.display = "none"; btn.style.display = "" }
+  }, 1000);
+}
+
+/* ── sign in with a one-time code (no password) ─────────────────────────── */
+async function sendLoginOtp(){
+  const email = $("email-input").value.trim();
+  if (!email || isAdminLogin(email)) return;
+  const btn = $("go-login-otp");
+  setLoading(btn, true);
+  try {
+    // Deliberately ignores the result: send_login_otp reports success even for
+    // unknown addresses, and the account was already confirmed to exist on the
+    // email step, so there is nothing further to branch on here.
+    await postFrappe("/api/method/xbr_crm.tenancy.auth.send_login_otp", { email });
+  } catch { /* never strand the user on the password step */ }
+  setLoading(btn, false);
+  $("login-otp-email").textContent = email;
+  clearOtp("login-otp-wrap");
+  hideErr("login-otp-err");
+  goStep("login-otp");
+  startResend("login");
+}
+
+async function submitLoginOtp(){
+  const code = otpValue("login-otp-wrap");
+  if (code.length < 6) return;
+  const email = $("email-input").value.trim();
+  const btn = $("login-otp-btn");
+  hideErr("login-otp-err");
+  setLoading(btn, true);
+  try {
+    await postFrappe("/api/method/xbr_crm.tenancy.auth.verify_login_otp", { email, otp: code });
+    try { localStorage.setItem("crm_last_email", email) } catch {}
+    $("success-msg").textContent = "Signed in. Opening CRM…";
+    goStep("success");
+    animateProgress();
+  } catch (err) {
+    setLoading(btn, false);
+    showErr("login-otp-err", (err && err.message) || "Invalid code. Please try again.");
+    clearOtp("login-otp-wrap");
+  }
+}
+
+async function resendLoginOtp(){
+  try {
+    await postFrappe("/api/method/xbr_crm.tenancy.auth.send_login_otp", { email: $("email-input").value.trim() });
+    clearOtp("login-otp-wrap"); hideErr("login-otp-err"); startResend("login");
+  } catch (err) {
+    showErr("login-otp-err", (err && err.message) || "Could not resend the code.");
+  }
+}
+
+/* ── password reset by code ─────────────────────────────────────────────── */
+const reset = { email: "", otp: "" };
+
+async function submitResetOtp(){
+  const code = otpValue("reset-otp-wrap");
+  if (code.length < 6) return;
+  const btn = $("reset-otp-btn");
+  hideErr("reset-otp-err");
+  setLoading(btn, true);
+  try {
+    // Verified without consuming, so a wrong code is caught here rather than
+    // after the user has chosen a new password.
+    await postFrappe("/api/method/xbr_crm.tenancy.auth.verify_reset_otp", { email: reset.email, otp: code });
+    reset.otp = code;
+    $("new-pw").value = ""; $("new-pw2").value = "";
+    paintNewMeter(); paintNewMatch(); hideErr("new-pw-err");
+    goStep("new-password");
+  } catch (err) {
+    showErr("reset-otp-err", (err && err.message) || "Invalid code. Please try again.");
+    clearOtp("reset-otp-wrap");
+  }
+  setLoading(btn, false);
+}
+
+async function resendResetOtp(){
+  try {
+    await postFrappe("/api/method/xbr_crm.tenancy.auth.send_password_reset_otp", { email: reset.email });
+    clearOtp("reset-otp-wrap"); hideErr("reset-otp-err"); startResend("reset");
+  } catch (err) {
+    showErr("reset-otp-err", (err && err.message) || "Could not resend the code.");
+  }
+}
+
+function paintNewMeter(){
+  const pw = $("new-pw").value;
+  const n = pw ? scorePassword(pw) : 0;
+  const colors = ["", "#dc2626", "#d97706", "#2563eb", "#16a34a"];
+  const labels = [" ", "Weak", "Fair", "Good", "Strong"];
+  [...$("new-meter").children].forEach((bar, i) => {
+    bar.style.background = i < n ? colors[n] : "var(--border)";
+  });
+  $("new-meter-label").textContent = pw ? labels[n] : " ";
+}
+
+function paintNewMatch(){
+  const a = $("new-pw").value, b = $("new-pw2").value;
+  if (!b) return clearHint("new-pw2-hint");
+  if (a === b) setHint("new-pw2-hint", "ok", "Passwords match");
+  else setHint("new-pw2-hint", "bad", "Passwords do not match");
+}
+
+async function submitNewPassword(){
+  const pw = $("new-pw").value, pw2 = $("new-pw2").value, btn = $("new-pw-btn");
+  hideErr("new-pw-err"); setFiErr("new-pw", false); setFiErr("new-pw2", false);
+
+  if (pw.length < 8) { setFiErr("new-pw", true); showErr("new-pw-err", "Password must be at least 8 characters"); return }
+  if (pw !== pw2) { setFiErr("new-pw2", true); showErr("new-pw-err", "Passwords do not match"); return }
+
+  setLoading(btn, true);
+  try {
+    await postFrappe("/api/method/xbr_crm.tenancy.auth.reset_password_with_otp", {
+      email: reset.email, otp: reset.otp, new_password: pw,
+    });
+    // Straight into the app — asking them to sign in again with the password
+    // they just set is a pointless extra step.
+    await postFrappe("/api/method/login", { usr: reset.email, pwd: pw });
+    reset.otp = "";
+    $("success-msg").textContent = "Password updated. Opening CRM…";
+    goStep("success");
+    animateProgress();
+  } catch (err) {
+    setLoading(btn, false);
+    const msg = (err && err.message) || "Could not reset your password. Please try again.";
+    // The code expires on its own clock; if it lapsed mid-flow, send them back
+    // to the code screen rather than leaving them stuck on a dead form.
+    if (/invalid|expired/i.test(msg)) {
+      reset.otp = "";
+      clearOtp("reset-otp-wrap");
+      goStep("reset-otp");
+      showErr("reset-otp-err", msg);
+    } else {
+      showErr("new-pw-err", msg);
+    }
+  }
+}
+
+async function resendOtp(){
+  try {
+    await postFrappe("/api/method/xbr_crm.tenancy.auth.resend_signup_otp", { email: signup.email });
+    clearOtp("otp-wrap"); hideErr("otp-err"); startResend("signup");
+  } catch (err) {
+    showErr("otp-err", (err && err.message) || "Could not resend the code.");
+  }
+}
+
+/* ── wiring ──────────────────────────────────────────────────────────── */
+document.addEventListener("DOMContentLoaded", () => {
+  $("email-btn").addEventListener("click", continueToPassword);
+  $("email-input").addEventListener("keydown", (e) => { if (e.key === "Enter") continueToPassword() });
+  $("email-input").addEventListener("input", () => {
+    setFiErr("email-input", false); hideErr("email-err");
+    signinEmailKnown = null;   // the address changed; the old verdict is stale
+    onSigninEmailInput();
+  });
+  // Carry the typed address straight into signup so it isn't retyped.
+  $("email-hint-cta").addEventListener("click", () => {
+    const v = $("email-input").value.trim();
+    if (v && !isAdminLogin(v)) { $("su-email").value = v; checkSignupEmail() }
+    setSigninHint(null);
+    goStep("signup");
+  });
+
+  // signup — these were previously stranded inside postFrappe(), so they were
+  // re-registered on every API call and stacked duplicate handlers.
+  $("go-signup").addEventListener("click", () => {
+    const v = $("email-input").value.trim();
+    if (v && !isAdminLogin(v)) { $("su-email").value = v; checkSignupEmail() }
+    goStep("signup");
+  });
+  $("su-to-signin").addEventListener("click", () => goStep("email"));
+  $("signup-back").addEventListener("click", () => goStep("email"));
+  $("su-next").addEventListener("click", signupNext);
+  $("su-email").addEventListener("input", checkSignupEmail);
+  $("su-company").addEventListener("input", checkCompany);
+  $("su-name").addEventListener("input", () => { setFiErr("su-name", false); hideErr("su-name-err") });
+  ["su-name","su-email","su-company"].forEach((id) =>
+    $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") signupNext() }));
+
+  $("supw-back").addEventListener("click", () => goStep("signup"));
+  $("su-pw").addEventListener("input", () => { paintMeter(); paintMatch(); setFiErr("su-pw", false); hideErr("su-pw-err") });
+  $("su-pw2").addEventListener("input", () => { paintMatch(); setFiErr("su-pw2", false); hideErr("su-pw-err") });
+  $("su-pw2").addEventListener("keydown", (e) => { if (e.key === "Enter") submitSignup() });
+  $("su-create").addEventListener("click", submitSignup);
+
+  $("verify-back").addEventListener("click", () => goStep("signup-pw"));
+  $("verify-btn").addEventListener("click", submitVerify);
+  $("signup-resend-btn").addEventListener("click", resendOtp);
+  wireOtp("otp-wrap", submitVerify);
+
+  // sign in with a one-time code
+  $("go-login-otp").addEventListener("click", sendLoginOtp);
+  $("login-otp-back").addEventListener("click", () => goStep("password"));
+  $("login-otp-btn").addEventListener("click", submitLoginOtp);
+  $("login-resend-btn").addEventListener("click", resendLoginOtp);
+  wireOtp("login-otp-wrap", submitLoginOtp);
+
+  // password reset by code
+  $("reset-otp-back").addEventListener("click", () => goStep("forgot"));
+  $("reset-otp-btn").addEventListener("click", submitResetOtp);
+  $("reset-resend-btn").addEventListener("click", resendResetOtp);
+  wireOtp("reset-otp-wrap", submitResetOtp);
+
+  $("newpw-back").addEventListener("click", () => goStep("reset-otp"));
+  $("new-pw").addEventListener("input", () => { paintNewMeter(); paintNewMatch(); setFiErr("new-pw", false); hideErr("new-pw-err") });
+  $("new-pw2").addEventListener("input", () => { paintNewMatch(); setFiErr("new-pw2", false); hideErr("new-pw-err") });
+  $("new-pw2").addEventListener("keydown", (e) => { if (e.key === "Enter") submitNewPassword() });
+  $("new-pw-btn").addEventListener("click", submitNewPassword);
+
+  $("login-btn").addEventListener("click", submitLogin);
+  $("password-input").addEventListener("keydown", (e) => { if (e.key === "Enter") submitLogin() });
+  $("password-input").addEventListener("input", () => { setFiErr("password-input", false); hideErr("pw-err") });
+  $("pw-back").addEventListener("click", () => goStep("email"));
+
+  $("pw-toggle").addEventListener("click", () => {
+    const fi = $("password-input");
+    const showing = fi.type === "password";
+    fi.type = showing ? "text" : "password";
+    $("pw-toggle").setAttribute("aria-label", showing ? "Hide password" : "Show password");
+    $("pw-eye").innerHTML = showing
+      ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  });
+
+  $("go-forgot").addEventListener("click", () => {
+    const v = $("email-input").value.trim();
+    if (v && !isAdminLogin(v)) $("reset-email").value = v;
+    goStep("forgot");
+  });
+  $("forgot-back").addEventListener("click", () => goStep("password"));
+  $("reset-btn").addEventListener("click", sendResetOtp);
+  $("reset-email").addEventListener("keydown", (e) => { if (e.key === "Enter") sendResetOtp() });
+
+  try {
+    const saved = localStorage.getItem("crm_last_email");
+    if (saved) $("email-input").value = saved;
+  } catch {}
+
+  $("email-input").focus();
+  loadSSO();
+});
+</script>
+</body>
+</html>{% endraw %}

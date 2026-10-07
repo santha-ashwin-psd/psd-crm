@@ -35,7 +35,7 @@ for CORS to be enabled.
 
 | | |
 |---|---|
-| **URL** | `https://crm.psdigitise.com/api/method/crm.api.web_lead.capture_inquiry` |
+| **URL** | `https://crm.psdigitise.com/api/method/xbr_crm.api.web_lead.capture_inquiry` |
 | **Method** | `POST` |
 | **Header** | `X-Lead-Api-Key: <the key you were given>` |
 | **Body** | JSON (`Content-Type: application/json`) or form-encoded |
@@ -200,7 +200,7 @@ Both assume you have **already validated your image captcha** before this point.
  */
 function sendLeadToCrm(array $fields): array
 {
-    $endpoint = 'https://crm.psdigitise.com/api/method/crm.api.web_lead.capture_inquiry';
+    $endpoint = 'https://crm.psdigitise.com/api/method/xbr_crm.api.web_lead.capture_inquiry';
     // Keep the key in an env var or config file OUTSIDE the web root.
     $apiKey = getenv('CRM_LEAD_API_KEY');
 
@@ -259,7 +259,7 @@ const express = require('express')
 const app = express()
 app.use(express.json())
 
-const CRM_ENDPOINT = 'https://crm.psdigitise.com/api/method/crm.api.web_lead.capture_inquiry'
+const CRM_ENDPOINT = 'https://crm.psdigitise.com/api/method/xbr_crm.api.web_lead.capture_inquiry'
 const CRM_API_KEY = process.env.CRM_LEAD_API_KEY // never hardcode
 
 async function sendLeadToCrm(fields) {
@@ -336,7 +336,7 @@ code — a two-step Zap does the whole job.
 
 | Field | Value |
 |---|---|
-| **URL** | `https://crm.psdigitise.com/api/method/crm.api.web_lead.capture_inquiry` |
+| **URL** | `https://crm.psdigitise.com/api/method/xbr_crm.api.web_lead.capture_inquiry` |
 | **Payload Type** | `Json` |
 | **Wrap Request In Array** | **No** |
 | **Unflatten** | **No** |
@@ -436,7 +436,7 @@ server swap in `https://crm.psdigitise.com`. Replace the key either way.
 **Consultation form:**
 
 ```bash
-curl -i -X POST 'http://localhost:8001/api/method/crm.api.web_lead.capture_inquiry' \
+curl -i -X POST 'http://localhost:8001/api/method/xbr_crm.api.web_lead.capture_inquiry' \
   -H 'Content-Type: application/json' \
   -H 'X-Lead-Api-Key: YOUR_API_KEY' \
   -d '{
@@ -453,7 +453,7 @@ curl -i -X POST 'http://localhost:8001/api/method/crm.api.web_lead.capture_inqui
 **Evaluation form:**
 
 ```bash
-curl -i -X POST 'http://localhost:8001/api/method/crm.api.web_lead.capture_inquiry' \
+curl -i -X POST 'http://localhost:8001/api/method/xbr_crm.api.web_lead.capture_inquiry' \
   -H 'Content-Type: application/json' \
   -H 'X-Lead-Api-Key: YOUR_API_KEY' \
   -d '{
@@ -470,7 +470,7 @@ curl -i -X POST 'http://localhost:8001/api/method/crm.api.web_lead.capture_inqui
 **Form-encoded instead of JSON:**
 
 ```bash
-curl -i -X POST 'http://localhost:8001/api/method/crm.api.web_lead.capture_inquiry' \
+curl -i -X POST 'http://localhost:8001/api/method/xbr_crm.api.web_lead.capture_inquiry' \
   -H 'X-Lead-Api-Key: YOUR_API_KEY' \
   --data-urlencode 'form_type=contact' \
   --data-urlencode 'first_name=Rahul' \
@@ -481,7 +481,7 @@ curl -i -X POST 'http://localhost:8001/api/method/crm.api.web_lead.capture_inqui
 **Confirm a bad key is refused (expect `401`):**
 
 ```bash
-curl -i -X POST 'http://localhost:8001/api/method/crm.api.web_lead.capture_inquiry' \
+curl -i -X POST 'http://localhost:8001/api/method/xbr_crm.api.web_lead.capture_inquiry' \
   -H 'Content-Type: application/json' \
   -H 'X-Lead-Api-Key: wrong-key' \
   -d '{"first_name":"Test","mobile_no":"9876543210"}'
@@ -523,7 +523,7 @@ logs and the network tab.
 ### Create a key
 
 ```bash
-bench --site crm.psdigitise.com execute crm.api.web_lead.create_key \
+bench --site crm.psdigitise.com execute xbr_crm.api.web_lead.create_key \
   --kwargs "{'company': 'IEA Seek International', 'label': 'ieagents.co.in website'}"
 ```
 
@@ -536,14 +536,14 @@ would start failing.
 One key per caller. Give Zapier its own:
 
 ```bash
-bench --site crm.psdigitise.com execute crm.api.web_lead.create_key \
+bench --site crm.psdigitise.com execute xbr_crm.api.web_lead.create_key \
   --kwargs "{'company': 'IEA Seek International', 'label': 'IEA Zapier'}"
 ```
 
 ### List keys
 
 ```bash
-bench --site crm.psdigitise.com execute crm.api.web_lead.list_keys
+bench --site crm.psdigitise.com execute xbr_crm.api.web_lead.list_keys
 ```
 
 ```
@@ -556,7 +556,7 @@ IEA Zapier                        IEA Seek International      yes     any       
 ### Rotate a key
 
 ```bash
-bench --site crm.psdigitise.com execute crm.api.web_lead.rotate_key \
+bench --site crm.psdigitise.com execute xbr_crm.api.web_lead.rotate_key \
   --kwargs "{'label': 'ieagents.co.in website'}"
 ```
 
@@ -578,10 +578,10 @@ during the gap can be recovered and re-entered.
 ### Deactivate / reactivate
 
 ```bash
-bench --site crm.psdigitise.com execute crm.api.web_lead.deactivate_key \
+bench --site crm.psdigitise.com execute xbr_crm.api.web_lead.deactivate_key \
   --kwargs "{'label': 'ieagents.co.in website'}"
 
-bench --site crm.psdigitise.com execute crm.api.web_lead.activate_key \
+bench --site crm.psdigitise.com execute xbr_crm.api.web_lead.activate_key \
   --kwargs "{'label': 'ieagents.co.in website'}"
 ```
 

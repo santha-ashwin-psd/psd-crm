@@ -387,7 +387,7 @@ describe('Dashboard page', () => {
       wrapper.vm.enableEditing()
       wrapper.vm.resetToDefault()
       const reset = api.resources.at(-1)
-      expect(reset.url).toBe('crm.api.dashboard.reset_to_default')
+      expect(reset.url).toBe('xbr_crm.api.dashboard.reset_to_default')
       expect(reset.auto).toBe(true)
     })
 

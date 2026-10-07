@@ -48,7 +48,7 @@ import { inject, provide } from 'vue'
 const updateStep = inject('updateStep')
 
 const assignmentRulesListData = createResource({
-  url: 'crm.api.assignment_rule.get_assignment_rules_list',
+  url: 'xbr_crm.api.assignment_rule.get_assignment_rules_list',
   cache: ['assignmentRules', 'get_assignment_rules_list'],
   auto: true,
 })

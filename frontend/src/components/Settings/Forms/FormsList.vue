@@ -181,7 +181,7 @@ const targetOptions = [
 const docLabel = (dt) => targetOptions.find((o) => o.value === dt)?.label || dt
 
 const forms = createResource({
-  url: 'crm.api.form.list_forms',
+  url: 'xbr_crm.api.form.list_forms',
   auto: true,
 })
 
@@ -229,7 +229,7 @@ async function createForm() {
   }
   creating.value = true
   try {
-    const doc = await call('crm.api.form.save_form', {
+    const doc = await call('xbr_crm.api.form.save_form', {
       name: null,
       form: { title: draft.title, route, document_type: draft.document_type },
     })
@@ -248,7 +248,7 @@ async function createForm() {
 
 async function togglePublished(form, value) {
   try {
-    await call('crm.api.form.set_published', {
+    await call('xbr_crm.api.form.set_published', {
       name: form.name,
       published: value ? 1 : 0,
     })
@@ -270,7 +270,7 @@ async function deleteForm(form) {
   // (a published form, a permission error) rejected into nothing — no toast,
   // no row removed, and an unhandled rejection in the console.
   try {
-    await call('crm.api.form.delete_form', { name: form.name })
+    await call('xbr_crm.api.form.delete_form', { name: form.name })
     forms.reload()
     toast.success(__('Form deleted'))
   } catch (e) {

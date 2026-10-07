@@ -88,7 +88,7 @@
   <body>
     <div class="wrap">
       <h1>IEA Inquiry Form Simulator</h1>
-      <p class="sub">Posts to <code>crm.api.web_lead.capture_inquiry</code> exactly as the website's backend would.</p>
+      <p class="sub">Posts to <code>xbr_crm.api.web_lead.capture_inquiry</code> exactly as the website's backend would.</p>
 
       <div class="warn">
         <strong>Local testing only.</strong> This page puts the API key in the browser, which the real
@@ -200,7 +200,7 @@
         $('status').className = 'status';
         $('status').textContent = 'Sending…';
 
-        const url = $('base').value.replace(/\/$/, '') + '/api/method/crm.api.web_lead.capture_inquiry';
+        const url = $('base').value.replace(/\/$/, '') + '/api/method/xbr_crm.api.web_lead.capture_inquiry';
         try {
           const res = await fetch(url, {
             method: 'POST',

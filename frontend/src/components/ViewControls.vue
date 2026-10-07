@@ -634,7 +634,7 @@ function getParams() {
 const initialParams = getParams()
 
 const listResource = createResource({
-  url: 'crm.api.doc.get_data',
+  url: 'xbr_crm.api.doc.get_data',
   params: initialParams,
   cache: [props.doctype, route.query.view, route.params.viewType],
   auto: true,
@@ -885,7 +885,7 @@ function removeQuickFilter(f) {
 }
 
 const updateQuickFilters = createResource({
-  url: 'crm.api.doc.update_quick_filters',
+  url: 'xbr_crm.api.doc.update_quick_filters',
   onSuccess() {
     customizeQuickFilter.value = false
 
@@ -972,7 +972,7 @@ const quickFilterList = computed(() => {
 })
 
 const quickFilters = createResource({
-  url: 'crm.api.doc.get_quick_filters',
+  url: 'xbr_crm.api.doc.get_quick_filters',
   params: { doctype: props.doctype },
   cache: ['Quick Filters', props.doctype],
   onSuccess(filters) {
@@ -1094,7 +1094,7 @@ function updateColumns(obj) {
 
 function persistCustomView() {
   view.value.doctype = props.doctype
-  call('crm.fcrm.doctype.crm_view_settings.crm_view_settings.update', {
+  call('xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.update', {
     view: view.value,
   }).then(() => {
     reloadView()
@@ -1182,7 +1182,7 @@ function createOrUpdateStandardView() {
   if (route.query.view) return
   view.value.doctype = props.doctype
   call(
-    'crm.fcrm.doctype.crm_view_settings.crm_view_settings.create_or_update_standard_view',
+    'xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.create_or_update_standard_view',
     {
       view: view.value,
     },
@@ -1345,7 +1345,7 @@ function createView() {
 }
 
 function setAsDefault(v) {
-  call('crm.fcrm.doctype.crm_view_settings.crm_view_settings.set_as_default', {
+  call('xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.set_as_default', {
     name: v.name,
     type: v.type,
     doctype: v.dt,
@@ -1377,7 +1377,7 @@ function editView(v, close) {
 }
 
 function publicView(v) {
-  call('crm.fcrm.doctype.crm_view_settings.crm_view_settings.public', {
+  call('xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.public', {
     name: v.name,
     value: !v.public,
   }).then(() => {
@@ -1388,7 +1388,7 @@ function publicView(v) {
 }
 
 function pinView(v) {
-  call('crm.fcrm.doctype.crm_view_settings.crm_view_settings.pin', {
+  call('xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.pin', {
     name: v.name,
     value: !v.pinned,
   }).then(() => {
@@ -1399,7 +1399,7 @@ function pinView(v) {
 }
 
 function deleteView(v, close) {
-  call('crm.fcrm.doctype.crm_view_settings.crm_view_settings.delete', {
+  call('xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.delete', {
     name: v.name,
   }).then(() => {
     router.push({ name: route.name, params: { viewType: 'list' } })
@@ -1411,7 +1411,7 @@ function deleteView(v, close) {
 
 function fetchAndUpdateKanbanColumns(v) {
   call(
-    'crm.fcrm.doctype.crm_view_settings.crm_view_settings.fetch_and_update_kanban_columns',
+    'xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.fetch_and_update_kanban_columns',
     {
       name: v.name,
     },

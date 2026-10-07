@@ -79,7 +79,7 @@ app.config.globalProperties.$dialog = createDialog
 
 let socket
 if (import.meta.env.DEV) {
-  frappeRequest({ url: '/api/method/crm.www.crm.get_context_for_dev' }).then(
+  frappeRequest({ url: '/api/method/xbr_crm.www.crm.get_context_for_dev' }).then(
     (values) => {
       for (let key in values) {
         window[key] = values[key]

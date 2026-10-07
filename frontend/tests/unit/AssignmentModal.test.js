@@ -124,7 +124,7 @@ describe('AssignmentModal', () => {
       })
       wrapper.vm.removeValue('bob@example.com')
       await wrapper.vm.updateAssignees()
-      expect(callTo('crm.api.doc.remove_assignments')).toMatchObject({
+      expect(callTo('xbr_crm.api.doc.remove_assignments')).toMatchObject({
         name: 'DEAL-1',
         assignees: JSON.stringify(['bob@example.com']),
       })
@@ -142,7 +142,7 @@ describe('AssignmentModal', () => {
       wrapper.vm.removeValue('ada@example.com')
       wrapper.vm.addValue('bob@example.com')
       await wrapper.vm.updateAssignees()
-      expect(callNames()).toContain('crm.api.doc.remove_assignments')
+      expect(callNames()).toContain('xbr_crm.api.doc.remove_assignments')
       expect(callNames()).toContain('frappe.desk.form.assign_to.add')
     })
 

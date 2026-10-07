@@ -244,7 +244,7 @@ const inviteByEmail = createResource({
   // Tenancy: creates the users directly in the caller's own company and emails
   // each a temporary password. The company is taken from the caller's member
   // row server-side, never from here.
-  url: 'crm.tenancy.admin.invite_users',
+  url: 'xbr_crm.tenancy.admin.invite_users',
   makeParams() {
     return {
       emails: convertArrayToString(invitees.value),

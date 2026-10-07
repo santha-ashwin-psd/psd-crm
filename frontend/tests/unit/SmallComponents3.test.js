@@ -238,7 +238,7 @@ describe('BulkDeleteLinkedDocModal', () => {
       wrapper.vm.confirmDelete()
       wrapper.vm.deleteDocs()
       await flushPromises()
-      expect(api.call).toHaveBeenCalledWith('crm.api.doc.delete_bulk_docs', {
+      expect(api.call).toHaveBeenCalledWith('xbr_crm.api.doc.delete_bulk_docs', {
         items: ['A', 'B'],
         doctype: 'CRM Deal',
         delete_linked: true,

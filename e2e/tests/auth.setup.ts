@@ -35,7 +35,7 @@ setup('authenticate', async ({ page }) => {
 	await page.goto('/crm')
 	await page.waitForLoadState('networkidle')
 
-	// The CRM SPA injects boot keys onto window (see crm/www/crm.html),
+	// The CRM SPA injects boot keys onto window (see xbr_crm/www/crm.html),
 	// so the token lives at window.csrf_token.
 	const csrfToken = await page.evaluate(() => {
 		const w = window as unknown as {

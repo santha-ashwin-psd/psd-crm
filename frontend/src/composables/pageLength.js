@@ -1,8 +1,8 @@
 import { useStorage } from '@vueuse/core'
 
 /**
- * The server's own default, from `crm.api.doc.get_data`
- * (crm/api/doc.py — `page_length: int = 20, page_length_count: int = 20`).
+ * The server's own default, from `xbr_crm.api.doc.get_data`
+ * (xbr_crm/api/doc.py — `page_length: int = 20, page_length_count: int = 20`).
  *
  * This value and PAGE_SIZE_OPTIONS must stay in lockstep. ListPagination
  * renders a native <select>, and a `value` that matches no <option> sets

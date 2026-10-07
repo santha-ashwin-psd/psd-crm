@@ -6,7 +6,7 @@ const store = vi.hoisted(() => ({
   ],
 }))
 
-// The component builds a `crm.api.contact.search_emails` resource when the
+// The component builds a `xbr_crm.api.contact.search_emails` resource when the
 // query changes. Left real it fires at localhost:3000 — a leak that shows up
 // only as an unhandled rejection below the pass summary, and only sometimes.
 vi.mock('frappe-ui', async (importOriginal) => {

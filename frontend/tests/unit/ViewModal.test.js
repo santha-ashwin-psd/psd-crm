@@ -30,7 +30,7 @@ describe('ViewModal', () => {
       const wrapper = mountModal({ view: { label: 'My leads' } })
       await wrapper.vm.create()
       expect(api.call).toHaveBeenCalledWith(
-        'crm.fcrm.doctype.crm_view_settings.crm_view_settings.create',
+        'xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.create',
         { view: expect.objectContaining({ doctype: 'CRM Lead', label: 'My leads' }) },
       )
     })
@@ -54,7 +54,7 @@ describe('ViewModal', () => {
       const wrapper = mountModal({ view: { name: 'VIEW-1', label: 'Renamed' } })
       await wrapper.vm.update()
       expect(api.call).toHaveBeenCalledWith(
-        'crm.fcrm.doctype.crm_view_settings.crm_view_settings.update',
+        'xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.update',
         { view: expect.objectContaining({ name: 'VIEW-1', doctype: 'CRM Lead' }) },
       )
     })

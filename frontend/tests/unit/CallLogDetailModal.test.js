@@ -214,7 +214,7 @@ describe('CallLogDetailModal', () => {
       const { wrapper, callLog } = mountModal()
       await wrapper.vm.addNoteToCallLog({ name: 'NOTE-9' }, true)
       expect(api.call).toHaveBeenCalledWith(
-        'crm.integrations.api.add_note_to_call_log',
+        'xbr_crm.integrations.api.add_note_to_call_log',
         expect.objectContaining({ call_sid: 'CALL-SID-1' }),
       )
       expect(callLog.reload).toHaveBeenCalled()
@@ -251,7 +251,7 @@ describe('CallLogDetailModal', () => {
       const { wrapper, callLog } = mountModal()
       await wrapper.vm.addTaskToCallLog({ name: 'TASK-9' }, true)
       expect(api.call).toHaveBeenCalledWith(
-        'crm.integrations.api.add_task_to_call_log',
+        'xbr_crm.integrations.api.add_task_to_call_log',
         expect.objectContaining({ call_sid: 'CALL-SID-1' }),
       )
       expect(callLog.reload).toHaveBeenCalled()
@@ -280,7 +280,7 @@ describe('CallLogDetailModal', () => {
       const cb = callbacksFor('showTask')
       await cb.afterInsert({ name: 'TASK-9' })
       expect(api.call).toHaveBeenCalledWith(
-        'crm.integrations.api.add_task_to_call_log',
+        'xbr_crm.integrations.api.add_task_to_call_log',
         expect.objectContaining({ call_sid: 'CALL-SID-1' }),
       )
       api.call.mockClear()
@@ -292,7 +292,7 @@ describe('CallLogDetailModal', () => {
       const cb = callbacksFor('showNote')
       await cb.afterInsert({ name: 'NOTE-9' })
       expect(api.call).toHaveBeenCalledWith(
-        'crm.integrations.api.add_note_to_call_log',
+        'xbr_crm.integrations.api.add_note_to_call_log',
         expect.objectContaining({ call_sid: 'CALL-SID-1' }),
       )
       api.call.mockClear()
@@ -307,7 +307,7 @@ describe('CallLogDetailModal', () => {
       wrapper.vm.leadDetails = { first_name: 'Ada' }
       await wrapper.vm.createLead()
       expect(api.call).toHaveBeenCalledWith(
-        'crm.fcrm.doctype.crm_call_log.crm_call_log.create_lead_from_call_log',
+        'xbr_crm.fcrm.doctype.crm_call_log.crm_call_log.create_lead_from_call_log',
         expect.objectContaining({ lead_details: { first_name: 'Ada' } }),
       )
     })

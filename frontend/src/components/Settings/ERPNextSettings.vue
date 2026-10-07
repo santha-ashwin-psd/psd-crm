@@ -537,7 +537,7 @@ const settingsTabs = [
 ]
 
 const productSyncStatus = createResource({
-  url: 'crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.get_product_sync_status',
+  url: 'xbr_crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.get_product_sync_status',
 })
 
 const productSyncSections = computed(() => {

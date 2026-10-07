@@ -89,7 +89,7 @@ const { document, scripts, triggerOnRender, triggerOnBeforeCreate } =
 const doc = computed(() => document.doc || {})
 
 const layout = createResource({
-  url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
+  url: 'xbr_crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
   cache: ['Quick Entry', props.doctype],
   params: { doctype: props.doctype, type: 'Quick Entry' },
   auto: true,

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "CRM \u2014 Website Lead Capture",
-    "description": "Website inquiry capture for ieagents.co.in.\n\nONE endpoint: POST /api/method/crm.api.web_lead.capture_inquiry\n\nSetup\n-----\n1. Open the collection Variables tab.\n2. Set `base_url` (default http://localhost:8001).\n3. Set `api_key` to the secret from the CRM Web Lead Key record.\n\nThe key is sent as the `X-Lead-Api-Key` header on every request, inherited from collection-level auth-free headers set per request.\n\nNotes\n-----\n- Frappe wraps every response in {\"message\": {...}} \u2014 read response.message, not the top level.\n- `duplicate: true` is a SUCCESS, not an error: the person already enquired and the new answers were attached to their existing lead as a note.\n- Requests 1 and 5 share {{dup_email}}/{{dup_mobile}} so you can prove dedup: run 'Consultation' then 'Duplicate \u2014 same email'.\n- Rate limit is 30 requests/minute per IP. Running the whole folder repeatedly will eventually return 429, which is correct behaviour.\n\nZapier\n------\nRequests 12 and 13 cover the Zapier path: retries are idempotent for 10 minutes (same key + form_type + email/mobile), and every error body carries a stable `code` to branch on.\n\nEnvironments\n------------\nDev : http://localhost:8001\nLive: https://crm.psdigitise.com\nSwitch with the `base_url` collection variable. The key differs per environment \u2014 a key created on the dev bench does not exist on live.",
+    "description": "Website inquiry capture for ieagents.co.in.\n\nONE endpoint: POST /api/method/xbr_crm.api.web_lead.capture_inquiry\n\nSetup\n-----\n1. Open the collection Variables tab.\n2. Set `base_url` (default http://localhost:8001).\n3. Set `api_key` to the secret from the CRM Web Lead Key record.\n\nThe key is sent as the `X-Lead-Api-Key` header on every request, inherited from collection-level auth-free headers set per request.\n\nNotes\n-----\n- Frappe wraps every response in {\"message\": {...}} \u2014 read response.message, not the top level.\n- `duplicate: true` is a SUCCESS, not an error: the person already enquired and the new answers were attached to their existing lead as a note.\n- Requests 1 and 5 share {{dup_email}}/{{dup_mobile}} so you can prove dedup: run 'Consultation' then 'Duplicate \u2014 same email'.\n- Rate limit is 30 requests/minute per IP. Running the whole folder repeatedly will eventually return 429, which is correct behaviour.\n\nZapier\n------\nRequests 12 and 13 cover the Zapier path: retries are idempotent for 10 minutes (same key + form_type + email/mobile), and every error body carries a stable `code` to branch on.\n\nEnvironments\n------------\nDev : http://localhost:8001\nLive: https://crm.psdigitise.com\nSwitch with the `base_url` collection variable. The key differs per environment \u2014 a key created on the dev bench does not exist on live.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -19,7 +19,7 @@
     },
     {
       "key": "endpoint",
-      "value": "/api/method/crm.api.web_lead.capture_inquiry",
+      "value": "/api/method/xbr_crm.api.web_lead.capture_inquiry",
       "type": "string"
     },
     {

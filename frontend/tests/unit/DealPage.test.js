@@ -178,7 +178,7 @@ describe('Deal page', () => {
       api.contacts.data = []
       await wrapper.vm.addContact('CONTACT-1')
       expect(api.call).toHaveBeenCalledWith(
-        'crm.fcrm.doctype.crm_deal.crm_deal.add_contact',
+        'xbr_crm.fcrm.doctype.crm_deal.crm_deal.add_contact',
         { deal: 'DEAL-1', contact: 'CONTACT-1' },
       )
     })
@@ -217,7 +217,7 @@ describe('Deal page', () => {
       await wrapper.vm.removeContact('CONTACT-1')
       await flushPromises()
       expect(api.call).toHaveBeenCalledWith(
-        'crm.fcrm.doctype.crm_deal.crm_deal.remove_contact',
+        'xbr_crm.fcrm.doctype.crm_deal.crm_deal.remove_contact',
         { deal: 'DEAL-1', contact: 'CONTACT-1' },
       )
       expect(api.contacts.reload).toHaveBeenCalled()
@@ -230,7 +230,7 @@ describe('Deal page', () => {
       await wrapper.vm.setPrimaryContact('CONTACT-1')
       await flushPromises()
       expect(api.call).toHaveBeenCalledWith(
-        'crm.fcrm.doctype.crm_deal.crm_deal.set_primary_contact',
+        'xbr_crm.fcrm.doctype.crm_deal.crm_deal.set_primary_contact',
         { deal: 'DEAL-1', contact: 'CONTACT-1' },
       )
       expect(api.toast.success).toHaveBeenCalledWith('Primary Contact Set')

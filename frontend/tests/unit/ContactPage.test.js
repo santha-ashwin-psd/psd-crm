@@ -161,7 +161,7 @@ describe('Contact page', () => {
     it('posts the field and value against the contact', async () => {
       const wrapper = mountPage()
       await wrapper.vm.setAsPrimary('email_id', 'ada@x.com')
-      expect(api.call).toHaveBeenCalledWith('crm.api.contact.set_as_primary', {
+      expect(api.call).toHaveBeenCalledWith('xbr_crm.api.contact.set_as_primary', {
         contact: 'CONTACT-1',
         field: 'email_id',
         value: 'ada@x.com',
@@ -189,7 +189,7 @@ describe('Contact page', () => {
     it('posts the new value', async () => {
       const wrapper = mountPage()
       await wrapper.vm.createNew('email_id', 'new@x.com')
-      expect(api.call).toHaveBeenCalledWith('crm.api.contact.create_new', {
+      expect(api.call).toHaveBeenCalledWith('xbr_crm.api.contact.create_new', {
         contact: 'CONTACT-1',
         field: 'email_id',
         value: 'new@x.com',

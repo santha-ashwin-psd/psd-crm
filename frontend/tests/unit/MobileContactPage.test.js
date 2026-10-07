@@ -275,7 +275,7 @@ describe('Mobile contact page', () => {
     it('posts the field and value against the contact', async () => {
       const wrapper = mountPage()
       await wrapper.vm.setAsPrimary('email', 'grace@x.com')
-      expect(api.call).toHaveBeenCalledWith('crm.api.contact.set_as_primary', {
+      expect(api.call).toHaveBeenCalledWith('xbr_crm.api.contact.set_as_primary', {
         contact: 'CONTACT-1',
         field: 'email',
         value: 'grace@x.com',
@@ -304,7 +304,7 @@ describe('Mobile contact page', () => {
     it('posts the new value', async () => {
       const wrapper = mountPage()
       await wrapper.vm.createNew('phone', '+1-555-0200')
-      expect(api.call).toHaveBeenCalledWith('crm.api.contact.create_new', {
+      expect(api.call).toHaveBeenCalledWith('xbr_crm.api.contact.create_new', {
         contact: 'CONTACT-1',
         field: 'phone',
         value: '+1-555-0200',
@@ -385,7 +385,7 @@ describe('Mobile contact page', () => {
       const field = emailField(wrapper.vm.getParsedSections(sectionsFixture()))
       field.options[1].onClick()
       await flushPromises()
-      expect(api.call).toHaveBeenCalledWith('crm.api.contact.set_as_primary', {
+      expect(api.call).toHaveBeenCalledWith('xbr_crm.api.contact.set_as_primary', {
         contact: 'CONTACT-1',
         field: 'email',
         value: 'grace@x.com',
@@ -397,7 +397,7 @@ describe('Mobile contact page', () => {
       const field = emailField(wrapper.vm.getParsedSections(sectionsFixture()))
       field.options[0].onSave({ name: 'new-1', value: 'new@x.com' }, true)
       await flushPromises()
-      expect(api.call).toHaveBeenLastCalledWith('crm.api.contact.create_new', {
+      expect(api.call).toHaveBeenLastCalledWith('xbr_crm.api.contact.create_new', {
         contact: 'CONTACT-1',
         field: 'email',
         value: 'new@x.com',

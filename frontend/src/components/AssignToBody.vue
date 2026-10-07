@@ -109,7 +109,7 @@ const addAssignees = createResource({
 })
 
 const removeAssignees = createResource({
-  url: 'crm.api.doc.remove_assignments',
+  url: 'xbr_crm.api.doc.remove_assignments',
   makeParams: (removedAssignees) => ({
     doctype: props.doctype,
     name: props.docname,

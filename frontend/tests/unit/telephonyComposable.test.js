@@ -33,7 +33,7 @@ describe('telephony', () => {
   describe('what it asks the server', () => {
     it('asks once, on load, and caches the answer', () => {
       expect(api.resource.url).toBe(
-        'crm.integrations.api.is_call_integration_enabled',
+        'xbr_crm.integrations.api.is_call_integration_enabled',
       )
       expect(api.resource.auto).toBe(true)
       expect(api.resource.cache).toBe('Is Call Integration Enabled')

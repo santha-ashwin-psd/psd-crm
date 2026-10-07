@@ -99,7 +99,7 @@ import { computed } from 'vue'
 
 const props = defineProps({
   // The list resource (reads data.total_count / page_length_count / start,
-  // all echoed by crm.api.doc.get_data).
+  // all echoed by xbr_crm.api.doc.get_data).
   list: { type: Object, required: true },
   label: { type: String, default: '' },
   // Must contain DEFAULT_PAGE_LENGTH — a native <select> whose value matches

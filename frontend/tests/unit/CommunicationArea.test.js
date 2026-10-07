@@ -234,7 +234,7 @@ describe('CommunicationArea', () => {
       const wrapper = mountArea()
       wrapper.vm.newComment = '<p>noted</p>'
       await wrapper.vm.sendComment()
-      expect(api.call).toHaveBeenCalledWith('crm.api.comment.add_comment', {
+      expect(api.call).toHaveBeenCalledWith('xbr_crm.api.comment.add_comment', {
         reference_doctype: 'CRM Deal',
         reference_name: 'DEAL-1',
         content: '<p>noted</p>',

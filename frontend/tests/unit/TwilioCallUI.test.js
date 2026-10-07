@@ -130,7 +130,7 @@ describe('TwilioCallUI', () => {
       const wrapper = mount()
       await wrapper.vm.startupClient()
       expect(api.call).toHaveBeenCalledWith(
-        'crm.integrations.twilio.api.generate_access_token',
+        'xbr_crm.integrations.twilio.api.generate_access_token',
       )
       expect(api.devices).toHaveLength(1)
       expect(api.devices[0].token).toBe('tok-1')
@@ -434,7 +434,7 @@ describe('TwilioCallUI', () => {
       api.call.mockClear()
       await wrapper.vm.updateNote({ name: 'N1', content: 'said hello' }, true)
       expect(api.call).toHaveBeenCalledWith(
-        'crm.integrations.api.add_note_to_call_log',
+        'xbr_crm.integrations.api.add_note_to_call_log',
         { call_sid: 'CA1', note: { name: 'N1', content: 'said hello' } },
       )
       expect(api.updateOnboardingStep).toHaveBeenCalledWith('create_first_note')
@@ -456,7 +456,7 @@ describe('TwilioCallUI', () => {
       wrapper.vm.phoneNumber = '+911234'
       await nextTick()
       const lookup = api.resources.find(
-        (r) => r.url === 'crm.integrations.api.get_contact_by_phone_number',
+        (r) => r.url === 'xbr_crm.integrations.api.get_contact_by_phone_number',
       )
       expect(lookup.makeParams()).toEqual({ phone_number: '+911234' })
       expect(lookup.fetch).toHaveBeenCalled()
@@ -465,7 +465,7 @@ describe('TwilioCallUI', () => {
     it('shows who it found', () => {
       const wrapper = mount()
       const lookup = api.resources.find(
-        (r) => r.url === 'crm.integrations.api.get_contact_by_phone_number',
+        (r) => r.url === 'xbr_crm.integrations.api.get_contact_by_phone_number',
       )
       lookup.onSuccess({ full_name: 'Ada', image: '', mobile_no: '+911234' })
       expect(wrapper.vm.contact.full_name).toBe('Ada')
@@ -474,7 +474,7 @@ describe('TwilioCallUI', () => {
     it('does not look up an empty number', async () => {
       const wrapper = mount()
       const lookup = api.resources.find(
-        (r) => r.url === 'crm.integrations.api.get_contact_by_phone_number',
+        (r) => r.url === 'xbr_crm.integrations.api.get_contact_by_phone_number',
       )
       lookup.fetch.mockClear()
       wrapper.vm.phoneNumber = ''

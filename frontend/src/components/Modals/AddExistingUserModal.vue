@@ -113,7 +113,7 @@ const roleOptions = computed(() => {
 })
 
 const addNewUser = createResource({
-  url: 'crm.api.user.add_existing_users',
+  url: 'xbr_crm.api.user.add_existing_users',
   makeParams: () => ({
     users: JSON.stringify(newUsers.value),
     role: role.value,

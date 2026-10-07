@@ -157,7 +157,7 @@ describe('Users settings', () => {
       const wrapper = mount()
       wrapper.vm.updateRole(crmUser('ada@x.com'), 'Sales Manager')
       expect(api.call).toHaveBeenCalledWith(
-        'crm.tenancy.admin.update_member_role',
+        'xbr_crm.tenancy.admin.update_member_role',
         { user: 'ada@x.com', role: 'Sales Manager' },
       )
     })
@@ -209,7 +209,7 @@ describe('Users settings', () => {
     it('sends the removal', () => {
       const wrapper = mount()
       wrapper.vm.removeUser(crmUser('ada@x.com'))
-      expect(api.call).toHaveBeenCalledWith('crm.tenancy.admin.remove_member', {
+      expect(api.call).toHaveBeenCalledWith('xbr_crm.tenancy.admin.remove_member', {
         user: 'ada@x.com',
       })
     })

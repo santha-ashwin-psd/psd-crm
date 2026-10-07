@@ -33,8 +33,8 @@ repos:
                 - prettier@3.2.5
             exclude: |
                 (?x)^(
-                    crm/public/dist/.*|
-                    crm/public/frontend/.*|
+                    xbr_crm/public/dist/.*|
+                    xbr_crm/public/frontend/.*|
                     .*node_modules.*|
                 )$
 

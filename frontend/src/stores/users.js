@@ -15,7 +15,7 @@ export const usersStore = defineStore('crm-users', () => {
   // afterwards by the background `usersFull` fetch (and by `get_user_info`
   // for the race window before that lands).
   const users = createResource({
-    url: 'crm.api.session.get_users',
+    url: 'xbr_crm.api.session.get_users',
     cache: 'crm-users',
     initialData: [],
     auto: true,
@@ -46,7 +46,7 @@ export const usersStore = defineStore('crm-users', () => {
   // getUser(email) call sites keep working for non-CRM emails (comment
   // authors, doc owners, email recipient typeahead, etc.).
   const usersFull = createResource({
-    url: 'crm.api.session.get_users',
+    url: 'xbr_crm.api.session.get_users',
     params: { include_all: 1 },
     cache: 'crm-users-full',
     auto: false,
@@ -97,7 +97,7 @@ export const usersStore = defineStore('crm-users', () => {
     pendingResolves.clear()
     try {
       const r = createResource({
-        url: 'crm.api.session.get_user_info',
+        url: 'xbr_crm.api.session.get_user_info',
         params: { users: batch },
         auto: false,
       })

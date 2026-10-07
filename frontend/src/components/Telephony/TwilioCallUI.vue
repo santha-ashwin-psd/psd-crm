@@ -230,7 +230,7 @@ watch(phoneNumber, (value) => {
 })
 
 const getContact = createResource({
-  url: 'crm.integrations.api.get_contact_by_phone_number',
+  url: 'xbr_crm.integrations.api.get_contact_by_phone_number',
   makeParams() {
     return {
       phone_number: phoneNumber.value,
@@ -264,7 +264,7 @@ function openNoteModal() {
 async function updateNote(_note, isInsert = false) {
   note.value = _note
   if (isInsert && _note.name) {
-    await call('crm.integrations.api.add_note_to_call_log', {
+    await call('xbr_crm.integrations.api.add_note_to_call_log', {
       call_sid: _call.parameters.CallSid,
       note: _note,
     })
@@ -286,7 +286,7 @@ async function startupClient() {
   log.value = 'Requesting Access Token...'
 
   try {
-    const data = await call('crm.integrations.twilio.api.generate_access_token')
+    const data = await call('xbr_crm.integrations.twilio.api.generate_access_token')
     log.value = 'Got a token.'
     intitializeDevice(data.token)
   } catch (err) {
@@ -326,7 +326,7 @@ function addDeviceListeners() {
   device.on('incoming', handleIncomingCall)
 
   device.on('tokenWillExpire', async () => {
-    const data = await call('crm.integrations.twilio.api.generate_access_token')
+    const data = await call('xbr_crm.integrations.twilio.api.generate_access_token')
     device.updateToken(data.token)
   })
 }

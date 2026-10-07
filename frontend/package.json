@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --base=/assets/crm/frontend/ && npm run copy-html-entry",
-    "copy-html-entry": "cp ../crm/public/frontend/index.html ../crm/www/crm.html",
+    "build": "vite build --base=/assets/xbr_crm/frontend/ && npm run copy-html-entry",
+    "copy-html-entry": "cp ../xbr_crm/public/frontend/index.html ../xbr_crm/www/crm.html",
     "serve": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",

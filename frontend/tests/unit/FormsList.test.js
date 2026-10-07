@@ -194,7 +194,7 @@ describe('FormsList', () => {
       const wrapper = mount()
       const f = form()
       await wrapper.vm.togglePublished(f, true)
-      expect(api.call).toHaveBeenCalledWith('crm.api.form.set_published', {
+      expect(api.call).toHaveBeenCalledWith('xbr_crm.api.form.set_published', {
         name: 'FORM-1',
         published: 1,
       })
@@ -231,7 +231,7 @@ describe('FormsList', () => {
     it('deletes and refreshes', async () => {
       const wrapper = mount()
       await wrapper.vm.deleteForm(form())
-      expect(api.call).toHaveBeenCalledWith('crm.api.form.delete_form', {
+      expect(api.call).toHaveBeenCalledWith('xbr_crm.api.form.delete_form', {
         name: 'FORM-1',
       })
       expect(api.forms.reload).toHaveBeenCalled()

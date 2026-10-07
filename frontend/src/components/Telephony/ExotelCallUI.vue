@@ -292,7 +292,7 @@ const contact = ref({
 })
 
 const getContact = createResource({
-  url: 'crm.integrations.api.get_contact_by_phone_number',
+  url: 'xbr_crm.integrations.api.get_contact_by_phone_number',
   makeParams() {
     return {
       phone_number: phoneNumber.value,
@@ -333,7 +333,7 @@ function showNoteWindow() {
 
 function createUpdateNote() {
   createResource({
-    url: 'crm.integrations.api.add_note_to_call_log',
+    url: 'xbr_crm.integrations.api.add_note_to_call_log',
     params: {
       call_sid: callData.value.CallSid,
       note: note.value,
@@ -372,7 +372,7 @@ function showTaskWindow() {
 
 function createUpdateTask() {
   createResource({
-    url: 'crm.integrations.api.add_task_to_call_log',
+    url: 'xbr_crm.integrations.api.add_task_to_call_log',
     params: {
       call_sid: callData.value.CallSid,
       task: task.value,
@@ -407,7 +407,7 @@ function makeOutgoingCall(number) {
   phoneNumber.value = number
 
   createResource({
-    url: 'crm.integrations.exotel.handler.make_a_call',
+    url: 'xbr_crm.integrations.exotel.handler.make_a_call',
     params: { to_number: phoneNumber.value },
     auto: true,
     onSuccess(callDetails) {

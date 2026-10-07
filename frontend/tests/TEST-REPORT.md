@@ -2161,7 +2161,7 @@ The store says otherwise:
 
 ```js
 const users = createResource({
-  url: 'crm.api.session.get_users',
+  url: 'xbr_crm.api.session.get_users',
   initialData: [],          // ← never null
   transform([allUsers, crmUsers]) { … return { allUsers, crmUsers } },
 })

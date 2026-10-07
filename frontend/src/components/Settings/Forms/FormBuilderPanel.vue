@@ -1157,7 +1157,7 @@ function addBreak(fieldtype) {
 
 // load
 createResource({
-  url: 'crm.api.form.get_form_config',
+  url: 'xbr_crm.api.form.get_form_config',
   params: { name: props.name },
   auto: true,
   onSuccess: (doc) => {
@@ -1200,7 +1200,7 @@ createResource({
 })
 
 const availableFields = createResource({
-  url: 'crm.api.form.get_form_fields',
+  url: 'xbr_crm.api.form.get_form_fields',
   makeParams: () => ({ document_type: form.document_type }),
 })
 
@@ -1269,7 +1269,7 @@ async function requestDoctypeChange(newDt) {
   // with no explanation.
   let fields
   try {
-    fields = await call('crm.api.form.get_form_fields', {
+    fields = await call('xbr_crm.api.form.get_form_fields', {
       document_type: newDt,
     })
   } catch (e) {
@@ -1333,7 +1333,7 @@ async function commitDoctype(newDt, valid) {
   // here would leave the form half-converted with no message.
   let newHidden
   try {
-    newHidden = await call('crm.api.form.get_hidden_seed', {
+    newHidden = await call('xbr_crm.api.form.get_hidden_seed', {
       document_type: newDt,
     })
   } catch (e) {
@@ -1390,7 +1390,7 @@ async function save({ silent = false } = {}) {
   // normalise from the model so every section break (incl. the first) persists
   form.fields = flattenModel()
   try {
-    const doc = await call('crm.api.form.save_form', {
+    const doc = await call('xbr_crm.api.form.save_form', {
       name: form.name,
       form: {
         title: form.title,

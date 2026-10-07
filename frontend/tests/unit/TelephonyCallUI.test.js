@@ -311,7 +311,7 @@ describe('CallUI', () => {
       wrapper.vm.makeCallUsing()
       await flushPromises()
       expect(api.call).toHaveBeenCalledWith(
-        'crm.integrations.api.set_default_calling_medium',
+        'xbr_crm.integrations.api.set_default_calling_medium',
         { medium: 'Exotel' },
       )
       expect(api.defaultMedium.value).toBe('Exotel')
@@ -682,7 +682,7 @@ describe('ExotelCallUI', () => {
       wrapper.vm.phoneNumber = '+911234'
       await nextTick()
       const lookup = api.resources.find(
-        (r) => r.url === 'crm.integrations.api.get_contact_by_phone_number',
+        (r) => r.url === 'xbr_crm.integrations.api.get_contact_by_phone_number',
       )
       expect(lookup.makeParams()).toEqual({ phone_number: '+911234' })
       expect(lookup.fetch).toHaveBeenCalled()
@@ -691,7 +691,7 @@ describe('ExotelCallUI', () => {
     it('does not look up an empty number', async () => {
       const wrapper = mount()
       const lookup = api.resources.find(
-        (r) => r.url === 'crm.integrations.api.get_contact_by_phone_number',
+        (r) => r.url === 'xbr_crm.integrations.api.get_contact_by_phone_number',
       )
       lookup.fetch.mockClear()
       wrapper.vm.phoneNumber = ''
@@ -702,7 +702,7 @@ describe('ExotelCallUI', () => {
     it('shows whoever it found', () => {
       const wrapper = mount()
       const lookup = api.resources.find(
-        (r) => r.url === 'crm.integrations.api.get_contact_by_phone_number',
+        (r) => r.url === 'xbr_crm.integrations.api.get_contact_by_phone_number',
       )
       lookup.onSuccess({ full_name: 'Ada', mobile_no: '+911234' })
       expect(wrapper.vm.contact.full_name).toBe('Ada')

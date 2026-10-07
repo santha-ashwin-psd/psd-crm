@@ -24,7 +24,7 @@ try:
 except ImportError:
 	sys.exit("This script needs `requests`:  pip install requests")
 
-ENDPOINT = "/api/method/crm.api.web_lead.capture_inquiry"
+ENDPOINT = "/api/method/xbr_crm.api.web_lead.capture_inquiry"
 
 PASS = "\033[32mPASS\033[0m"
 FAIL = "\033[31mFAIL\033[0m"

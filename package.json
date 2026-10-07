@@ -1,7 +1,7 @@
 {
 	"private": true,
 	"type": "module",
-	"name": "crm",
+	"name": "xbr-crm",
 	"description": "Frappe CRM helps you work, not slow you down. Open-source, intuitive, and free from extra costs.",
 	"repository": {
 		"type": "git",

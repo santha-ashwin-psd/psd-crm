@@ -249,7 +249,7 @@ const options = computed(() => [
 ])
 
 const dashboardItems = createResource({
-  url: 'crm.api.dashboard.get_dashboard',
+  url: 'xbr_crm.api.dashboard.get_dashboard',
   makeParams() {
     return {
       from_date: fromDate.value,
@@ -307,7 +307,7 @@ function save() {
 
 function resetToDefault() {
   createResource({
-    url: 'crm.api.dashboard.reset_to_default',
+    url: 'xbr_crm.api.dashboard.reset_to_default',
     auto: true,
     onSuccess: () => {
       dashboardItems.reload()

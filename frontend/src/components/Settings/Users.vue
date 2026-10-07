@@ -292,7 +292,7 @@ function getDropdownOptions(user) {
 function updateRole(user, newRole) {
   if ((user.crm_role || user.role) === newRole) return
 
-  call('crm.tenancy.admin.update_member_role', {
+  call('xbr_crm.tenancy.admin.update_member_role', {
     user: user.name,
     role: newRole,
   })
@@ -311,7 +311,7 @@ function updateRole(user, newRole) {
 }
 
 function removeUser(user) {
-  call('crm.tenancy.admin.remove_member', {
+  call('xbr_crm.tenancy.admin.remove_member', {
     user: user.name,
   })
     .then(() => {

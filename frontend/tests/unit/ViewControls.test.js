@@ -604,7 +604,7 @@ describe('ViewControls', () => {
 
   describe('quick filters', () => {
     const quickResource = (wrapper) =>
-      api.resources.find((r) => r.url === 'crm.api.doc.get_quick_filters')
+      api.resources.find((r) => r.url === 'xbr_crm.api.doc.get_quick_filters')
 
     const withQuickFilters = (filters) => {
       const wrapper = withData(mount(), {})
@@ -692,7 +692,7 @@ describe('ViewControls', () => {
       wrapper.vm.newQuickFilters = [{ fieldname: 'deal_owner' }]
       wrapper.vm.saveQuickFilters()
       const update = api.resources.find(
-        (r) => r.url === 'crm.api.doc.update_quick_filters',
+        (r) => r.url === 'xbr_crm.api.doc.update_quick_filters',
       )
       expect(JSON.parse(update.params.quick_filters)).toEqual(['deal_owner'])
       expect(JSON.parse(update.params.old_filters)).toEqual(['status'])

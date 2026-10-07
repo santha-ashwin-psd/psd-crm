@@ -1,5 +1,5 @@
 [project]
-name = "crm"
+name = "xbr_crm"
 authors = [
     { name = "Frappe Technologies Pvt. Ltd.", email = "shariq@frappe.io"}
 ]
@@ -33,8 +33,8 @@ frappe = ">=16.0.0-dev,<=17.0.0-dev"
 
 [tool.bench.assets]
 build_dir = "./frontend"
-out_dir = "../crm/public/frontend"
-index_html_path = "../crm/www/crm.html"
+out_dir = "../xbr_crm/public/frontend"
+index_html_path = "../xbr_crm/www/crm.html"
 
 [tool.ruff]
 line-length = 110

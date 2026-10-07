@@ -264,7 +264,7 @@ describe('AssignmentRules', () => {
   it('fetches the rule list on arrival', () => {
     mount()
     expect(api.created[0].url).toBe(
-      'crm.api.assignment_rule.get_assignment_rules_list',
+      'xbr_crm.api.assignment_rule.get_assignment_rules_list',
     )
     expect(api.created[0].auto).toBe(true)
   })

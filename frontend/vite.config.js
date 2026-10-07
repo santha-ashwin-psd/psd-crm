@@ -39,25 +39,25 @@ export default defineConfig(async ({ mode }) => {
             'Modern & 100% Open-source CRM tool to supercharge your sales operations',
           icons: [
             {
-              src: '/assets/crm/manifest/manifest-icon-192.maskable.png',
+              src: '/assets/xbr_crm/manifest/manifest-icon-192.maskable.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/assets/crm/manifest/manifest-icon-192.maskable.png',
+              src: '/assets/xbr_crm/manifest/manifest-icon-192.maskable.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'maskable',
             },
             {
-              src: '/assets/crm/manifest/manifest-icon-512.maskable.png',
+              src: '/assets/xbr_crm/manifest/manifest-icon-512.maskable.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/assets/crm/manifest/manifest-icon-512.maskable.png',
+              src: '/assets/xbr_crm/manifest/manifest-icon-512.maskable.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
@@ -107,7 +107,7 @@ export default defineConfig(async ({ mode }) => {
       lucideIcons: true,
       jinjaBootData: true,
       buildConfig: {
-        indexHtmlPath: '../crm/www/crm.html',
+        indexHtmlPath: '../xbr_crm/www/crm.html',
         emptyOutDir: true,
         sourcemap: true,
       },
