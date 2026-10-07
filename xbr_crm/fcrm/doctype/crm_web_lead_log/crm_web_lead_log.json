@@ -12,6 +12,7 @@
   "crm_company",
   "key_name",
   "column_break_head",
+  "deal",
   "lead",
   "form_type",
   "client_ip",
@@ -33,30 +34,39 @@
    "reqd": 1
   },
   {
+   "description": "Empty when the request failed before the key could be resolved.",
    "fieldname": "crm_company",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "CRM Company",
-   "options": "CRM Company",
-   "description": "Empty when the request failed before the key could be resolved."
+   "options": "CRM Company"
   },
   {
+   "description": "Name of the CRM Web Lead Key record. The secret itself is never logged.",
    "fieldname": "key_name",
    "fieldtype": "Data",
-   "label": "Key Name",
-   "description": "Name of the CRM Web Lead Key record. The secret itself is never logged."
+   "label": "Key Name"
   },
   {
    "fieldname": "column_break_head",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "lead",
+   "description": "The pipeline created, or the existing open pipeline matched on a duplicate.",
+   "fieldname": "deal",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "label": "Pipeline",
+   "options": "CRM Deal"
+  },
+  {
+   "depends_on": "lead",
+   "description": "Set only on rows from before the API created pipelines: the lead it created or matched.",
+   "fieldname": "lead",
+   "fieldtype": "Link",
    "label": "Lead",
    "options": "CRM Lead",
-   "description": "The lead created, or the existing lead matched on a duplicate."
+   "read_only": 1
   },
   {
    "fieldname": "form_type",
@@ -70,12 +80,12 @@
    "label": "Client IP"
   },
   {
+   "description": "Fingerprint of key + form type + email/mobile. Used to recognise a caller retrying the same inquiry; every request looks this up, hence the index.",
    "fieldname": "submission_hash",
    "fieldtype": "Data",
    "label": "Submission Hash",
    "read_only": 1,
-   "search_index": 1,
-   "description": "Fingerprint of key + form type + email/mobile. Used to recognise a caller retrying the same inquiry; every request looks this up, hence the index."
+   "search_index": 1
   },
   {
    "fieldname": "payload_section",
@@ -83,11 +93,11 @@
    "label": "Inbound Payload"
   },
   {
+   "description": "Exactly what the website posted, so a failed submission can be replayed.",
    "fieldname": "payload",
    "fieldtype": "Code",
    "label": "Raw Payload",
-   "options": "JSON",
-   "description": "Exactly what the website posted, so a failed submission can be replayed."
+   "options": "JSON"
   },
   {
    "fieldname": "error_section",
@@ -109,7 +119,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-03 10:00:00.000000",
+ "modified": "2026-10-07 18:30:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Web Lead Log",

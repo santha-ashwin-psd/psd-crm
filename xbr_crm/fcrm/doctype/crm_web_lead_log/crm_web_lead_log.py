@@ -32,6 +32,7 @@ class CRMWebLeadLog(Document):
 
 		client_ip: DF.Data | None
 		crm_company: DF.Link | None
+		deal: DF.Link | None
 		form_type: DF.Data | None
 		key_name: DF.Data | None
 		lead: DF.Link | None
@@ -56,7 +57,7 @@ def write_log(
 	result: str,
 	payload: dict | None = None,
 	key=None,
-	lead: str | None = None,
+	deal: str | None = None,
 	message: str | None = None,
 	traceback: str | None = None,
 	client_ip: str | None = None,
@@ -64,13 +65,13 @@ def write_log(
 ) -> str | None:
 	"""Record one inbound request. Never raises into the caller.
 
-	Logging must not be able to turn a successful lead into a failed HTTP response,
+	Logging must not be able to turn a successful pipeline into a failed HTTP response,
 	so every failure here is swallowed and reported to the error log instead.
 	"""
 	try:
 		doc = frappe.new_doc("CRM Web Lead Log")
 		doc.result = result
-		doc.lead = lead
+		doc.deal = deal
 		doc.message = (message or "")[:500] or None
 		doc.traceback = traceback
 		doc.client_ip = client_ip

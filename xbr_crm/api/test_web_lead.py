@@ -8,8 +8,13 @@ HTTP status onto `frappe.local.response`, so the tests drive it through a small
 harness that fakes both rather than going over the network — that keeps the
 assertions on OUR logic (tenancy, dedup, normalisation) instead of on werkzeug.
 
+Every inquiry becomes a Pipeline (CRM Deal) linked to a Contact; no CRM Lead is
+ever created, and several tests assert exactly that.
+
 The end-to-end HTTP path is covered separately by scripts/test_web_lead.py.
 """
+
+import json
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -19,8 +24,13 @@ from xbr_crm.api.web_lead import capture_inquiry, normalize_mobile
 
 TEST_COMPANY = "_Test Web Lead Co"
 OTHER_COMPANY = "_Test Other Co"
+COMPANIES = (TEST_COMPANY, OTHER_COMPANY)
 TEST_KEY = "test-secret-key-aaaaaaaaaaaa"
 OWNER_USER = "test_weblead_owner@example.com"
+RULE_USER = "test_weblead_rule@example.com"
+OUTSIDER_USER = "test_weblead_outsider@example.com"
+TEST_USERS = (OWNER_USER, RULE_USER, OUTSIDER_USER)
+RULE_NAME = "_Test Web Lead Pipeline Rule"
 
 
 class _FakeHeaders(dict):
@@ -33,20 +43,59 @@ class _FakeHeaders(dict):
 
 
 class _FakeRequest:
-	"""Just enough of a werkzeug request for the code paths a lead insert touches.
+	"""Just enough of a werkzeug request for the code paths a pipeline insert touches.
 
-	`host` is not optional despite us never reading it: creating a lead fires the
-	assignment rule, which queues a notification email, which builds a document URL
-	via `get_host_name_from_request()` — and that reads `frappe.local.request.host`
-	directly. A real request always has one.
+	`host` and `path` are not optional despite us never reading them: assigning
+	the pipeline's owner queues a notification email, which builds a document URL
+	from `frappe.local.request.host` and renders a template that reads
+	`frappe.local.request.path`. A real request always has both.
 	"""
 
 	def __init__(self, headers):
 		self.headers = _FakeHeaders(headers)
 		self.host = "crm.local"
 		self.method = "POST"
-		self.url = "http://crm.local/api/method/xbr_crm.api.web_lead.capture_inquiry"
+		self.path = "/api/method/xbr_crm.api.web_lead.capture_inquiry"
+		self.url = "http://crm.local" + self.path
 		self.environ = {"REMOTE_ADDR": "203.0.113.10"}
+
+
+def _delete_where(doctype, filters):
+	frappe.db.delete(doctype, filters)
+
+
+def _purge_tenant_records():
+	"""Remove every record the endpoint created for the test companies.
+
+	The endpoint commits on its own, so nothing here is rolled back for us. Deals
+	drag a tail of framework rows behind them (assignments, shares, notifications,
+	versions), and those are cleared too so the suite leaves the site as it found it.
+	"""
+	deals = frappe.get_all("CRM Deal", {"crm_company": ("in", COMPANIES)}, pluck="name")
+	if deals:
+		for doctype, field in (
+			("ToDo", "reference_name"),
+			("DocShare", "share_name"),
+			("Comment", "reference_name"),
+			("Version", "docname"),
+			("Notification Log", "document_name"),
+			("CRM Notification", "reference_name"),
+			("FCRM Note", "reference_docname"),
+			("CRM Contacts", "parent"),
+			("CRM Status Change Log", "parent"),
+		):
+			_delete_where(doctype, {field: ("in", deals)})
+		_delete_where("CRM Deal", {"name": ("in", deals)})
+
+	contacts = frappe.get_all("Contact", {"crm_company": ("in", COMPANIES)}, pluck="name")
+	if contacts:
+		for child in ("Contact Email", "Contact Phone", "Dynamic Link"):
+			_delete_where(child, {"parent": ("in", contacts), "parenttype": "Contact"})
+		_delete_where("Contact", {"name": ("in", contacts)})
+
+	_delete_where("FCRM Note", {"crm_company": ("in", COMPANIES)})
+	_delete_where("CRM Lead", {"crm_company": ("in", COMPANIES)})
+	_delete_where("CRM Web Lead Log", {"crm_company": ("in", COMPANIES)})
 
 
 class TestWebLead(FrappeTestCase):
@@ -55,19 +104,20 @@ class TestWebLead(FrappeTestCase):
 		super().setUpClass()
 		frappe.set_user("Administrator")
 
-		if not frappe.db.exists("User", OWNER_USER):
-			frappe.get_doc(
-				{
-					"doctype": "User",
-					"email": OWNER_USER,
-					"first_name": "Weblead",
-					"last_name": "Owner",
-					"send_welcome_email": 0,
-					"roles": [{"role": "Sales User"}],
-				}
-			).insert(ignore_permissions=True)
+		for email, first in ((OWNER_USER, "Weblead"), (RULE_USER, "Rule"), (OUTSIDER_USER, "Outsider")):
+			if not frappe.db.exists("User", email):
+				frappe.get_doc(
+					{
+						"doctype": "User",
+						"email": email,
+						"first_name": first,
+						"last_name": "Tester",
+						"send_welcome_email": 0,
+						"roles": [{"role": "Sales User"}],
+					}
+				).insert(ignore_permissions=True)
 
-		for company in (TEST_COMPANY, OTHER_COMPANY):
+		for company in COMPANIES:
 			if not frappe.db.exists("CRM Company", company):
 				frappe.get_doc(
 					{
@@ -75,6 +125,18 @@ class TestWebLead(FrappeTestCase):
 						"company_name": company,
 						"is_active": 1,
 						"owner_user": OWNER_USER,
+					}
+				).insert(ignore_permissions=True)
+
+		# Tenant membership, for the visibility tests under strict tenancy.
+		for user, company in ((OWNER_USER, TEST_COMPANY), (OUTSIDER_USER, OTHER_COMPANY)):
+			if not frappe.db.exists("CRM Company Member", user):
+				frappe.get_doc(
+					{
+						"doctype": "CRM Company Member",
+						"user": user,
+						"company": company,
+						"crm_role": "Sales User",
 					}
 				).insert(ignore_permissions=True)
 
@@ -102,23 +164,28 @@ class TestWebLead(FrappeTestCase):
 		read the repo. Delete it, and the rest of the scaffolding with it.
 		"""
 		frappe.set_user("Administrator")
-		frappe.db.delete("CRM Lead", {"crm_company": ("in", [TEST_COMPANY, OTHER_COMPANY])})
-		frappe.db.delete("CRM Web Lead Log", {"crm_company": ("in", [TEST_COMPANY, OTHER_COMPANY])})
+		_purge_tenant_records()
 		for doctype, name in (
+			("Assignment Rule", RULE_NAME),
 			("CRM Web Lead Key", "_Test Website Key"),
+			("CRM Company Member", OWNER_USER),
+			("CRM Company Member", OUTSIDER_USER),
 			("CRM Company", TEST_COMPANY),
 			("CRM Company", OTHER_COMPANY),
 		):
 			if frappe.db.exists(doctype, name):
 				frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+		for user in TEST_USERS:
+			if frappe.db.exists("User", user):
+				frappe.delete_doc("User", user, force=True, ignore_permissions=True)
 		frappe.db.commit()
 		super().tearDownClass()
 
 	def setUp(self):
-		# Every test starts from a clean slate of leads for this tenant, so dedup
-		# assertions cannot be polluted by a previous test's lead.
-		frappe.db.delete("CRM Lead", {"crm_company": ("in", [TEST_COMPANY, OTHER_COMPANY])})
-		frappe.db.delete("CRM Web Lead Log", {"crm_company": ("in", [TEST_COMPANY, OTHER_COMPANY])})
+		# Every test starts from a clean slate for these tenants, so dedup
+		# assertions cannot be polluted by a previous test's pipeline or contact.
+		frappe.set_user("Administrator")
+		_purge_tenant_records()
 		frappe.db.commit()
 		# The suite makes more calls per minute than the endpoint's own rate limit
 		# allows, so without this the later tests fail on RateLimitExceededError
@@ -129,6 +196,7 @@ class TestWebLead(FrappeTestCase):
 		self._orig_ip = getattr(frappe.local, "request_ip", None)
 
 	def tearDown(self):
+		frappe.set_user("Administrator")
 		frappe.local.request = self._orig_request
 		frappe.local.request_ip = self._orig_ip
 		frappe.local.response.pop("http_status_code", None)
@@ -195,62 +263,210 @@ class TestWebLead(FrappeTestCase):
 		payload.update(overrides)
 		return payload
 
+	def deal_count(self, company=TEST_COMPANY):
+		return frappe.db.count("CRM Deal", {"crm_company": company})
+
+	def notes_on(self, deal):
+		return frappe.get_all(
+			"FCRM Note",
+			filters={"reference_doctype": "CRM Deal", "reference_docname": deal},
+			pluck="content",
+		)
+
+	def close_deal(self, deal, status="Won"):
+		# Straight to the database: the test is about what the endpoint does with a
+		# closed pipeline, not about the rules for closing one (Lost needs a reason).
+		frappe.db.set_value("CRM Deal", deal, "status", status)
+		frappe.db.commit()
+
+	def _age_submission_log(self, minutes=None):
+		"""Push the log rows out of the retry window.
+
+		Needed wherever a test posts the same payload twice but means them as two
+		separate inquiries rather than one retry.
+		"""
+		frappe.db.sql(
+			"""update `tabCRM Web Lead Log`
+			   set creation = date_sub(creation, interval %s minute)
+			   where submission_hash is not null""",
+			(minutes or web_lead.RETRY_WINDOW_MINUTES + 5,),
+		)
+		frappe.db.commit()
+
 	# -- happy paths ------------------------------------------------------
 
-	def test_valid_consultation_lead(self):
+	def test_response_shape(self):
 		result, status = self.post(self.consultation_payload())
-
 		self.assertEqual(status, 200)
+		self.assertEqual(set(result), {"success", "pipeline", "contact", "duplicate", "message"})
 		self.assertTrue(result["success"])
 		self.assertFalse(result["duplicate"])
+		self.assertTrue(frappe.db.exists("CRM Deal", result["pipeline"]))
+		self.assertTrue(frappe.db.exists("Contact", result["contact"]))
 
-		lead = frappe.get_doc("CRM Lead", result["lead"])
-		self.assertEqual(lead.first_name, "Arun")  # title-cased
-		self.assertEqual(lead.last_name, "Kumar")
-		self.assertEqual(lead.email, "arun.kumar@example.com")  # lower-cased
-		self.assertEqual(lead.mobile_no, "+919876543210")  # normalised
-		self.assertEqual(lead.custom_city, "Chennai")
-		self.assertEqual(lead.custom_form_type, "consultation")
-		self.assertEqual(lead.custom_utm_source, "google")
-		self.assertEqual(lead.source, "Website")
-		# Not set by us — the controller's own default must still win.
-		self.assertEqual(lead.status, "New")
-
-	def test_valid_evaluation_lead(self):
-		result, status = self.post(self.evaluation_payload())
-
+	def test_valid_consultation_creates_pipeline_and_contact(self):
+		result, status = self.post(self.consultation_payload())
 		self.assertEqual(status, 200)
-		lead = frappe.get_doc("CRM Lead", result["lead"])
-		self.assertEqual(lead.custom_highest_qualification, "Bachelors")
-		self.assertEqual(lead.custom_course_level, "Masters")
-		self.assertEqual(lead.custom_preferred_state, "Victoria")
-		self.assertEqual(lead.custom_start_timeline, "2027 Intake")
-		self.assertEqual(lead.custom_form_type, "evaluation")
+
+		deal = frappe.get_doc("CRM Deal", result["pipeline"])
+		self.assertEqual(deal.first_name, "Arun")  # title-cased
+		self.assertEqual(deal.last_name, "Kumar")
+		self.assertEqual(deal.custom_city, "Chennai")
+		self.assertEqual(deal.custom_form_type, "consultation")
+		self.assertEqual(deal.custom_utm_source, "google")
+		self.assertEqual(deal.custom_page_url, "https://ieagents.co.in/")
+		self.assertEqual(deal.source, "Website")
+		self.assertEqual(deal.custom_created_via, "Website")
+		# Not set by us — the controller's own default must still win.
+		self.assertEqual(deal.status, "Qualification")
+
+		# The person is a Contact, linked as the pipeline's primary contact, and
+		# the pipeline mirrors its email and mobile.
+		self.assertEqual([c.contact for c in deal.contacts], [result["contact"]])
+		self.assertTrue(deal.contacts[0].is_primary)
+		self.assertEqual(deal.email, "arun.kumar@example.com")  # lower-cased
+		self.assertEqual(deal.mobile_no, "+919876543210")  # normalised
+
+		contact = frappe.get_doc("Contact", result["contact"])
+		self.assertEqual(contact.first_name, "Arun")
+		self.assertEqual(contact.email_id, "arun.kumar@example.com")
+		self.assertEqual(contact.mobile_no, "+919876543210")
+
+	def test_valid_evaluation_pipeline(self):
+		result, status = self.post(self.evaluation_payload())
+		self.assertEqual(status, 200)
+		deal = frappe.get_doc("CRM Deal", result["pipeline"])
+		self.assertEqual(deal.custom_highest_qualification, "Bachelors")
+		self.assertEqual(deal.custom_course_level, "Masters")
+		self.assertEqual(deal.custom_preferred_state, "Victoria")
+		self.assertEqual(deal.custom_start_timeline, "2027 Intake")
+		self.assertEqual(deal.custom_form_type, "evaluation")
+
+	def test_contact_form_type(self):
+		result, status = self.post(self.consultation_payload(form_type="contact"))
+		self.assertEqual(status, 200)
+		self.assertEqual(frappe.db.get_value("CRM Deal", result["pipeline"], "custom_form_type"), "contact")
+
+	def test_new_pipeline_carries_a_note_of_the_submission(self):
+		result, _ = self.post(self.evaluation_payload())
+		notes = self.notes_on(result["pipeline"])
+		self.assertTrue(any("Masters" in n for n in notes))
+
+	def test_no_lead_is_ever_created(self):
+		self.post(self.consultation_payload())
+		self.post(self.evaluation_payload())
+		self.post(self.consultation_payload(mobile_no="9876511111", email="third@example.com"))
+		self.assertEqual(frappe.db.count("CRM Lead", {"crm_company": ("in", COMPANIES)}), 0)
 
 	def test_tenant_and_owner_are_set(self):
-		"""The two things that decide whether anyone can SEE the lead."""
+		"""The things that decide whether anyone can SEE the pipeline."""
 		result, _status = self.post(self.consultation_payload())
-		lead = frappe.get_doc("CRM Lead", result["lead"])
+		deal = frappe.get_doc("CRM Deal", result["pipeline"])
 
-		# Without this the lead is invisible under tenancy_strict.
-		self.assertEqual(lead.crm_company, TEST_COMPANY)
-		# "Never leave a web lead unowned" — falls back to CRM Company.owner_user.
-		self.assertTrue(lead.lead_owner)
-		self.assertEqual(lead.lead_owner, OWNER_USER)
+		# Without these the records are invisible under tenancy_strict.
+		self.assertEqual(deal.crm_company, TEST_COMPANY)
+		self.assertEqual(frappe.db.get_value("Contact", result["contact"], "crm_company"), TEST_COMPANY)
+		self.assertEqual(
+			frappe.db.get_value("FCRM Note", {"reference_docname": deal.name}, "crm_company"), TEST_COMPANY
+		)
+		# "Never leave a web pipeline unowned" — falls back to CRM Company.owner_user,
+		# and the owner is assigned so org_hierarchy shows it to them.
+		self.assertEqual(deal.deal_owner, OWNER_USER)
+		self.assertIn(OWNER_USER, json.loads(deal._assign or "[]"))
+
+	def test_key_default_owner_beats_company_owner(self):
+		frappe.db.set_value("CRM Web Lead Key", "_Test Website Key", "default_lead_owner", RULE_USER)
+		frappe.clear_cache(doctype="CRM Web Lead Key")
+		frappe.db.commit()
+		try:
+			result, _ = self.post(self.consultation_payload())
+			self.assertEqual(frappe.db.get_value("CRM Deal", result["pipeline"], "deal_owner"), RULE_USER)
+		finally:
+			frappe.db.set_value("CRM Web Lead Key", "_Test Website Key", "default_lead_owner", None)
+			frappe.clear_cache(doctype="CRM Web Lead Key")
+			frappe.db.commit()
+
+	def test_assignment_rule_picks_the_owner(self):
+		"""An assignment rule on CRM Deal wins over the key's fallback owner.
+
+		The pipeline is inserted without an owner precisely so the rule can fire —
+		a rule only assigns a document that has no assignment yet.
+		"""
+		rule = frappe.get_doc(
+			{
+				"doctype": "Assignment Rule",
+				"name": RULE_NAME,
+				"document_type": "CRM Deal",
+				"description": "Test: website pipelines for the test company",
+				"assign_condition": f'crm_company == "{TEST_COMPANY}"',
+				"rule": "Round Robin",
+				"priority": 99,
+				"users": [{"user": RULE_USER}],
+				"assignment_days": [
+					{"day": d}
+					for d in ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+				],
+			}
+		)
+		rule.insert(ignore_permissions=True)
+		frappe.db.commit()
+		try:
+			result, status = self.post(self.consultation_payload())
+			self.assertEqual(status, 200)
+			deal = frappe.get_doc("CRM Deal", result["pipeline"])
+			self.assertEqual(deal.deal_owner, RULE_USER)
+			self.assertEqual(json.loads(deal._assign or "[]"), [RULE_USER])
+		finally:
+			frappe.delete_doc("Assignment Rule", rule.name, force=True, ignore_permissions=True)
+			frappe.db.commit()
+
+	def test_pipeline_is_visible_to_its_owner_under_strict_tenancy(self):
+		"""The owner can see it; a user of another company cannot."""
+		result, _ = self.post(self.consultation_payload())
+		deal = result["pipeline"]
+
+		strict_before = frappe.db.get_single_value("FCRM Settings", "tenancy_strict")
+		frappe.db.set_single_value("FCRM Settings", "tenancy_strict", 1)
+		frappe.db.commit()
+		try:
+			for user, should_see in ((OWNER_USER, True), (OUTSIDER_USER, False)):
+				with self.subTest(user=user):
+					frappe.set_user(user)
+					# get_user_company/is_strict cache per request; start fresh per user.
+					getattr(frappe.local, "request_cache", {}).clear()
+					visible = frappe.get_list("CRM Deal", filters={"name": deal}, pluck="name")
+					self.assertEqual(bool(visible), should_see)
+					self.assertEqual(frappe.has_permission("CRM Deal", "read", deal, user=user), should_see)
+		finally:
+			frappe.set_user("Administrator")
+			frappe.db.set_single_value("FCRM Settings", "tenancy_strict", strict_before or 0)
+			frappe.db.commit()
+			getattr(frappe.local, "request_cache", {}).clear()
 
 	def test_form_encoded_and_nested_payloads_both_work(self):
 		"""A caller may post flat fields or {"data": {...}}."""
-		import json as _json
-
 		result, status = self.post(
 			{
-				"data": _json.dumps(
+				"data": json.dumps(
 					self.consultation_payload(email="nested@example.com", mobile_no="9876500099")
 				)
 			}
 		)
 		self.assertEqual(status, 200)
-		self.assertEqual(frappe.db.get_value("CRM Lead", result["lead"], "email"), "nested@example.com")
+		self.assertEqual(frappe.db.get_value("CRM Deal", result["pipeline"], "email"), "nested@example.com")
+
+	def test_forecasting_does_not_reject_website_pipelines(self):
+		"""Forecasting makes value and close date mandatory; an inquiry has neither."""
+		before = frappe.db.get_single_value("FCRM Settings", "enable_forecasting")
+		frappe.db.set_single_value("FCRM Settings", "enable_forecasting", 1)
+		frappe.db.commit()
+		try:
+			result, status = self.post(self.consultation_payload())
+			self.assertEqual(status, 200)
+			self.assertTrue(frappe.db.exists("CRM Deal", result["pipeline"]))
+		finally:
+			frappe.db.set_single_value("FCRM Settings", "enable_forecasting", before or 0)
+			frappe.db.commit()
 
 	# -- validation -------------------------------------------------------
 
@@ -278,8 +494,22 @@ class TestWebLead(FrappeTestCase):
 		self.assertIn("Email", result["message"])
 
 	def test_email_is_optional(self):
-		_result, status = self.post(self.consultation_payload(email=""))
+		result, status = self.post(self.consultation_payload(email=""))
 		self.assertEqual(status, 200)
+		self.assertFalse(frappe.db.get_value("Contact", result["contact"], "email_id"))
+
+	def test_rejections_create_nothing(self):
+		self.post(self.consultation_payload(mobile_no="nope"))
+		self.assertEqual(self.deal_count(), 0)
+		self.assertEqual(frappe.db.count("Contact", {"crm_company": TEST_COMPANY}), 0)
+
+	def test_error_response_shape(self):
+		result, status = self.post(self.consultation_payload(mobile_no="nope"))
+		self.assertEqual(status, 400)
+		self.assertEqual(result["pipeline"], None)
+		self.assertEqual(result["contact"], None)
+		self.assertFalse(result["duplicate"])
+		self.assertEqual(result["code"], "invalid_mobile")
 
 	def test_failed_submission_is_logged_for_retry(self):
 		self.post(self.consultation_payload(mobile_no="nope"))
@@ -293,6 +523,17 @@ class TestWebLead(FrappeTestCase):
 		self.assertTrue(log, "a rejected submission must still be logged")
 		# The raw payload is kept so the inquiry can be re-entered by hand.
 		self.assertIn("nope", log[0].payload)
+
+	def test_log_links_the_pipeline(self):
+		result, _ = self.post(self.consultation_payload())
+		log = frappe.get_all(
+			"CRM Web Lead Log",
+			filters={"crm_company": TEST_COMPANY, "result": "success"},
+			fields=["deal", "lead"],
+		)
+		self.assertEqual(len(log), 1)
+		self.assertEqual(log[0].deal, result["pipeline"])
+		self.assertFalse(log[0].lead)
 
 	# -- mobile normalisation ---------------------------------------------
 
@@ -312,24 +553,90 @@ class TestWebLead(FrappeTestCase):
 			with self.subTest(raw=raw):
 				self.assertEqual(normalize_mobile(raw), expected)
 
+	# -- contact matching -------------------------------------------------
+
+	def test_existing_contact_is_reused_by_mobile(self):
+		"""A contact typed in by hand, number in a different shape, is still them."""
+		existing = frappe.get_doc(
+			{
+				"doctype": "Contact",
+				"first_name": "Arun",
+				"crm_company": TEST_COMPANY,
+				"phone_nos": [{"phone": "98765 43210", "is_primary_mobile_no": 1}],
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.commit()
+
+		result, status = self.post(self.consultation_payload(email="new.address@example.com"))
+		self.assertEqual(status, 200)
+		self.assertEqual(result["contact"], existing.name)
+		self.assertFalse(result["duplicate"], "a contact with no open pipeline gets a new one")
+		# A missing email is filled in; nothing is overwritten.
+		self.assertEqual(frappe.db.get_value("Contact", existing.name, "email_id"), "new.address@example.com")
+
+	def test_existing_contact_is_reused_by_email(self):
+		existing = frappe.get_doc(
+			{
+				"doctype": "Contact",
+				"first_name": "Arun",
+				"crm_company": TEST_COMPANY,
+				"email_ids": [{"email_id": "ARUN.KUMAR@example.com", "is_primary": 1}],
+				"phone_nos": [{"phone": "+919000000001", "is_primary_mobile_no": 1}],
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.commit()
+
+		result, _ = self.post(self.consultation_payload())
+		self.assertEqual(result["contact"], existing.name)
+		# Their existing number is kept, not replaced.
+		self.assertEqual(frappe.db.get_value("Contact", existing.name, "mobile_no"), "+919000000001")
+
+	def test_contact_matching_is_scoped_to_the_tenant(self):
+		"""Another company's contact with the same details is NOT this person."""
+		other = frappe.get_doc(
+			{
+				"doctype": "Contact",
+				"first_name": "Arun",
+				"crm_company": OTHER_COMPANY,
+				"email_ids": [{"email_id": "arun.kumar@example.com", "is_primary": 1}],
+				"phone_nos": [{"phone": "+919876543210", "is_primary_mobile_no": 1}],
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.commit()
+
+		result, status = self.post(self.consultation_payload())
+		self.assertEqual(status, 200)
+		self.assertNotEqual(result["contact"], other.name)
+		self.assertEqual(frappe.db.get_value("Contact", result["contact"], "crm_company"), TEST_COMPANY)
+
 	# -- dedup ------------------------------------------------------------
 
-	def test_duplicate_by_email(self):
+	def test_open_pipeline_by_email_is_a_duplicate(self):
 		first, _ = self.post(self.consultation_payload())
 		second, status = self.post(self.consultation_payload(mobile_no="9876500002"))
 
 		self.assertEqual(status, 200)
 		self.assertTrue(second["duplicate"])
-		self.assertEqual(second["lead"], first["lead"])
-		self.assertEqual(frappe.db.count("CRM Lead", {"crm_company": TEST_COMPANY}), 1)
+		self.assertEqual(second["pipeline"], first["pipeline"])
+		self.assertEqual(second["contact"], first["contact"])
+		self.assertEqual(self.deal_count(), 1)
 
-	def test_duplicate_by_mobile(self):
+	def test_open_pipeline_by_mobile_is_a_duplicate(self):
 		first, _ = self.post(self.consultation_payload())
 		second, status = self.post(self.consultation_payload(email="different@example.com"))
 
 		self.assertEqual(status, 200)
 		self.assertTrue(second["duplicate"])
-		self.assertEqual(second["lead"], first["lead"])
+		self.assertEqual(second["pipeline"], first["pipeline"])
+
+	def test_ongoing_pipeline_still_counts_as_open(self):
+		first, _ = self.post(self.consultation_payload())
+		self.close_deal(first["pipeline"], status="Negotiation")
+		self._age_submission_log()
+
+		second, _ = self.post(self.consultation_payload())
+		self.assertTrue(second["duplicate"])
+		self.assertEqual(second["pipeline"], first["pipeline"])
 
 	def test_same_person_submits_both_forms(self):
 		"""The case this dedup rule exists for."""
@@ -337,62 +644,50 @@ class TestWebLead(FrappeTestCase):
 		second, _ = self.post(self.evaluation_payload(email="arun.kumar@example.com", mobile_no="9876543210"))
 
 		self.assertTrue(second["duplicate"])
-		self.assertEqual(second["lead"], first["lead"])
-		self.assertEqual(frappe.db.count("CRM Lead", {"crm_company": TEST_COMPANY}), 1)
+		self.assertEqual(second["pipeline"], first["pipeline"])
+		self.assertEqual(self.deal_count(), 1)
 
 		# The second form's answers must not be lost — they go on as a note.
-		notes = frappe.get_all(
-			"FCRM Note",
-			filters={"reference_doctype": "CRM Lead", "reference_docname": first["lead"]},
-			fields=["title", "content"],
-		)
-		self.assertTrue(notes)
-		self.assertIn("Masters", notes[0].content)
+		self.assertTrue(any("Masters" in n for n in self.notes_on(first["pipeline"])))
 
-	def _age_submission_log(self, minutes=None):
-		"""Push the log rows out of the retry window.
+	def test_closed_pipeline_starts_a_new_one(self):
+		for status in ("Won", "Lost"):
+			with self.subTest(closed_as=status):
+				_purge_tenant_records()
+				frappe.db.commit()
+				first, _ = self.post(self.consultation_payload())
+				self.close_deal(first["pipeline"], status=status)
+				# A real later re-inquiry, not a transport retry — see
+				# test_retry_wins_over_the_closed_rule for the other side of this.
+				self._age_submission_log()
 
-		Needed wherever a test posts the same payload twice but means them as two
-		separate inquiries rather than one retry.
-		"""
-		frappe.db.sql(
-			"""update `tabCRM Web Lead Log`
-			   set creation = date_sub(creation, interval %s minute)
-			   where submission_hash is not null""",
-			(minutes or web_lead.RETRY_WINDOW_MINUTES + 5,),
-		)
-		frappe.db.commit()
+				second, code = self.post(self.consultation_payload())
 
-	def test_converted_lead_does_not_block_a_new_one(self):
-		first, _ = self.post(self.consultation_payload())
-		frappe.db.set_value("CRM Lead", first["lead"], "converted", 1)
-		frappe.db.commit()
-		# A real later re-inquiry, not a transport retry — see
-		# test_retry_wins_over_the_converted_rule for the other side of this.
-		self._age_submission_log()
-
-		second, status = self.post(self.consultation_payload())
-
-		self.assertEqual(status, 200)
-		self.assertFalse(second["duplicate"])
-		self.assertNotEqual(second["lead"], first["lead"])
-		# ...and the new lead points back at the old one.
-		notes = frappe.get_all(
-			"FCRM Note",
-			filters={"reference_doctype": "CRM Lead", "reference_docname": second["lead"]},
-			pluck="content",
-		)
-		self.assertTrue(any(first["lead"] in n for n in notes))
+				self.assertEqual(code, 200)
+				self.assertFalse(second["duplicate"])
+				self.assertNotEqual(second["pipeline"], first["pipeline"])
+				# Same person, so the same contact...
+				self.assertEqual(second["contact"], first["contact"])
+				self.assertEqual(self.deal_count(), 2)
+				# ...and the new pipeline points back at the old one.
+				self.assertTrue(any(first["pipeline"] in n for n in self.notes_on(second["pipeline"])))
 
 	def test_dedup_is_scoped_to_the_tenant(self):
-		"""A different company's lead with the same email is NOT a duplicate."""
-		other = frappe.get_doc(
+		"""Another company's open pipeline for the same person is not a duplicate."""
+		other_contact = frappe.get_doc(
 			{
-				"doctype": "CRM Lead",
+				"doctype": "Contact",
 				"first_name": "Arun",
-				"email": "arun.kumar@example.com",
-				"mobile_no": "+919876543210",
 				"crm_company": OTHER_COMPANY,
+				"email_ids": [{"email_id": "arun.kumar@example.com", "is_primary": 1}],
+				"phone_nos": [{"phone": "+919876543210", "is_primary_mobile_no": 1}],
+			}
+		).insert(ignore_permissions=True)
+		other_deal = frappe.get_doc(
+			{
+				"doctype": "CRM Deal",
+				"crm_company": OTHER_COMPANY,
+				"contacts": [{"contact": other_contact.name, "is_primary": 1}],
 			}
 		).insert(ignore_permissions=True)
 		frappe.db.commit()
@@ -401,7 +696,7 @@ class TestWebLead(FrappeTestCase):
 
 		self.assertEqual(status, 200)
 		self.assertFalse(result["duplicate"])
-		self.assertNotEqual(result["lead"], other.name)
+		self.assertNotEqual(result["pipeline"], other_deal.name)
 
 	# -- auth -------------------------------------------------------------
 
@@ -409,7 +704,7 @@ class TestWebLead(FrappeTestCase):
 		result, status = self.post(self.consultation_payload(), api_key="wrong-key")
 		self.assertEqual(status, 401)
 		self.assertFalse(result["success"])
-		self.assertEqual(frappe.db.count("CRM Lead", {"crm_company": TEST_COMPANY}), 0)
+		self.assertEqual(self.deal_count(), 0)
 
 	def test_missing_api_key_is_401(self):
 		_result, status = self.post(self.consultation_payload(), api_key=None)
@@ -433,6 +728,14 @@ class TestWebLead(FrappeTestCase):
 		for p in payloads:
 			self.assertNotIn(TEST_KEY, p or "")
 
+	def test_old_method_path_still_routes_here(self):
+		"""Websites configured before the app rename POST to crm.api.web_lead…"""
+		overrides = frappe.get_hooks("override_whitelisted_methods") or {}
+		self.assertEqual(
+			(overrides.get("crm.api.web_lead.capture_inquiry") or [None])[-1],
+			"xbr_crm.api.web_lead.capture_inquiry",
+		)
+
 	# -- IP allowlist -----------------------------------------------------
 
 	def _set_allowlist(self, value):
@@ -448,7 +751,7 @@ class TestWebLead(FrappeTestCase):
 			result, status = self.post(self.consultation_payload(), ip="203.0.113.10")
 			self.assertEqual(status, 403)
 			self.assertFalse(result["success"])
-			self.assertEqual(frappe.db.count("CRM Lead", {"crm_company": TEST_COMPANY}), 0)
+			self.assertEqual(self.deal_count(), 0)
 		finally:
 			self._set_allowlist("")
 
@@ -474,19 +777,19 @@ class TestWebLead(FrappeTestCase):
 
 	# -- field mapping safety ---------------------------------------------
 
-	def test_payload_cannot_set_arbitrary_lead_fields(self):
-		"""Only FIELD_MAP keys are written — not status, converted or crm_company."""
+	def test_payload_cannot_set_arbitrary_pipeline_fields(self):
+		"""Only mapped keys are written — not status, owner or crm_company."""
 		result, status = self.post(
 			self.consultation_payload(
-				status="Qualified", converted=1, crm_company=OTHER_COMPANY, lead_owner="Administrator"
+				status="Won", crm_company=OTHER_COMPANY, deal_owner="Administrator", probability=99
 			)
 		)
 		self.assertEqual(status, 200)
-		lead = frappe.get_doc("CRM Lead", result["lead"])
-		self.assertEqual(lead.status, "New")
-		self.assertFalse(lead.converted)
-		self.assertEqual(lead.crm_company, TEST_COMPANY)
-		self.assertEqual(lead.lead_owner, OWNER_USER)
+		deal = frappe.get_doc("CRM Deal", result["pipeline"])
+		self.assertEqual(deal.status, "Qualification")
+		self.assertEqual(deal.crm_company, TEST_COMPANY)
+		self.assertEqual(deal.deal_owner, OWNER_USER)
+		self.assertNotEqual(deal.probability, 99)
 
 	# -- key lifecycle ----------------------------------------------------
 
@@ -591,22 +894,22 @@ class TestWebLead(FrappeTestCase):
 		"""An unmapped Zapier field arrives as "" rather than being absent."""
 		result, status = self.post(self.consultation_payload(last_name="", email="", city="", utm_source=""))
 		self.assertEqual(status, 200)
-		lead = frappe.get_doc("CRM Lead", result["lead"])
-		self.assertFalse(lead.last_name)
-		self.assertFalse(lead.email)
-		self.assertFalse(lead.custom_city)
+		deal = frappe.get_doc("CRM Deal", result["pipeline"])
+		self.assertFalse(deal.last_name)
+		self.assertFalse(deal.email)
+		self.assertFalse(deal.custom_city)
 
 	def test_blank_words_are_treated_as_missing(self):
 		"""A Zap that stringifies an absent value sends the word, not "".
 
-		Storing the literal text "null" in a lead's city is worse than storing
+		Storing the literal text "null" in a pipeline's city is worse than storing
 		nothing, and it would also defeat the email/mobile validation below.
 		"""
 		result, status = self.post(self.consultation_payload(city="null", email="undefined"))
 		self.assertEqual(status, 200, "a blank-word email must not fail validation")
-		lead = frappe.get_doc("CRM Lead", result["lead"])
-		self.assertFalse(lead.custom_city)
-		self.assertFalse(lead.email)
+		deal = frappe.get_doc("CRM Deal", result["pipeline"])
+		self.assertFalse(deal.custom_city)
+		self.assertFalse(deal.email)
 
 	def test_whitespace_only_required_field_is_rejected(self):
 		_result, status = self.post(self.consultation_payload(first_name="   "))
@@ -629,29 +932,23 @@ class TestWebLead(FrappeTestCase):
 
 	# -- retries ----------------------------------------------------------
 
-	def test_retry_replays_the_original_lead_without_a_second_note(self):
+	def test_retry_replays_the_original_pipeline_without_a_second_note(self):
 		"""Zapier re-POSTs after a timeout. The second call must be inert."""
 		payload = self.consultation_payload()
 		first, _ = self.post(payload)
-
-		def note_count():
-			return frappe.db.count(
-				"FCRM Note",
-				{"reference_doctype": "CRM Lead", "reference_docname": first["lead"]},
-			)
-
-		notes_before = note_count()
+		notes_before = len(self.notes_on(first["pipeline"]))
 
 		second, status = self.post(payload)
 		third, _ = self.post(payload)
 
 		self.assertEqual(status, 200)
 		self.assertTrue(second["duplicate"])
-		self.assertEqual(second["lead"], first["lead"])
-		self.assertEqual(third["lead"], first["lead"])
+		self.assertEqual(second["pipeline"], first["pipeline"])
+		self.assertEqual(second["contact"], first["contact"])
+		self.assertEqual(third["pipeline"], first["pipeline"])
 		# The whole point: a retry adds nothing.
-		self.assertEqual(note_count(), notes_before, "a retry must not add another note")
-		self.assertEqual(frappe.db.count("CRM Lead", {"crm_company": TEST_COMPANY}), 1)
+		self.assertEqual(len(self.notes_on(first["pipeline"])), notes_before, "a retry must not add a note")
+		self.assertEqual(self.deal_count(), 1)
 
 	def test_a_different_form_is_not_a_retry(self):
 		"""The same person on a second form still gets their answers recorded.
@@ -661,54 +958,43 @@ class TestWebLead(FrappeTestCase):
 		"""
 		consult = self.consultation_payload()
 		first, _ = self.post(consult)
+		notes_before = len(self.notes_on(first["pipeline"]))
 
-		evaluation = self.evaluation_payload(email=consult["email"], mobile_no=consult["mobile_no"])
-		second, _ = self.post(evaluation)
+		second, _ = self.post(self.evaluation_payload(email=consult["email"], mobile_no=consult["mobile_no"]))
 
 		self.assertTrue(second["duplicate"])
-		self.assertEqual(second["lead"], first["lead"])
-		notes = frappe.get_all(
-			"FCRM Note",
-			filters={"reference_doctype": "CRM Lead", "reference_docname": first["lead"]},
-			pluck="content",
-		)
-		self.assertTrue(any("Masters" in n for n in notes), "the second form's answers must be kept")
+		self.assertEqual(second["pipeline"], first["pipeline"])
+		self.assertEqual(len(self.notes_on(first["pipeline"])), notes_before + 1)
 
-	def test_retry_wins_over_the_converted_rule(self):
+	def test_retry_wins_over_the_closed_rule(self):
 		"""The one case where the two rules disagree — pinned deliberately.
 
-		A converted match normally means "create a new lead". A retry means "we
+		A closed pipeline normally means "create a new one". A retry means "we
 		already answered this". Inside the window the retry wins, because the
-		alternative is a fresh duplicate lead for every Zapier retry.
+		alternative is a fresh pipeline for every Zapier retry.
 		"""
 		payload = self.consultation_payload()
 		first, _ = self.post(payload)
-		frappe.db.set_value("CRM Lead", first["lead"], "converted", 1)
-		frappe.db.commit()
+		self.close_deal(first["pipeline"])
 
 		second, status = self.post(payload)
 
 		self.assertEqual(status, 200)
 		self.assertTrue(second["duplicate"])
-		self.assertEqual(second["lead"], first["lead"], "a retry must not mint a second lead")
-		self.assertEqual(frappe.db.count("CRM Lead", {"crm_company": TEST_COMPANY}), 1)
+		self.assertEqual(second["pipeline"], first["pipeline"], "a retry must not mint a second pipeline")
+		self.assertEqual(self.deal_count(), 1)
 
 	def test_retry_outside_the_window_is_a_fresh_inquiry(self):
 		payload = self.consultation_payload()
 		first, _ = self.post(payload)
 		self._age_submission_log()
+		before = len(self.notes_on(first["pipeline"]))
 
-		before = frappe.db.count(
-			"FCRM Note", {"reference_doctype": "CRM Lead", "reference_docname": first["lead"]}
-		)
 		second, _ = self.post(payload)
 
 		self.assertTrue(second["duplicate"])
-		self.assertEqual(second["lead"], first["lead"])
-		after = frappe.db.count(
-			"FCRM Note", {"reference_doctype": "CRM Lead", "reference_docname": first["lead"]}
-		)
-		self.assertEqual(after, before + 1, "outside the window it is a real re-inquiry")
+		self.assertEqual(second["pipeline"], first["pipeline"])
+		self.assertEqual(len(self.notes_on(first["pipeline"])), before + 1, "outside the window it is real")
 
 	def test_retry_after_a_rejection_is_allowed_to_fail_again(self):
 		"""A 400 must not be replayed as a success."""
@@ -737,8 +1023,11 @@ class TestWebLead(FrappeTestCase):
 
 			self.assertEqual(status, 200)
 			self.assertFalse(second["duplicate"], "a different tenant is not a retry")
-			self.assertNotEqual(second["lead"], first["lead"])
-			self.assertEqual(frappe.db.get_value("CRM Lead", second["lead"], "crm_company"), OTHER_COMPANY)
+			self.assertNotEqual(second["pipeline"], first["pipeline"])
+			self.assertNotEqual(second["contact"], first["contact"])
+			self.assertEqual(
+				frappe.db.get_value("CRM Deal", second["pipeline"], "crm_company"), OTHER_COMPANY
+			)
 		finally:
 			frappe.delete_doc("CRM Web Lead Key", other_key.name, force=True, ignore_permissions=True)
 			frappe.db.commit()
@@ -750,7 +1039,7 @@ class TestWebLead(FrappeTestCase):
 
 		Uses an invalid payload so the 31 calls stay cheap — the limiter runs in the
 		decorator, before any validation, so a rejected body exercises it just as
-		well as a valid one and creates no leads.
+		well as a valid one and creates no pipelines.
 		"""
 		bad = self.consultation_payload(mobile_no="nope")
 		for _ in range(30):
@@ -770,9 +1059,9 @@ class TestWebLead(FrappeTestCase):
 		self.assertEqual(status, 200)
 
 	def test_unknown_form_type_is_accepted(self):
-		"""A new form on the website must not start dropping leads."""
+		"""A new form on the website must not start dropping inquiries."""
 		result, status = self.post(self.consultation_payload(form_type="brochure_download"))
 		self.assertEqual(status, 200)
 		self.assertEqual(
-			frappe.db.get_value("CRM Lead", result["lead"], "custom_form_type"), "brochure_download"
+			frappe.db.get_value("CRM Deal", result["pipeline"], "custom_form_type"), "brochure_download"
 		)

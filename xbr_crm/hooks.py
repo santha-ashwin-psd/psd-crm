@@ -341,7 +341,13 @@ before_tests = "xbr_crm.tests.before_tests"
 # override_whitelisted_methods = {
 # "frappe.desk.doctype.event.event.get_events": "crm.event.get_events"
 # }
-#
+
+# The app was renamed from `crm` to `xbr_crm`. Websites and Zaps configured before
+# the rename still POST to the old method path, so keep it answering.
+override_whitelisted_methods = {
+	"crm.api.web_lead.capture_inquiry": "xbr_crm.api.web_lead.capture_inquiry",
+}
+
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps

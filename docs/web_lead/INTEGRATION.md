@@ -1,6 +1,8 @@
-# Website → CRM Lead Capture
+# Website → CRM Pipeline Capture
 
-How to post an inquiry form from **ieagents.co.in** into the CRM so it becomes a Lead.
+How to post an inquiry form from **ieagents.co.in** into the CRM so it becomes a
+**Pipeline** — the CRM's record of a sales opportunity — linked to the person as a
+**Contact**.
 
 This document is for the website developer. Everything the CRM side needs is already
 in place — you only need to make one HTTPS call.
@@ -35,14 +37,15 @@ for CORS to be enabled.
 
 | | |
 |---|---|
-| **URL** | `https://crm.psdigitise.com/api/method/xbr_crm.api.web_lead.capture_inquiry` |
+| **URL** | `https://crm.ieagents.co.in/api/method/xbr_crm.api.web_lead.capture_inquiry` |
+| **Old URL** | `…/api/method/crm.api.web_lead.capture_inquiry` still works (same behaviour) for callers set up before the CRM was renamed. Use the URL above for anything new. |
 | **Method** | `POST` |
 | **Header** | `X-Lead-Api-Key: <the key you were given>` |
 | **Body** | JSON (`Content-Type: application/json`) or form-encoded |
 | **Rate limit** | 30 requests per minute, per source IP |
 
 The key will be issued to you separately. It identifies *which company's CRM* the
-lead belongs to, so it is specific to ieagents.co.in — do not reuse it elsewhere.
+inquiry belongs to, so it is specific to ieagents.co.in — do not reuse it elsewhere.
 
 ### Optional IP lock
 
@@ -75,8 +78,23 @@ what the form collected and omit the rest.
 Names are title-cased, emails lower-cased and mobiles normalised to `+91XXXXXXXXXX`
 on our side — send them as typed.
 
-Any field not in this table is ignored. You cannot set the lead's status, owner or
-company from the payload.
+Any field not in this table is ignored. You cannot set the pipeline's status, owner
+or company from the payload.
+
+### What the CRM does with an inquiry
+
+1. **Finds the person.** It looks for a Contact in your company with the same
+   mobile number (compared after normalising, so `98765 43210` and `+919876543210`
+   match), or failing that the same email. If there is none, it creates one.
+2. **Checks for an open pipeline.** If that contact already has a pipeline that is
+   still being worked (any stage before *Won* or *Lost*), no new pipeline is created:
+   the new answers are added to it as a note, and the response says
+   `duplicate: true`.
+3. **Otherwise creates a pipeline** at the first stage (*Qualification*), source
+   *Website*, with every field you sent, the submitted answers as a note, and an
+   owner from the CRM's assignment rules (or the default owner for your key). If the
+   person's earlier pipelines are all closed, the new one gets a note pointing to the
+   most recent.
 
 ---
 
@@ -134,32 +152,41 @@ company from the payload.
 The body is always wrapped by the framework in a `message` object:
 
 ```json
-{ "message": { "success": true, "lead": "CRM-LEAD-2026-00123", "duplicate": false, "message": "Lead created." } }
+{ "message": { "success": true, "pipeline": "PIPE-2026-00123", "contact": "Arun Kumar", "duplicate": false, "message": "Pipeline created." } }
 ```
 
-Read `response.message`, not the top level.
+Read `response.message`, not the top level. Inside it:
 
-### Lead created — `200`
+| Key | Meaning |
+|---|---|
+| `success` | `true` for a new pipeline **and** for a duplicate |
+| `pipeline` | ID of the pipeline created, or of the open pipeline the inquiry was added to |
+| `contact` | ID of the Contact for this person (found or created) |
+| `duplicate` | `true` when no new pipeline was created |
+| `message` | human-readable summary |
+| `code` | on errors only — see below |
+
+### Pipeline created — `200`
 
 ```json
-{ "success": true, "lead": "CRM-LEAD-2026-00123", "duplicate": false, "message": "Lead created." }
+{ "success": true, "pipeline": "PIPE-2026-00123", "contact": "Arun Kumar", "duplicate": false, "message": "Pipeline created." }
 ```
 
-### Already known — `200`
+### Already being worked — `200`
 
 ```json
-{ "success": true, "lead": "CRM-LEAD-2026-00098", "duplicate": true, "message": "Inquiry recorded on the existing lead." }
+{ "success": true, "pipeline": "PIPE-2026-00098", "contact": "Arun Kumar", "duplicate": true, "message": "Inquiry recorded on the existing pipeline." }
 ```
 
-If someone who already enquired submits again — including through a *different* form —
-we do not create a second lead. The new answers are attached as a note on the lead
-that already exists. **`duplicate: true` is a success, not an error.** Show the visitor
-the same thank-you message.
+If someone with an open pipeline submits again — including through a *different*
+form — we do not create a second pipeline. The new answers are attached as a note on
+the pipeline that already exists. **`duplicate: true` is a success, not an error.**
+Show the visitor the same thank-you message.
 
 The same response covers a **retry**: if you re-send an identical submission (same
-key + `form_type` + email/mobile) within **10 minutes**, you get the original lead
-back and nothing is changed — not even an extra note. So a timeout on your side is
-safe to retry blindly.
+key + `form_type` + email/mobile) within **10 minutes**, you get the original
+pipeline back and nothing is changed — not even an extra note. So a timeout on your
+side is safe to retry blindly.
 
 ### Errors
 
@@ -177,7 +204,7 @@ Error bodies carry a stable `code` alongside the human `message`. Branch on `cod
 | `500` | `internal_error` | `Could not process the inquiry...` | Our side. The raw payload **is** saved and can be recovered — tell us. |
 
 ```json
-{ "message": { "success": false, "lead": null, "duplicate": false, "message": "Email address is not valid", "code": "invalid_email" } }
+{ "message": { "success": false, "pipeline": null, "contact": null, "duplicate": false, "message": "Email address is not valid", "code": "invalid_email" } }
 ```
 
 **Never drop a submission because our endpoint failed.** Store it on your side and
@@ -198,9 +225,9 @@ Both assume you have **already validated your image captcha** before this point.
  * Forward a validated inquiry to the CRM.
  * Returns [httpStatus, decodedBody].
  */
-function sendLeadToCrm(array $fields): array
+function sendInquiryToCrm(array $fields): array
 {
-    $endpoint = 'https://crm.psdigitise.com/api/method/xbr_crm.api.web_lead.capture_inquiry';
+    $endpoint = 'https://crm.ieagents.co.in/api/method/xbr_crm.api.web_lead.capture_inquiry';
     // Keep the key in an env var or config file OUTSIDE the web root.
     $apiKey = getenv('CRM_LEAD_API_KEY');
 
@@ -223,7 +250,7 @@ function sendLeadToCrm(array $fields): array
 
     if ($raw === false) {
         // Network failure: the CRM never saw this. Persist it and retry later.
-        error_log('CRM lead post failed: ' . $err);
+        error_log('CRM inquiry post failed: ' . $err);
         return [0, null];
     }
 
@@ -232,7 +259,7 @@ function sendLeadToCrm(array $fields): array
 }
 
 // --- usage, after your captcha check passes ---
-[$status, $result] = sendLeadToCrm([
+[$status, $result] = sendInquiryToCrm([
     'form_type'  => 'consultation',
     'first_name' => $_POST['first_name'],
     'last_name'  => $_POST['last_name'] ?? '',
@@ -243,10 +270,10 @@ function sendLeadToCrm(array $fields): array
 ]);
 
 if ($status === 200 && !empty($result['success'])) {
-    // Covers both a new lead and a duplicate — both are a success for the visitor.
+    // Covers both a new pipeline and a duplicate — both are a success for the visitor.
     echo json_encode(['ok' => true, 'message' => 'Thank you, we will call you shortly.']);
 } else {
-    error_log('CRM rejected lead: ' . $status . ' ' . json_encode($result));
+    error_log('CRM rejected inquiry: ' . $status . ' ' . json_encode($result));
     echo json_encode(['ok' => false, 'message' => 'Something went wrong. Please call us.']);
 }
 ```
@@ -259,10 +286,10 @@ const express = require('express')
 const app = express()
 app.use(express.json())
 
-const CRM_ENDPOINT = 'https://crm.psdigitise.com/api/method/xbr_crm.api.web_lead.capture_inquiry'
+const CRM_ENDPOINT = 'https://crm.ieagents.co.in/api/method/xbr_crm.api.web_lead.capture_inquiry'
 const CRM_API_KEY = process.env.CRM_LEAD_API_KEY // never hardcode
 
-async function sendLeadToCrm(fields) {
+async function sendInquiryToCrm(fields) {
   const res = await fetch(CRM_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -302,12 +329,12 @@ app.post('/api/inquiry', async (req, res) => {
   }
 
   try {
-    const { status, body } = await sendLeadToCrm(fields)
+    const { status, body } = await sendInquiryToCrm(fields)
     if (status === 200 && body.success) {
       // body.duplicate === true is still a success for the visitor
       return res.json({ ok: true, message: 'Thank you, we will call you shortly.' })
     }
-    console.error('CRM rejected lead', status, body)
+    console.error('CRM rejected inquiry', status, body)
     return res.status(502).json({ ok: false, message: 'Something went wrong. Please call us.' })
   } catch (err) {
     // Timeout or network error: the CRM may never have seen this. Queue and retry.
@@ -336,7 +363,7 @@ code — a two-step Zap does the whole job.
 
 | Field | Value |
 |---|---|
-| **URL** | `https://crm.psdigitise.com/api/method/xbr_crm.api.web_lead.capture_inquiry` |
+| **URL** | `https://crm.ieagents.co.in/api/method/xbr_crm.api.web_lead.capture_inquiry` |
 | **Payload Type** | `Json` |
 | **Wrap Request In Array** | **No** |
 | **Unflatten** | **No** |
@@ -390,8 +417,8 @@ Leave Basic Auth empty — the header is the whole authentication.
   timestamps. Anything we do not recognise is ignored, not rejected.
 - **Retries.** Zapier re-sends a POST that timed out. An identical submission
   (same key + form type + email/mobile) within **10 minutes** returns the original
-  lead with `duplicate: true` and changes nothing — no second lead, and no second
-  note on the existing one. You do not need a dedupe step in the Zap.
+  pipeline with `duplicate: true` and changes nothing — no second pipeline, and no
+  second note on the existing one. You do not need a dedupe step in the Zap.
 - **Form encoding.** `Form` payload type works too if you prefer it to `Json`.
 
 ### Reading the result in Zap history
@@ -399,10 +426,14 @@ Leave Basic Auth empty — the header is the whole authentication.
 A successful task shows:
 
 ```json
-{ "message": { "success": true, "lead": "CRM-LEAD-2026-00123", "duplicate": false, "message": "Lead created." } }
+{ "message": { "success": true, "pipeline": "PIPE-2026-00123", "contact": "Arun Kumar", "duplicate": false, "message": "Pipeline created." } }
 ```
 
-`duplicate: true` is **also** a success — that person had already enquired.
+`duplicate: true` is **also** a success — that person already has an open pipeline.
+
+Any later Zap step that needs the CRM record should map **`message__pipeline`**
+(the pipeline ID) and, if useful, **`message__contact`**. The response has no `lead`
+field — a Zap built against the old lead response must be re-mapped to `pipeline`.
 
 A failed task shows a `code` you can branch on with a Zapier **Filter** or route to
 an alert:
@@ -422,21 +453,22 @@ not write Zap filters against it.
 ### If a Zap fails
 
 Zapier keeps the task and lets you **Replay** it. Replaying inside the 10-minute
-window is safe — it returns the original lead rather than creating another. Beyond
-that window a replay is treated as a genuine new inquiry, which for an already-known
-person means a note on their existing lead, still not a duplicate.
+window is safe — it returns the original pipeline rather than creating another.
+Beyond that window a replay is treated as a genuine new inquiry, which for a person
+with an open pipeline means a note on it, still not a second pipeline.
 
 ---
 
 ## 8. Quick test with curl
 
-The examples below use `localhost:8001` so they work on a dev bench. For the live
-server swap in `https://crm.psdigitise.com`. Replace the key either way.
+The examples below use `localhost:8002` so they work on the dev bench. For the live
+server swap in `https://crm.ieagents.co.in`. Replace the key either way. Each
+successful call prints a `pipeline` and a `contact` in the response.
 
 **Consultation form:**
 
 ```bash
-curl -i -X POST 'http://localhost:8001/api/method/xbr_crm.api.web_lead.capture_inquiry' \
+curl -i -X POST 'http://localhost:8002/api/method/xbr_crm.api.web_lead.capture_inquiry' \
   -H 'Content-Type: application/json' \
   -H 'X-Lead-Api-Key: YOUR_API_KEY' \
   -d '{
@@ -453,7 +485,7 @@ curl -i -X POST 'http://localhost:8001/api/method/xbr_crm.api.web_lead.capture_i
 **Evaluation form:**
 
 ```bash
-curl -i -X POST 'http://localhost:8001/api/method/xbr_crm.api.web_lead.capture_inquiry' \
+curl -i -X POST 'http://localhost:8002/api/method/xbr_crm.api.web_lead.capture_inquiry' \
   -H 'Content-Type: application/json' \
   -H 'X-Lead-Api-Key: YOUR_API_KEY' \
   -d '{
@@ -470,7 +502,7 @@ curl -i -X POST 'http://localhost:8001/api/method/xbr_crm.api.web_lead.capture_i
 **Form-encoded instead of JSON:**
 
 ```bash
-curl -i -X POST 'http://localhost:8001/api/method/xbr_crm.api.web_lead.capture_inquiry' \
+curl -i -X POST 'http://localhost:8002/api/method/xbr_crm.api.web_lead.capture_inquiry' \
   -H 'X-Lead-Api-Key: YOUR_API_KEY' \
   --data-urlencode 'form_type=contact' \
   --data-urlencode 'first_name=Rahul' \
@@ -478,10 +510,15 @@ curl -i -X POST 'http://localhost:8001/api/method/xbr_crm.api.web_lead.capture_i
   --data-urlencode 'city=Madurai'
 ```
 
+**Same person again — expect `duplicate: true` and the same `pipeline`:**
+
+Re-run the consultation example with `"form_type": "contact"`. (Re-running it
+unchanged inside 10 minutes is a *retry*, which also returns the same pipeline.)
+
 **Confirm a bad key is refused (expect `401`):**
 
 ```bash
-curl -i -X POST 'http://localhost:8001/api/method/xbr_crm.api.web_lead.capture_inquiry' \
+curl -i -X POST 'http://localhost:8002/api/method/xbr_crm.api.web_lead.capture_inquiry' \
   -H 'Content-Type: application/json' \
   -H 'X-Lead-Api-Key: wrong-key' \
   -d '{"first_name":"Test","mobile_no":"9876543210"}'
@@ -491,14 +528,25 @@ curl -i -X POST 'http://localhost:8001/api/method/xbr_crm.api.web_lead.capture_i
 
 ## 9. Browser simulator
 
-`scripts/test_inquiry_form.html` is a standalone page with all five fields that posts
-to the endpoint, for checking the CRM side before your backend is ready.
+`scripts/test_inquiry_form.html` is a standalone page that posts to the endpoint and
+shows which pipeline the inquiry created or was added to, with a link to open it in
+the CRM.
 
-Serve it over http (not `file://`) because the endpoint sends no CORS headers:
+The endpoint sends no CORS headers, so a browser page can only call it after the dev
+site is told to allow that page's origin (never do this on production):
 
 ```bash
-cd apps/crm && python3 -m http.server 8080
+bench --site xbr.local set-config allow_cors http://localhost:8080
+cd ~/projects/xbr-crm && python3 -m http.server 8080
 # then open http://localhost:8080/scripts/test_inquiry_form.html
+```
+
+`scripts/test_web_lead.py` runs the same checks from the command line and needs no
+CORS setting:
+
+```bash
+python3 scripts/test_web_lead.py --key YOUR_API_KEY                         # dev bench, port 8002
+python3 scripts/test_web_lead.py --key YOUR_API_KEY --admin-password admin  # + closed-pipeline check
 ```
 
 It asks for the API key in a form field — that is acceptable for local testing only,
@@ -516,18 +564,20 @@ and a secret is minted with `secrets.token_urlsafe(32)` on creation. It is shown
 **once**, then encrypted at rest and unreadable thereafter, including to you. If you
 lose it, rotate; there is no recovery.
 
-All commands run on the server. There is no HTTP endpoint for any of this on
-purpose: a response containing a plaintext secret ends up in browser history, proxy
-logs and the network tab.
+All commands run on the server, with `<site>` replaced by the production site's
+name. There is no HTTP endpoint for any of this on purpose: a response containing a
+plaintext secret ends up in browser history, proxy logs and the network tab.
 
 ### Create a key
 
 ```bash
-bench --site crm.psdigitise.com execute xbr_crm.api.web_lead.create_key \
+bench --site <site> execute xbr_crm.api.web_lead.create_key \
   --kwargs "{'company': 'IEA Seek International', 'label': 'ieagents.co.in website'}"
 ```
 
-Optional kwargs: `website_url`, `lead_owner` (sets `default_lead_owner`).
+Optional kwargs: `website_url`, `lead_owner` (sets the key's default owner, who
+owns new pipelines when no assignment rule picks someone; if unset, the company's
+owner does).
 
 Creates the `CRM Company` if it does not exist. Re-running with an existing label
 **refuses** rather than silently rotating — a website already posting with that key
@@ -536,14 +586,14 @@ would start failing.
 One key per caller. Give Zapier its own:
 
 ```bash
-bench --site crm.psdigitise.com execute xbr_crm.api.web_lead.create_key \
+bench --site <site> execute xbr_crm.api.web_lead.create_key \
   --kwargs "{'company': 'IEA Seek International', 'label': 'IEA Zapier'}"
 ```
 
 ### List keys
 
 ```bash
-bench --site crm.psdigitise.com execute xbr_crm.api.web_lead.list_keys
+bench --site <site> execute xbr_crm.api.web_lead.list_keys
 ```
 
 ```
@@ -556,7 +606,7 @@ IEA Zapier                        IEA Seek International      yes     any       
 ### Rotate a key
 
 ```bash
-bench --site crm.psdigitise.com execute xbr_crm.api.web_lead.rotate_key \
+bench --site <site> execute xbr_crm.api.web_lead.rotate_key \
   --kwargs "{'label': 'ieagents.co.in website'}"
 ```
 
@@ -578,10 +628,10 @@ during the gap can be recovered and re-entered.
 ### Deactivate / reactivate
 
 ```bash
-bench --site crm.psdigitise.com execute xbr_crm.api.web_lead.deactivate_key \
+bench --site <site> execute xbr_crm.api.web_lead.deactivate_key \
   --kwargs "{'label': 'ieagents.co.in website'}"
 
-bench --site crm.psdigitise.com execute xbr_crm.api.web_lead.activate_key \
+bench --site <site> execute xbr_crm.api.web_lead.activate_key \
   --kwargs "{'label': 'ieagents.co.in website'}"
 ```
 
@@ -589,7 +639,7 @@ Requests with a deactivated key get `401 invalid_api_key`. The secret is unchang
 so reactivating restores service without redistributing anything.
 
 **Prefer deactivating to deleting.** `CRM Web Lead Log` rows reference the key by
-name; deleting it orphans the audit trail for every lead that key ever captured.
+name; deleting it orphans the audit trail for every inquiry that key ever captured.
 
 ### Restricting by IP
 
@@ -608,6 +658,8 @@ Every single request is recorded, including ones that failed validation. In the 
 desk, open **CRM Web Lead Log**:
 
 - `result` — `success`, `duplicate` or `error`
+- `Pipeline` — the pipeline created or matched (rows from before the switch to
+  pipelines show a `Lead` instead)
 - `payload` — exactly what was posted, so a failed inquiry can be re-entered or replayed
 - `message` — why it was rejected
 - `client_ip` — useful when setting up the IP allowlist

@@ -34,8 +34,15 @@ export function useDealFacts(doc, organization) {
    * Deliberately separate from the doctype's `title` field: that resolves to
    * the record name when no organization is set, which is how the page came to
    * show the deal ID as both its heading and its subtitle.
+   *
+   * A pipeline from a website inquiry has a person but no organization, so it
+   * falls back to that person's name rather than reading "Untitled".
    */
-  const dealName = computed(() => d().organization || org()?.name || '')
+  const personName = () =>
+    [d().first_name, d().last_name].filter(Boolean).join(' ')
+  const dealName = computed(
+    () => d().organization || org()?.name || personName() || '',
+  )
 
   // Money and dates go through the same meta-aware formatters the list and the
   // side panel use, so the deal's own currency and the site's date format are

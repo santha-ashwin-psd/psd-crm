@@ -46,6 +46,21 @@ describe('useDealFacts', () => {
       // subtitle. An empty name lets the caller say "Untitled deal" instead.
       expect(facts({ name: 'CRM-DEAL-0001' }, null).dealName.value).toBe('')
     })
+
+    it("falls back to the person's name when there is no organization", () => {
+      // Website inquiries create pipelines for a person, not a company.
+      expect(
+        facts({ first_name: 'Priya', last_name: 'Raman' }, null).dealName.value,
+      ).toBe('Priya Raman')
+      expect(facts({ first_name: 'Priya' }, null).dealName.value).toBe('Priya')
+    })
+
+    it('still prefers the organization over the person', () => {
+      expect(
+        facts({ organization: 'Acme', first_name: 'Priya' }, null).dealName
+          .value,
+      ).toBe('Acme')
+    })
   })
 
   describe('money', () => {

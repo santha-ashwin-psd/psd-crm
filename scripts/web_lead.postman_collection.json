@@ -1,15 +1,15 @@
 {
   "info": {
-    "name": "CRM \u2014 Website Lead Capture",
-    "description": "Website inquiry capture for ieagents.co.in.\n\nONE endpoint: POST /api/method/xbr_crm.api.web_lead.capture_inquiry\n\nSetup\n-----\n1. Open the collection Variables tab.\n2. Set `base_url` (default http://localhost:8001).\n3. Set `api_key` to the secret from the CRM Web Lead Key record.\n\nThe key is sent as the `X-Lead-Api-Key` header on every request, inherited from collection-level auth-free headers set per request.\n\nNotes\n-----\n- Frappe wraps every response in {\"message\": {...}} \u2014 read response.message, not the top level.\n- `duplicate: true` is a SUCCESS, not an error: the person already enquired and the new answers were attached to their existing lead as a note.\n- Requests 1 and 5 share {{dup_email}}/{{dup_mobile}} so you can prove dedup: run 'Consultation' then 'Duplicate \u2014 same email'.\n- Rate limit is 30 requests/minute per IP. Running the whole folder repeatedly will eventually return 429, which is correct behaviour.\n\nZapier\n------\nRequests 12 and 13 cover the Zapier path: retries are idempotent for 10 minutes (same key + form_type + email/mobile), and every error body carries a stable `code` to branch on.\n\nEnvironments\n------------\nDev : http://localhost:8001\nLive: https://crm.psdigitise.com\nSwitch with the `base_url` collection variable. The key differs per environment \u2014 a key created on the dev bench does not exist on live.",
+    "name": "CRM — Website Inquiry Capture (Pipelines)",
+    "description": "Website inquiry capture for ieagents.co.in.\n\nONE endpoint: POST /api/method/xbr_crm.api.web_lead.capture_inquiry\n\nSetup\n-----\n1. Open the collection Variables tab.\n2. Set `base_url` (default http://localhost:8002).\n3. Set `api_key` to the secret from the CRM Web Lead Key record.\n\nThe key is sent as the `X-Lead-Api-Key` header on every request, inherited from collection-level auth-free headers set per request.\n\nNotes\n-----\n- Frappe wraps every response in {\"message\": {...}} — read response.message, not the top level.\n- `duplicate: true` is a SUCCESS, not an error: the person already enquired and the new answers were attached to their existing pipeline as a note.\n- Requests 1 and 5 share {{dup_email}}/{{dup_mobile}} so you can prove dedup: run 'Consultation' then 'Duplicate — same email'.\n- Rate limit is 30 requests/minute per IP. Running the whole folder repeatedly will eventually return 429, which is correct behaviour.\n\nZapier\n------\nRequests 12 and 13 cover the Zapier path: retries are idempotent for 10 minutes (same key + form_type + email/mobile), and every error body carries a stable `code` to branch on.\n\nEnvironments\n------------\nDev : http://localhost:8002\nLive: https://crm.ieagents.co.in\nSwitch with the `base_url` collection variable. The key differs per environment — a key created on the dev bench does not exist on live.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:8001",
+      "value": "http://localhost:8002",
       "type": "string",
-      "description": "CRM base URL, no trailing slash. Dev: http://localhost:8001 \u2014 Live: https://crm.psdigitise.com"
+      "description": "CRM base URL, no trailing slash. Dev: http://localhost:8002 — Live: https://crm.ieagents.co.in"
     },
     {
       "key": "api_key",
@@ -59,7 +59,7 @@
           "// Applies to every request in the collection.",
           "pm.test('response is JSON', () => pm.response.json());",
           "if (pm.response.code === 401) {",
-          "    console.log('401 \u2014 check the api_key collection variable');",
+          "    console.log('401 — check the api_key collection variable');",
           "}"
         ]
       }
@@ -67,7 +67,7 @@
   ],
   "item": [
     {
-      "name": "1. Consultation form \u2014 creates a lead",
+      "name": "1. Consultation form — creates a pipeline",
       "request": {
         "method": "POST",
         "header": [
@@ -95,7 +95,7 @@
             "{{base_url}}{{endpoint}}"
           ]
         },
-        "description": "The 'Book Free Consultation' popup. Note the deliberately messy input: lowercase names and a spaced mobile. The response lead will have 'Arun Kumar' and '+919876500123'."
+        "description": "The 'Book Free Consultation' popup. Note the deliberately messy input: lowercase names and a spaced mobile. The response pipeline will have 'Arun Kumar' and '+919876500123'."
       },
       "response": [],
       "event": [
@@ -107,13 +107,15 @@
               "pm.test('200', () => pm.response.to.have.status(200));",
               "const b = pm.response.json().message;",
               "pm.test('success', () => pm.expect(b.success).to.be.true);",
-              "pm.test('a lead name came back', () => pm.expect(b.lead).to.be.a('string'));",
+              "pm.test('a pipeline name came back', () => pm.expect(b.pipeline).to.be.a('string'));",
+              "pm.test('a contact name came back', () => pm.expect(b.contact).to.be.a('string'));",
+              "pm.test('no lead key in the response', () => pm.expect(b).to.not.have.property('lead'));",
               "if (!b.duplicate) {",
-              "    pm.collectionVariables.set('first_lead', b.lead);",
-              "    console.log('created', b.lead);",
+              "    pm.collectionVariables.set('first_pipeline', b.pipeline);",
+              "    console.log('created', b.pipeline);",
               "} else {",
-              "    console.log('already existed ->', b.lead, '(change dup_email to start clean)');",
-              "    pm.collectionVariables.set('first_lead', b.lead);",
+              "    console.log('already existed ->', b.pipeline, '(change dup_email to start clean)');",
+              "    pm.collectionVariables.set('first_pipeline', b.pipeline);",
               "}"
             ]
           }
@@ -121,7 +123,7 @@
       ]
     },
     {
-      "name": "2. Evaluation form \u2014 creates a lead",
+      "name": "2. Evaluation form — creates a pipeline",
       "request": {
         "method": "POST",
         "header": [
@@ -168,7 +170,7 @@
       ]
     },
     {
-      "name": "3. Contact form \u2014 minimal payload",
+      "name": "3. Contact form — minimal payload",
       "request": {
         "method": "POST",
         "header": [
@@ -196,7 +198,7 @@
             "{{base_url}}{{endpoint}}"
           ]
         },
-        "description": "Only first_name and mobile_no are required. No email at all \u2014 that is allowed."
+        "description": "Only first_name and mobile_no are required. No email at all — that is allowed."
       },
       "response": [],
       "event": [
@@ -266,7 +268,7 @@
       ]
     },
     {
-      "name": "5. Duplicate \u2014 same email, different mobile",
+      "name": "5. Duplicate — same email, different mobile",
       "request": {
         "method": "POST",
         "header": [
@@ -294,7 +296,7 @@
             "{{base_url}}{{endpoint}}"
           ]
         },
-        "description": "RUN REQUEST 1 FIRST.\n\nSame person, second form, different phone. No new lead is created \u2014 the evaluation answers are attached to the existing lead as a note. Returns duplicate:true, which is a success."
+        "description": "RUN REQUEST 1 FIRST.\n\nSame person, second form, different phone. No new pipeline is created — the evaluation answers are attached to the existing pipeline as a note. Returns duplicate:true, which is a success."
       },
       "response": [],
       "event": [
@@ -309,11 +311,11 @@
               "    pm.expect(b.success).to.be.true;",
               "    pm.expect(b.duplicate).to.be.true;",
               "});",
-              "const first = pm.collectionVariables.get('first_lead');",
+              "const first = pm.collectionVariables.get('first_pipeline');",
               "if (first) {",
-              "    pm.test('points at the SAME lead as request 1', () => pm.expect(b.lead).to.eql(first));",
+              "    pm.test('points at the SAME pipeline as request 1', () => pm.expect(b.pipeline).to.eql(first));",
               "} else {",
-              "    console.log('run request 1 first to assert the lead name matches');",
+              "    console.log('run request 1 first to assert the pipeline name matches');",
               "}"
             ]
           }
@@ -321,7 +323,7 @@
       ]
     },
     {
-      "name": "6. Duplicate \u2014 same mobile, different email",
+      "name": "6. Duplicate — same mobile, different email",
       "request": {
         "method": "POST",
         "header": [
@@ -367,7 +369,7 @@
       ]
     },
     {
-      "name": "7. Missing first_name \u2014 400",
+      "name": "7. Missing first_name — 400",
       "request": {
         "method": "POST",
         "header": [
@@ -413,7 +415,7 @@
       ]
     },
     {
-      "name": "8. Invalid mobile \u2014 400",
+      "name": "8. Invalid mobile — 400",
       "request": {
         "method": "POST",
         "header": [
@@ -458,7 +460,7 @@
       ]
     },
     {
-      "name": "9. Invalid email \u2014 400",
+      "name": "9. Invalid email — 400",
       "request": {
         "method": "POST",
         "header": [
@@ -486,7 +488,7 @@
             "{{base_url}}{{endpoint}}"
           ]
         },
-        "description": "Email is optional \u2014 but if you send one it must be valid. Omit the field or send \"\" when the form has no email."
+        "description": "Email is optional — but if you send one it must be valid. Omit the field or send \"\" when the form has no email."
       },
       "response": [],
       "event": [
@@ -503,7 +505,7 @@
       ]
     },
     {
-      "name": "10. Wrong API key \u2014 401",
+      "name": "10. Wrong API key — 401",
       "request": {
         "method": "POST",
         "header": [
@@ -540,14 +542,14 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('401', () => pm.response.to.have.status(401));",
-              "pm.test('no lead created', () => pm.expect(pm.response.json().message.lead).to.be.null);"
+              "pm.test('no pipeline created', () => pm.expect(pm.response.json().message.pipeline).to.be.null);"
             ]
           }
         }
       ]
     },
     {
-      "name": "11. No API key header \u2014 401",
+      "name": "11. No API key header — 401",
       "request": {
         "method": "POST",
         "header": [
@@ -571,7 +573,7 @@
             "{{base_url}}{{endpoint}}"
           ]
         },
-        "description": "The key is accepted ONLY from the X-Lead-Api-Key header, never from the body \u2014 a key in the body would end up in access logs and in our own payload log."
+        "description": "The key is accepted ONLY from the X-Lead-Api-Key header, never from the body — a key in the body would end up in access logs and in our own payload log."
       },
       "response": [],
       "event": [
@@ -587,7 +589,7 @@
       ]
     },
     {
-      "name": "12. Zapier retry \u2014 identical resend, no new lead",
+      "name": "12. Zapier retry — identical resend, no new pipeline",
       "request": {
         "method": "POST",
         "header": [
@@ -615,7 +617,7 @@
             "{{base_url}}{{endpoint}}"
           ]
         },
-        "description": "RUN REQUEST 1 FIRST, then send this one TWICE.\n\nShaped the way Zapier actually posts:\n- `city` is an empty string (unmapped field)\n- `last_name` is the literal word \"null\"\n- `zap_id` and `Raw Body` are fields we do not know about\n\nAll three are tolerated: blanks and blank-words are treated as missing, unknown fields are ignored.\n\nThe retry behaviour: an identical submission (same key + form_type + email/mobile) within 10 minutes returns the ORIGINAL lead with duplicate:true and writes no second note. Send it 3 times \u2014 the lead name never changes and the lead's note count stays put."
+        "description": "RUN REQUEST 1 FIRST, then send this one TWICE.\n\nShaped the way Zapier actually posts:\n- `city` is an empty string (unmapped field)\n- `last_name` is the literal word \"null\"\n- `zap_id` and `Raw Body` are fields we do not know about\n\nAll three are tolerated: blanks and blank-words are treated as missing, unknown fields are ignored.\n\nThe retry behaviour: an identical submission (same key + form_type + email/mobile) within 10 minutes returns the ORIGINAL pipeline with duplicate:true and writes no second note. Send it 3 times — the pipeline name never changes and the pipeline's note count stays put."
       },
       "response": [],
       "event": [
@@ -628,16 +630,16 @@
               "const b = pm.response.json().message;",
               "pm.test('success', () => pm.expect(b.success).to.be.true);",
               "pm.test('duplicate:true', () => pm.expect(b.duplicate).to.be.true);",
-              "const first = pm.collectionVariables.get('first_lead');",
-              "if (first) pm.test('same lead as request 1', () => pm.expect(b.lead).to.eql(first));",
-              "console.log('lead:', b.lead, '\u2014 send again, it must not change');"
+              "const first = pm.collectionVariables.get('first_pipeline');",
+              "if (first) pm.test('same pipeline as request 1', () => pm.expect(b.pipeline).to.eql(first));",
+              "console.log('pipeline:', b.pipeline, '— send again, it must not change');"
             ]
           }
         }
       ]
     },
     {
-      "name": "13. Error codes \u2014 for Zap filters",
+      "name": "13. Error codes — for Zap filters",
       "request": {
         "method": "POST",
         "header": [

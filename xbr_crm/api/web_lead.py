@@ -5,8 +5,12 @@
 
 A single guest endpoint that any client website can POST to, server-to-server.
 The website validates its own captcha, then forwards the form with a shared
-secret in `X-Lead-Api-Key`; the key identifies the tenant, so a lead can never
-land in the wrong company's CRM.
+secret in `X-Lead-Api-Key`; the key identifies the tenant, so an inquiry can
+never land in the wrong company's CRM.
+
+Each inquiry becomes a CRM Deal (shown to users as a "Pipeline") linked to a
+Contact — never a CRM Lead. Leads are switched off in XBR CRM, so a lead created
+here would be invisible to everyone.
 
 Deliberately NOT a browser endpoint: no CORS headers are emitted, and the key
 would be readable by anyone who opened devtools if it were called from the page.
@@ -23,10 +27,11 @@ Tenancy
 -------
 `xbr_crm/permissions/tenancy.py` stamps `crm_company` in `before_insert` from the
 SESSION user. Our session is Guest, which maps to no company, and
-`FCRM Settings.default_crm_company` may be unset — so a lead inserted without
+`FCRM Settings.default_crm_company` may be unset — so a record inserted without
 intervention is born with `crm_company = NULL` and, under `tenancy_strict`,
 is invisible to every tenant user. We therefore set `crm_company` from the key
-BEFORE insert; `stamp_company` then sees a value already present and no-ops.
+on the Contact, the Deal and its Notes BEFORE insert; `stamp_company` then sees
+a value already present and no-ops.
 """
 
 import json
@@ -43,17 +48,16 @@ from xbr_crm.fcrm.doctype.crm_web_lead_log.crm_web_lead_log import write_log
 LEAD_SOURCE = "Website"
 
 # Form types the website may declare. Unknown values are stored as-is rather than
-# rejected: a new form should not start dropping leads before we ship a constant.
+# rejected: a new form should not start dropping inquiries before we ship a constant.
 KNOWN_FORM_TYPES = ("consultation", "evaluation", "contact")
 
-# Website field -> CRM Lead field. Only these are ever written; anything else in
+# Website field -> CRM Deal field. Only these are ever written; anything else in
 # the payload is logged but not mapped, so a website change cannot set arbitrary
-# doctype fields (`status`, `converted`, `crm_company`...).
+# doctype fields (`status`, `deal_owner`, `crm_company`...). Email and mobile are
+# not here: they belong to the Contact, and the deal copies them from it.
 FIELD_MAP = {
 	"first_name": "first_name",
 	"last_name": "last_name",
-	"email": "email",
-	"mobile_no": "mobile_no",
 	"city": "custom_city",
 	"highest_qualification": "custom_highest_qualification",
 	"course_level": "custom_course_level",
@@ -66,7 +70,11 @@ FIELD_MAP = {
 	"utm_campaign": "custom_utm_campaign",
 }
 
-# Fields echoed into the note added to a duplicate lead, in display order.
+# Every field the website may send: the deal fields above plus the two that go
+# onto the Contact.
+INPUT_FIELDS = (*FIELD_MAP, "email", "mobile_no")
+
+# Fields echoed into the pipeline's inquiry notes, in display order.
 NOTE_FIELDS = (
 	("form_type", "Form"),
 	("city", "City"),
@@ -83,14 +91,14 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$")
 
 # Values that mean "the sender had nothing for this field". An unmapped Zapier
 # field usually arrives as "", but a Zap that stringifies a missing value can
-# send the word instead, and storing the literal text "null" in a lead's city is
+# send the word instead, and storing the literal text "null" in a pipeline's city is
 # worse than storing nothing.
 BLANK_VALUES = {"null", "none", "undefined", "nil", "n/a", "na", "-"}
 
 # How long a repeated identical submission counts as a retry rather than a new
 # inquiry. Zapier retries a failed or timed-out POST on its own, and without this
 # each retry would pile another "New website inquiry received" note onto the same
-# lead. Long enough to cover Zapier's retry schedule, short enough that someone
+# pipeline. Long enough to cover Zapier's retry schedule, short enough that someone
 # genuinely re-submitting later still gets recorded.
 RETRY_WINDOW_MINUTES = 10
 
@@ -118,9 +126,10 @@ class InquiryError(Exception):
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @rate_limit(limit=30, seconds=60)
 def capture_inquiry(**kwargs):
-	"""Create a CRM Lead from a website inquiry.
+	"""Create a Pipeline (CRM Deal) from a website inquiry.
 
-	Returns {success, lead, duplicate, message} and sets the HTTP status:
+	Returns {success, pipeline, contact, duplicate, message} — plus `code` on
+	failure — and sets the HTTP status:
 	200 created/duplicate, 400 validation, 401 bad key, 403 IP not allowed,
 	429 rate limited (raised by the decorator).
 	"""
@@ -139,7 +148,7 @@ def capture_inquiry(**kwargs):
 			result="duplicate" if result["duplicate"] else "success",
 			payload=payload,
 			key=key,
-			lead=result["lead"],
+			deal=result["pipeline"],
 			message=result["message"],
 			client_ip=client_ip,
 			submission_hash=fingerprint,
@@ -156,7 +165,8 @@ def capture_inquiry(**kwargs):
 		frappe.local.response["http_status_code"] = e.http_status
 		return {
 			"success": False,
-			"lead": None,
+			"pipeline": None,
+			"contact": None,
 			"duplicate": False,
 			"message": e.message,
 			"code": e.code,
@@ -180,7 +190,8 @@ def capture_inquiry(**kwargs):
 		frappe.local.response["http_status_code"] = 500
 		return {
 			"success": False,
-			"lead": None,
+			"pipeline": None,
+			"contact": None,
 			"duplicate": False,
 			"message": _("Could not process the inquiry. It has been logged for review."),
 			"code": "internal_error",
@@ -317,11 +328,11 @@ def _title_case(value: str) -> str:
 def _clean(payload: dict) -> dict:
 	"""Trim, normalise and validate. Raises InquiryError(400) on bad input.
 
-	Keys outside FIELD_MAP are ignored rather than rejected, which is what lets a
-	caller (Zapier especially) send its own bookkeeping fields alongside ours.
+	Keys outside INPUT_FIELDS are ignored rather than rejected, which is what lets
+	a caller (Zapier especially) send its own bookkeeping fields alongside ours.
 	"""
 	data = {}
-	for key in FIELD_MAP:
+	for key in INPUT_FIELDS:
 		value = payload.get(key)
 		if value is None:
 			continue
@@ -377,11 +388,11 @@ def submission_fingerprint(key_name: str, data: dict) -> str:
 
 
 def find_recent_submission(fingerprint: str) -> dict | None:
-	"""The lead from an identical submission inside the retry window, if any.
+	"""The pipeline from an identical submission inside the retry window, if any.
 
-	Reads the log rather than the leads: the log is the only place that records
-	*that a request happened*, which is what distinguishes "Zapier sent this twice"
-	from "this person is in our CRM already".
+	Reads the log rather than the pipelines: the log is the only place that
+	records *that a request happened*, which is what distinguishes "Zapier sent
+	this twice" from "this person is in our CRM already".
 	"""
 	cutoff = frappe.utils.add_to_date(frappe.utils.now_datetime(), minutes=-RETRY_WINDOW_MINUTES)
 	rows = frappe.get_all(
@@ -393,47 +404,87 @@ def find_recent_submission(fingerprint: str) -> dict | None:
 			["result", "in", ["success", "duplicate"]],
 			["creation", ">", cutoff],
 		],
-		fields=["name", "lead"],
+		fields=["name", "deal"],
 		order_by="creation desc",
 		limit=1,
 	)
-	return rows[0] if rows and rows[0].get("lead") else None
+	return rows[0] if rows and rows[0].get("deal") else None
 
 
-def find_duplicate_leads(crm_company: str, email: str | None, mobile_no: str | None) -> list[dict]:
-	"""Leads in this tenant matching on email OR normalised mobile.
+def find_contact(crm_company: str, email: str | None, mobile_no: str | None) -> str | None:
+	"""The Contact in this tenant matching the normalised mobile, else the email.
 
-	Kept separate from the create path so the match surface can be widened to
-	Deals/Contacts later without touching the endpoint. Returns newest first and
-	includes `converted`, because a converted match is handled differently from a
-	live one.
+	Mobile first: it is required and normalised on every submission, so it is the
+	stronger identity. Contacts typed in by hand may hold the number in any shape
+	("98765 43210", "+91-98765-43210"), so candidates are narrowed on the last ten
+	digits in SQL and then compared after normalising each one here.
 
-	Uses `get_all`, not `get_list`: `get_all` skips the permission_query_conditions
-	hooks, which matters because the session is Guest and the tenancy hook would
-	otherwise reduce this to `1=0` under strict mode — every submission would look
-	unique and we would create a duplicate for every repeat visitor. The tenant
-	scope is not lost by doing so, it is applied explicitly in the filter below,
-	from the API key rather than from the session.
+	Uses `get_all`/raw SQL rather than `get_list`: the session is Guest, so the
+	permission hooks would hide every contact. The tenant scope is applied
+	explicitly instead, from the API key.
 	"""
-	clauses = []
-	if email:
-		clauses.append(["email", "=", email])
 	if mobile_no:
-		clauses.append(["mobile_no", "=", mobile_no])
-	if not clauses:
-		return []
+		rows = frappe.db.sql(
+			"""
+			select c.name, p.phone
+			from `tabContact` c
+			join `tabContact Phone` p on p.parent = c.name and p.parenttype = 'Contact'
+			where c.crm_company = %(company)s and p.phone like %(tail)s
+			order by c.creation desc
+			""",
+			{"company": crm_company, "tail": f"%{mobile_no[-4:]}"},
+			as_dict=True,
+		)
+		for row in rows:
+			if normalize_mobile(row.phone) == mobile_no:
+				return row.name
 
-	return frappe.get_all(
-		"CRM Lead",
-		filters=[["crm_company", "=", crm_company]],
-		or_filters=clauses,
-		fields=["name", "converted", "lead_name"],
-		order_by="creation desc",
+	if email:
+		rows = frappe.db.sql(
+			"""
+			select c.name
+			from `tabContact` c
+			join `tabContact Email` e on e.parent = c.name and e.parenttype = 'Contact'
+			where c.crm_company = %(company)s and lower(e.email_id) = %(email)s
+			order by c.creation desc
+			limit 1
+			""",
+			{"company": crm_company, "email": email},
+			as_dict=True,
+		)
+		if rows:
+			return rows[0].name
+
+	return None
+
+
+def find_contact_deals(contact: str, crm_company: str) -> list[dict]:
+	"""This contact's pipelines in this tenant, newest first, with an `is_open` flag.
+
+	Closed means a status of type Won or Lost; every other status (Open,
+	Ongoing, or one with no type) counts as still being worked.
+	"""
+	rows = frappe.db.sql(
+		"""
+		select d.name, d.status, s.type as status_type
+		from `tabCRM Deal` d
+		join `tabCRM Contacts` dc
+			on dc.parent = d.name and dc.parenttype = 'CRM Deal' and dc.parentfield = 'contacts'
+		left join `tabCRM Deal Status` s on s.name = d.status
+		where dc.contact = %(contact)s and d.crm_company = %(company)s
+		group by d.name, d.status, s.type, d.creation
+		order by d.creation desc
+		""",
+		{"contact": contact, "company": crm_company},
+		as_dict=True,
 	)
+	for row in rows:
+		row.is_open = row.status_type not in ("Won", "Lost")
+	return rows
 
 
 def _inquiry_note_html(data: dict, heading: str) -> str:
-	"""Readable summary of what the visitor submitted, for the lead's notes."""
+	"""Readable summary of what the visitor submitted, for the pipeline's notes."""
 	rows = []
 	for key, label in NOTE_FIELDS:
 		if data.get(key):
@@ -444,17 +495,17 @@ def _inquiry_note_html(data: dict, heading: str) -> str:
 	return f"<p>{frappe.utils.escape_html(heading)}</p>{body}"
 
 
-def _add_note(lead_name: str, crm_company: str, title: str, html: str):
-	"""Attach an FCRM Note to a lead.
+def _add_note(deal_name: str, crm_company: str, title: str, html: str):
+	"""Attach an FCRM Note to a pipeline.
 
 	FCRM Note is tenant-scoped, so the company is stamped explicitly for the same
-	reason the lead is — the Guest session maps to none.
+	reason the pipeline is — the Guest session maps to none.
 	"""
 	note = frappe.new_doc("FCRM Note")
 	note.title = title
 	note.content = html
-	note.reference_doctype = "CRM Lead"
-	note.reference_docname = lead_name
+	note.reference_doctype = "CRM Deal"
+	note.reference_docname = deal_name
 	if note.meta.has_field("crm_company"):
 		note.crm_company = crm_company
 	note.insert(ignore_permissions=True)
@@ -467,23 +518,61 @@ def _add_note(lead_name: str, crm_company: str, title: str, html: str):
 
 
 def _resolve_fallback_owner(key) -> str | None:
-	"""Owner to use when no assignment rule claims the lead."""
+	"""Owner to use when no assignment rule claims the pipeline."""
 	if key.default_lead_owner:
 		return key.default_lead_owner
 	return frappe.db.get_value("CRM Company", key.crm_company, "owner_user")
 
 
-def _sync_owner_from_assignment(lead_name: str, fallback: str | None):
-	"""Make `lead_owner` agree with whoever the assignment rule picked.
+def _create_contact(crm_company: str, data: dict) -> str:
+	"""A new Contact in this tenant for the person who submitted the form."""
+	contact = frappe.new_doc("Contact")
+	contact.first_name = data["first_name"]
+	contact.last_name = data.get("last_name")
+	if data.get("email"):
+		contact.append("email_ids", {"email_id": data["email"], "is_primary": 1})
+	contact.append("phone_nos", {"phone": data["mobile_no"], "is_primary_mobile_no": 1})
+	# Set BEFORE insert, as for the pipeline: `stamp_company` would resolve the
+	# Guest session to no company and leave the contact invisible under strict mode.
+	contact.crm_company = crm_company
+	contact.insert(ignore_permissions=True)
+	return contact.name
 
-	Frappe's Assignment Rule runs on `on_update` (hooked for `*` in hooks.py) and
-	records its choice as a ToDo + `_assign` — it does NOT set `lead_owner`, which
-	is the field `org_hierarchy` filters on. Left alone, an assigned web lead would
-	still be invisible to the assignee's own Sales User view once a hierarchy tree
-	exists. So: prefer the assignee, fall back to the key's default, and never
-	leave the lead unowned.
+
+def _fill_missing_contact_details(contact_name: str, data: dict):
+	"""Add the email or mobile an existing contact has none of. Never overwrites."""
+	contact = frappe.get_doc("Contact", contact_name)
+	changed = False
+	if data.get("email") and not contact.email_ids:
+		contact.append("email_ids", {"email_id": data["email"], "is_primary": 1})
+		changed = True
+	if data.get("mobile_no") and not contact.phone_nos:
+		contact.append("phone_nos", {"phone": data["mobile_no"], "is_primary_mobile_no": 1})
+		changed = True
+	if changed:
+		contact.save(ignore_permissions=True)
+
+
+def _find_or_create_contact(key, data: dict) -> str:
+	existing = find_contact(key.crm_company, data.get("email"), data.get("mobile_no"))
+	if existing:
+		_fill_missing_contact_details(existing, data)
+		return existing
+	return _create_contact(key.crm_company, data)
+
+
+def _set_owner(deal, fallback: str | None):
+	"""Give the pipeline an owner: the assignment rule's pick, else the fallback.
+
+	The pipeline is inserted WITHOUT an owner on purpose. CRM Deal assigns its
+	owner in `after_insert`, and Frappe's Assignment Rule (an `on_update` hook
+	that runs straight after) only assigns a document that has no assignment
+	yet — so a pre-set owner would stop every assignment rule from firing.
+
+	`deal_owner` is the field `org_hierarchy` filters on, so leaving it empty
+	would hide the pipeline from the assignee's own Sales User view.
 	"""
-	assigned = frappe.db.get_value("CRM Lead", lead_name, "_assign")
+	assigned = frappe.db.get_value("CRM Deal", deal.name, "_assign")
 	owner = None
 	if assigned:
 		try:
@@ -492,16 +581,20 @@ def _sync_owner_from_assignment(lead_name: str, fallback: str | None):
 		except (ValueError, IndexError):
 			owner = None
 
-	owner = owner or fallback
-	if not owner:
+	if owner:
+		frappe.db.set_value("CRM Deal", deal.name, "deal_owner", owner, update_modified=False)
 		return
-	if frappe.db.get_value("CRM Lead", lead_name, "lead_owner") == owner:
+
+	if not fallback:
 		return
-	frappe.db.set_value("CRM Lead", lead_name, "lead_owner", owner, update_modified=False)
+	frappe.db.set_value("CRM Deal", deal.name, "deal_owner", fallback, update_modified=False)
+	deal.deal_owner = fallback
+	deal.share_with_agent(fallback)
+	deal.assign_agent(fallback)
 
 
 def ensure_lead_source() -> str:
-	"""Return the 'Website' CRM Lead Source, creating it once if absent."""
+	"""Return the 'Website' source (a CRM Lead Source record), creating it once if absent."""
 	if not frappe.db.exists("CRM Lead Source", LEAD_SOURCE):
 		frappe.get_doc({"doctype": "CRM Lead Source", "source_name": LEAD_SOURCE}).insert(
 			ignore_permissions=True
@@ -509,106 +602,130 @@ def ensure_lead_source() -> str:
 	return LEAD_SOURCE
 
 
+def _create_deal(key, data: dict, contact: str):
+	deal = frappe.new_doc("CRM Deal")
+	for src, target in FIELD_MAP.items():
+		if data.get(src) and deal.meta.has_field(target):
+			deal.set(target, data[src])
+
+	# Email and mobile live on the contact; the pipeline copies them from its
+	# primary contact on save.
+	deal.append("contacts", {"contact": contact, "is_primary": 1})
+	deal.source = ensure_lead_source()
+	# Declare the origin so `stamp_origin` does not have to guess. `source` is the
+	# sales team's to edit; this stays as the system's record of the mechanism.
+	if deal.meta.has_field(ORIGIN_FIELD):
+		deal.set(ORIGIN_FIELD, WEBSITE)
+	# Set BEFORE insert: `stamp_company` would otherwise resolve the Guest session
+	# to no company and leave this NULL, which is invisible under tenancy_strict.
+	deal.crm_company = key.crm_company
+	# `status` is intentionally not set — CRM Deal.validate_status() picks the
+	# default open status, and hardcoding one here would fork that decision.
+	deal.flags.from_web_inquiry = True
+
+	# `ignore_permissions`: the session is Guest, which holds no create permission
+	# on CRM Deal by design. The caller is already authenticated by API key and the
+	# tenant resolved from that key, so the permission check has been satisfied
+	# upstream by something stronger than a session role.
+	deal.insert(ignore_permissions=True)
+
+	# After insert, because assignment rules fire on on_update.
+	_set_owner(deal, _resolve_fallback_owner(key))
+	return deal
+
+
 def _create_or_dedup(key, data: dict, fingerprint: str) -> dict:
 	"""Retry check, then dedup, then create. Returns the endpoint's response dict.
 
 	Three outcomes, in priority order:
 	  1. a retry of a submission we already handled -> replay the same answer,
-	  2. the person is already a live lead          -> note it, no new lead,
-	  3. otherwise                                  -> create the lead.
+	  2. the person has an open pipeline            -> note it, no new pipeline,
+	  3. otherwise                                  -> create a pipeline.
 
-	The retry check runs FIRST, and that ordering is a real decision rather than an
-	accident of layout. It changes one case: an inquiry whose lead was converted
-	within the retry window. Rule 3 would say "converted match -> make a new lead",
-	rule 1 says "we already answered this". Rule 1 wins, because the alternative is
-	that every Zapier retry of a converted lead's inquiry mints another duplicate —
-	exactly the failure the retry window exists to stop. The cost is the rarer
-	case: someone genuinely re-submitting within ten minutes of their lead being
-	converted gets the converted lead back instead of a fresh one, which is
-	recoverable because the person is already in the CRM either way.
+	The retry check runs FIRST, and that ordering is a real decision rather than
+	an accident of layout. It changes one case: an inquiry whose pipeline was
+	closed within the retry window. Rule 3 would say "closed -> make a new one",
+	rule 1 says "we already answered this". Rule 1 wins, because the alternative
+	is that every Zapier retry mints another pipeline — exactly the failure the
+	retry window exists to stop.
 	"""
 	# 1. Zapier (or any caller) re-sending the same inquiry after a timeout. Return
-	# the original answer verbatim and add NOTHING: the note was already written by
-	# the request this one is a repeat of.
+	# the original answer and add NOTHING: the note was already written by the
+	# request this one is a repeat of.
 	replayed = find_recent_submission(fingerprint)
 	if replayed:
 		return {
 			"success": True,
-			"lead": replayed.lead,
+			"pipeline": replayed.deal,
+			"contact": _primary_contact(replayed.deal),
 			"duplicate": True,
 			"message": _("This inquiry was already received."),
 		}
 
-	matches = find_duplicate_leads(key.crm_company, data.get("email"), data.get("mobile_no"))
-	live = [m for m in matches if not m.converted]
-	converted = [m for m in matches if m.converted]
+	contact = _find_or_create_contact(key, data)
+	deals = find_contact_deals(contact, key.crm_company)
+	open_deals = [d for d in deals if d.is_open]
+	closed_deals = [d for d in deals if not d.is_open]
 
-	# An unconverted match is the same person enquiring again — possibly through a
-	# different form. Record what they asked for on the lead that already exists
-	# rather than splitting one person across two records.
-	if live:
-		existing = live[0]
+	# 2. Still being worked. Record what they asked for on the pipeline that
+	# already exists rather than splitting one person across two.
+	if open_deals:
+		existing = open_deals[0]
 		form_type = data.get("form_type") or "website"
 		_add_note(
 			existing.name,
 			key.crm_company,
 			_("New website inquiry received"),
-			_inquiry_note_html(data, _("A new {0} inquiry was submitted for this lead.").format(form_type)),
+			_inquiry_note_html(
+				data, _("A new {0} inquiry was submitted for this pipeline.").format(form_type)
+			),
 		)
 		frappe.db.commit()
 		return {
 			"success": True,
-			"lead": existing.name,
+			"pipeline": existing.name,
+			"contact": contact,
 			"duplicate": True,
-			"message": _("Inquiry recorded on the existing lead."),
+			"message": _("Inquiry recorded on the existing pipeline."),
 		}
 
-	lead = frappe.new_doc("CRM Lead")
-	for src, target in FIELD_MAP.items():
-		if data.get(src) and lead.meta.has_field(target):
-			lead.set(target, data[src])
-
-	lead.source = ensure_lead_source()
-	# Declare the origin so `stamp_origin` does not have to guess. `source` is the
-	# sales team's to edit; this stays as the system's record of the mechanism.
-	if lead.meta.has_field(ORIGIN_FIELD):
-		lead.set(ORIGIN_FIELD, WEBSITE)
-	# Set BEFORE insert: `stamp_company` would otherwise resolve the Guest session
-	# to no company and leave this NULL, which is invisible under tenancy_strict.
-	lead.crm_company = key.crm_company
-	# `status` is intentionally not set — CRM Lead.validate_status() defaults it
-	# to "New", and hardcoding it here would fork that decision.
-
-	fallback_owner = _resolve_fallback_owner(key)
-	if fallback_owner:
-		lead.lead_owner = fallback_owner
-
-	# `ignore_permissions`: the session is Guest, which holds no create permission
-	# on CRM Lead by design. The caller is already authenticated by API key and the
-	# tenant resolved from that key, so the permission check has been satisfied
-	# upstream by something stronger than a session role.
-	lead.insert(ignore_permissions=True)
-
-	# After insert, because assignment rules fire on on_update.
-	_sync_owner_from_assignment(lead.name, fallback_owner)
-
-	if converted:
+	# 3. New pipeline.
+	deal = _create_deal(key, data, contact)
+	form_type = data.get("form_type") or "website"
+	_add_note(
+		deal.name,
+		key.crm_company,
+		_("Website inquiry"),
+		_inquiry_note_html(data, _("A {0} inquiry was submitted on the website.").format(form_type)),
+	)
+	if closed_deals:
+		previous = closed_deals[0]
 		_add_note(
-			lead.name,
+			deal.name,
 			key.crm_company,
-			_("Earlier inquiry from this person"),
-			_("This person previously submitted an inquiry that was converted: {0}.").format(
-				f"<b>{frappe.utils.escape_html(converted[0].name)}</b>"
+			_("Earlier pipeline for this person"),
+			_("This person had an earlier pipeline that is now closed ({1}): {0}.").format(
+				f"<b>{frappe.utils.escape_html(previous.name)}</b>",
+				frappe.utils.escape_html(previous.status or ""),
 			),
 		)
 
 	frappe.db.commit()
 	return {
 		"success": True,
-		"lead": lead.name,
+		"pipeline": deal.name,
+		"contact": contact,
 		"duplicate": False,
-		"message": _("Lead created."),
+		"message": _("Pipeline created."),
 	}
+
+
+def _primary_contact(deal_name: str) -> str | None:
+	"""The pipeline's primary contact, or its first one if none is marked primary."""
+	filters = {"parent": deal_name, "parenttype": "CRM Deal", "parentfield": "contacts"}
+	return frappe.db.get_value(
+		"CRM Contacts", {**filters, "is_primary": 1}, "contact"
+	) or frappe.db.get_value("CRM Contacts", filters, "contact", order_by="idx asc")
 
 
 # ---------------------------------------------------------------------------
@@ -701,7 +818,7 @@ def deactivate_key(label: str):
 	        --kwargs "{'label': 'ieagents.co.in website'}"
 
 	Preferred over deletion: the CRM Web Lead Log rows reference this key by name,
-	and deleting it would orphan the audit trail for every lead it ever captured.
+	and deleting it would orphan the audit trail for every inquiry it ever captured.
 	Reversible with activate_key.
 	"""
 	key = _find_key(label)

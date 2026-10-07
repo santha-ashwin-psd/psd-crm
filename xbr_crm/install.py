@@ -685,8 +685,8 @@ def create_assignment_rule_custom_fields():
 # Website inquiry capture (xbr_crm/api/web_lead.py)
 # ---------------------------------------------------------------------------
 
-# Fields the client website can send that CRM Lead has no home for. All optional:
-# a form that omits any of them still creates a lead.
+# Fields the client website can send that CRM Lead/Deal have no home for. All
+# optional: a form that omits any of them still creates a pipeline.
 WEB_LEAD_CUSTOM_FIELDS = [
 	("custom_city", "City", "Data"),
 	("custom_highest_qualification", "Highest Qualification", "Data"),
@@ -701,8 +701,13 @@ WEB_LEAD_CUSTOM_FIELDS = [
 ]
 
 
+# The website inquiry API creates CRM Deals ("Pipeline"). The fields stay on CRM
+# Lead as well: leads captured before the switch keep their answers.
+WEB_INQUIRY_DOCTYPES = ("CRM Lead", "CRM Deal")
+
+
 def add_web_lead_custom_fields():
-	"""Install the website-inquiry fields on CRM Lead.
+	"""Install the website-inquiry fields on CRM Lead and CRM Deal.
 
 	Follows the same `create_custom_fields` + after_migrate route as the Web Form
 	and Email Account fields above; this app defines no `fixtures` hook and adding
@@ -711,30 +716,31 @@ def add_web_lead_custom_fields():
 	`create_custom_fields` is itself idempotent, but the meta check keeps a no-op
 	migrate from touching the doctype cache on every run.
 	"""
-	meta = frappe.get_meta("CRM Lead")
-	if all(meta.has_field(fieldname) for fieldname, _label, _ftype in WEB_LEAD_CUSTOM_FIELDS):
-		return
+	for doctype in WEB_INQUIRY_DOCTYPES:
+		meta = frappe.get_meta(doctype)
+		if all(meta.has_field(fieldname) for fieldname, _label, _ftype in WEB_LEAD_CUSTOM_FIELDS):
+			continue
 
-	click.secho("* Installing website inquiry Custom Fields in CRM Lead")
+		click.secho(f"* Installing website inquiry Custom Fields in {doctype}")
 
-	fields = []
-	# Chain each field after the previous one so the order in the doctype matches
-	# the order above rather than reverse-stacking at one insertion point.
-	previous = "source"
-	for fieldname, label, fieldtype in WEB_LEAD_CUSTOM_FIELDS:
-		fields.append(
-			{
-				"fieldname": fieldname,
-				"fieldtype": fieldtype,
-				"label": label,
-				"insert_after": previous,
-				"description": "Captured from a website inquiry form",
-			}
-		)
-		previous = fieldname
+		fields = []
+		# Chain each field after the previous one so the order in the doctype matches
+		# the order above rather than reverse-stacking at one insertion point.
+		previous = "source"
+		for fieldname, label, fieldtype in WEB_LEAD_CUSTOM_FIELDS:
+			fields.append(
+				{
+					"fieldname": fieldname,
+					"fieldtype": fieldtype,
+					"label": label,
+					"insert_after": previous,
+					"description": "Captured from a website inquiry form",
+				}
+			)
+			previous = fieldname
 
-	create_custom_fields({"CRM Lead": fields})
-	frappe.clear_cache(doctype="CRM Lead")
+		create_custom_fields({doctype: fields})
+		frappe.clear_cache(doctype=doctype)
 
 
 # Where the new fields appear in the lead's right-hand panel.
@@ -752,7 +758,7 @@ WEB_LEAD_PANEL_SECTION = {
 
 
 def add_web_lead_side_panel_section():
-	"""Append the Website Inquiry section to the CRM Lead side panel.
+	"""Append the Website Inquiry section to the CRM Lead and CRM Deal side panels.
 
 	The panel is a stored layout, not a reflection of the doctype, so a custom
 	field is invisible in the UI until it is named here. `add_default_fields_layout`
@@ -763,25 +769,26 @@ def add_web_lead_side_panel_section():
 	otherwise leaves every existing section untouched, so an operator's own
 	reordering survives a migrate.
 	"""
-	name = "CRM Lead-Side Panel"
-	if not frappe.db.exists("CRM Fields Layout", name):
-		return
+	for doctype in WEB_INQUIRY_DOCTYPES:
+		name = f"{doctype}-Side Panel"
+		if not frappe.db.exists("CRM Fields Layout", name):
+			continue
 
-	doc = frappe.get_doc("CRM Fields Layout", name)
-	try:
-		layout = json.loads(doc.layout or "[]")
-	except ValueError:
-		return
-	if not isinstance(layout, list):
-		return
+		doc = frappe.get_doc("CRM Fields Layout", name)
+		try:
+			layout = json.loads(doc.layout or "[]")
+		except ValueError:
+			continue
+		if not isinstance(layout, list):
+			continue
 
-	if any(section.get("name") == WEB_LEAD_PANEL_SECTION["name"] for section in layout):
-		return
+		if any(section.get("name") == WEB_LEAD_PANEL_SECTION["name"] for section in layout):
+			continue
 
-	click.secho("* Adding Website Inquiry section to the CRM Lead side panel")
-	layout.append(WEB_LEAD_PANEL_SECTION)
-	doc.layout = json.dumps(layout)
-	doc.save(ignore_permissions=True)
+		click.secho(f"* Adding Website Inquiry section to the {doctype} side panel")
+		layout.append(dict(WEB_LEAD_PANEL_SECTION))
+		doc.layout = json.dumps(layout)
+		doc.save(ignore_permissions=True)
 
 
 # ---------------------------------------------------------------------------

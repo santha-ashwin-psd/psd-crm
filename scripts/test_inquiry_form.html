@@ -88,21 +88,24 @@
   <body>
     <div class="wrap">
       <h1>IEA Inquiry Form Simulator</h1>
-      <p class="sub">Posts to <code>xbr_crm.api.web_lead.capture_inquiry</code> exactly as the website's backend would.</p>
+      <p class="sub">Posts to <code>xbr_crm.api.web_lead.capture_inquiry</code> exactly as the website's backend would. Each inquiry creates (or is noted on) a Pipeline.</p>
 
       <div class="warn">
         <strong>Local testing only.</strong> This page puts the API key in the browser, which the real
         integration must never do. On the live site the key stays on your server: the browser posts to
         <em>your</em> backend, your backend checks the captcha and then calls the CRM with the key.
-        That is also why this endpoint sends no CORS headers — opening this file straight from disk
-        (<code>file://</code>) will be blocked by the browser. Serve it over http instead:
-        <code>python3 -m http.server 8080</code>, then open <code>http://localhost:8080/scripts/test_inquiry_form.html</code>.
+        That is also why this endpoint sends no CORS headers, so the browser blocks this page's request
+        unless the dev site allows its origin. Serve the page with <code>python3 -m http.server 8080</code>
+        from the repo root, allow that origin once on the dev site with
+        <code>bench --site xbr.local set-config allow_cors http://localhost:8080</code>, then open
+        <code>http://localhost:8080/scripts/test_inquiry_form.html</code>. Never set this on production;
+        <code>scripts/test_web_lead.py</code> needs none of it.
       </div>
 
       <div class="card">
         <h2>Connection</h2>
         <label for="base">CRM base URL</label>
-        <input id="base" value="http://localhost:8001" />
+        <input id="base" value="http://localhost:8002" />
         <label for="key" class="req">X-Lead-Api-Key</label>
         <input id="key" placeholder="paste the key from CRM Web Lead Key" />
       </div>
@@ -170,12 +173,27 @@
       <div class="card">
         <h2>Response</h2>
         <div class="status" id="status">Not sent yet.</div>
+        <p class="sub" id="summary"></p>
         <pre id="out">—</pre>
       </div>
     </div>
 
     <script>
       const $ = (id) => document.getElementById(id);
+
+      // What happened, in CRM terms, with a link to open the pipeline.
+      function showSummary(body) {
+        const el = $('summary');
+        el.textContent = '';
+        if (!body || !body.pipeline) return;
+        const link = document.createElement('a');
+        link.href = $('base').value.replace(/\/$/, '') + '/pipeline/' + encodeURIComponent(body.pipeline);
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = body.pipeline;
+        el.append(body.duplicate ? 'Recorded on existing pipeline ' : 'Created pipeline ', link);
+        if (body.contact) el.append(' for contact ' + body.contact + '.');
+      }
       const FIELDS = [
         'first_name', 'last_name', 'email', 'mobile_no', 'city',
         'highest_qualification', 'course_level', 'preferred_state', 'start_timeline',
@@ -219,6 +237,7 @@
           $('status').className = 'status ' + (ok ? 'ok' : 'err');
           $('status').textContent =
             'HTTP ' + res.status + (body && body.message ? ' — ' + body.message : '');
+          showSummary(ok ? body : null);
           $('out').textContent =
             'REQUEST\n' + JSON.stringify(payload, null, 2) +
             '\n\nRESPONSE\n' + (typeof body === 'string' ? body : JSON.stringify(body, null, 2));
