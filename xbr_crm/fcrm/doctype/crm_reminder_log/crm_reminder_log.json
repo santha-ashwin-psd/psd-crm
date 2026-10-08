@@ -1,0 +1,173 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-10-08 15:00:00.000000",
+ "default_view": "List",
+ "description": "One row per reminder delivered (or skipped) per recipient. Written by xbr_crm.reminders.",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "reminder_type",
+  "reference_doctype",
+  "reference_name",
+  "crm_company",
+  "column_break_main",
+  "recipient",
+  "recipient_is_user",
+  "trigger_at",
+  "occurrence_start",
+  "reminder_key",
+  "section_break_delivery",
+  "email_queue",
+  "communication",
+  "message",
+  "dedupe_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Sent\nSkipped\nFailed",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "description": "The reminder source, e.g. event or task.",
+   "fieldname": "reminder_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Reminder Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Reference",
+   "options": "reference_doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "crm_company",
+   "fieldtype": "Link",
+   "label": "CRM Company",
+   "options": "CRM Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "recipient",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Recipient",
+   "read_only": 1
+  },
+  {
+   "description": "CRM users also get the in-app notification; external participants get the email only.",
+   "fieldname": "recipient_is_user",
+   "fieldtype": "Check",
+   "label": "Recipient Is CRM User",
+   "read_only": 1
+  },
+  {
+   "description": "When the reminder was due (system timezone).",
+   "fieldname": "trigger_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Reminder Time",
+   "read_only": 1
+  },
+  {
+   "description": "The start of the event occurrence, or the task due time, this reminder is for.",
+   "fieldname": "occurrence_start",
+   "fieldtype": "Datetime",
+   "label": "Item Starts / Due",
+   "read_only": 1
+  },
+  {
+   "description": "Identifies which reminder row on the item (or global default) this was.",
+   "fieldname": "reminder_key",
+   "fieldtype": "Data",
+   "label": "Reminder Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_delivery",
+   "fieldtype": "Section Break",
+   "label": "Delivery"
+  },
+  {
+   "fieldname": "email_queue",
+   "fieldtype": "Link",
+   "label": "Email Queue",
+   "options": "Email Queue",
+   "read_only": 1
+  },
+  {
+   "fieldname": "communication",
+   "fieldtype": "Link",
+   "label": "Communication",
+   "options": "Communication",
+   "read_only": 1
+  },
+  {
+   "description": "Why it was skipped or failed.",
+   "fieldname": "message",
+   "fieldtype": "Small Text",
+   "label": "Message",
+   "read_only": 1
+  },
+  {
+   "description": "Item + reminder + reminder time + recipient. Unique, so one reminder can never be sent twice.",
+   "fieldname": "dedupe_key",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Dedupe Key",
+   "read_only": 1,
+   "unique": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-08 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "FCRM",
+ "name": "CRM Reminder Log",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "delete": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

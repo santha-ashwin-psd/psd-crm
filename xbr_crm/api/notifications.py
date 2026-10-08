@@ -3,6 +3,14 @@ from frappe.query_builder import Order
 
 from xbr_crm.utils.leads import leads_enabled
 
+# reference doctype -> (label shown in the text, frontend route name)
+ROUTES = {
+	"CRM Deal": ("deal", "Deal"),
+	"CRM Lead": ("lead", "Lead"),
+	"CRM Task": ("task", "Tasks"),
+	"Event": ("event", "Calendar"),
+}
+
 
 @frappe.whitelist()
 def get_notifications():
@@ -35,9 +43,9 @@ def get_notifications():
 				"notification_text": notification.notification_text,
 				"notification_type_doctype": notification.notification_type_doctype,
 				"notification_type_doc": notification.notification_type_doc,
-				"reference_doctype": ("deal" if notification.reference_doctype == "CRM Deal" else "lead"),
+				"reference_doctype": ROUTES.get(notification.reference_doctype, ROUTES["CRM Lead"])[0],
 				"reference_name": notification.reference_name,
-				"route_name": ("Deal" if notification.reference_doctype == "CRM Deal" else "Lead"),
+				"route_name": ROUTES.get(notification.reference_doctype, ROUTES["CRM Lead"])[1],
 			}
 		)
 

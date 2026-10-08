@@ -13,6 +13,7 @@ class CRMTask(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
+		from frappe.desk.doctype.event_notifications.event_notifications import EventNotifications
 		from frappe.types import DF
 
 		assigned_to: DF.Link | None
@@ -22,6 +23,7 @@ class CRMTask(Document):
 		priority: DF.Literal["Low", "Medium", "High"]
 		reference_docname: DF.DynamicLink | None
 		reference_doctype: DF.Link | None
+		reminders: DF.Table[EventNotifications]
 		start_date: DF.Date | None
 		status: DF.Literal["Backlog", "Todo", "In Progress", "Done", "Canceled"]
 		title: DF.Data

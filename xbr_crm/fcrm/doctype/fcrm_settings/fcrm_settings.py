@@ -34,9 +34,13 @@ class FCRMSettings(Document):
 		default_calendar_view: DF.Literal["Daily", "Weekly", "Monthly"]
 		dropdown_items: DF.Table[CRMDropdownItem]
 		enable_forecasting: DF.Check
+		enable_event_reminder_emails: DF.Check
 		enable_leads: DF.Check
+		enable_reminder_emails: DF.Check
+		enable_task_reminder_emails: DF.Check
 		event_notifications: DF.Table[EventNotifications]
 		favicon: DF.Attach | None
+		reminder_emails_enabled_on: DF.Datetime | None
 		service_provider: DF.Literal[
 			"frankfurter.app", "fawazahmed-exchange-api", "exchangerate.host", "exchangerate-api"
 		]
@@ -51,6 +55,18 @@ class FCRMSettings(Document):
 		self.do_not_allow_to_delete_if_standard()
 		self.setup_forecasting()
 		self.make_currency_read_only()
+		self.stamp_reminder_emails_enabled_on()
+
+	def stamp_reminder_emails_enabled_on(self):
+		"""Record when reminder emails were switched on.
+
+		Reminders due before this moment are never emailed, so switching the
+		feature on (or back on) never floods people with old reminders.
+		"""
+		if not self.enable_reminder_emails:
+			return
+		if self.has_value_changed("enable_reminder_emails") or not self.reminder_emails_enabled_on:
+			self.reminder_emails_enabled_on = frappe.utils.now_datetime()
 
 	def do_not_allow_to_delete_if_standard(self):
 		if not self.has_value_changed("dropdown_items"):

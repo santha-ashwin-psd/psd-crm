@@ -313,17 +313,14 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-	"all": ["xbr_crm.api.event.trigger_offset_event_notifications"],
-	"hourly": ["xbr_crm.api.event.trigger_hourly_event_notifications"],
-	"daily": [
-		"xbr_crm.api.event.trigger_daily_event_notifications",
-		"xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.clear_old_versions",
-	],
-	"weekly": ["xbr_crm.api.event.trigger_weekly_event_notifications"],
+	"daily": ["xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.clear_old_versions"],
 	"daily_long": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_daily"],
 	"hourly_long": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_hourly"],
 	"monthly_long": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_monthly"],
 	"cron": {
+		# Every minute; needs `scheduler_tick_interval: 60` in common_site_config
+		# (Frappe's default tick is 4 minutes).
+		"* * * * *": ["xbr_crm.reminders.service.send_due_reminders"],
 		"*/5 * * * *": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_5_minutes"],
 		"*/10 * * * *": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_10_minutes"],
 		"*/15 * * * *": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_15_minutes"],
@@ -415,6 +412,7 @@ after_migrate = [
 	"xbr_crm.install.add_web_lead_side_panel_section",
 	"xbr_crm.install.add_lead_origin_field",
 	"xbr_crm.install.add_lead_origin_to_side_panel",
+	"xbr_crm.reminders.templates.create_default_templates",
 ]
 
 standard_dropdown_items = [

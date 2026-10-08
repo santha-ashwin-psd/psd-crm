@@ -160,6 +160,13 @@ onMounted(() => {
 })
 
 function getRoute(notification) {
+  // Reminders can point at a task (opened via ?open=) or a calendar event.
+  if (notification.route_name === 'Tasks') {
+    return { name: 'Tasks', query: { open: notification.reference_name } }
+  }
+  if (notification.route_name === 'Calendar') {
+    return { name: 'Calendar' }
+  }
   let params = {
     leadId: notification.reference_name,
   }

@@ -9,6 +9,7 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 from xbr_crm.domain_enrichment.install import seed_default_rules_and_mappings
 from xbr_crm.fcrm.doctype.crm_dashboard.crm_dashboard import create_default_manager_dashboard
 from xbr_crm.fcrm.doctype.crm_products.crm_products import create_product_details_script
+from xbr_crm.reminders.templates import create_default_templates
 
 
 def before_install():
@@ -36,6 +37,7 @@ def after_install(force=False):
 	add_assignment_rule_property_setters()
 	seed_default_rules_and_mappings()
 	setup_tenancy()
+	create_default_templates()
 	frappe.db.commit()
 
 

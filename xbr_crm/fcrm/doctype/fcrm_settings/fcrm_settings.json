@@ -32,6 +32,11 @@
   "default_calendar_view",
   "event_notifications",
   "all_day_event_notifications",
+  "reminder_emails_section",
+  "enable_reminder_emails",
+  "enable_event_reminder_emails",
+  "enable_task_reminder_emails",
+  "reminder_emails_enabled_on",
   "dropdown_items_tab",
   "dropdown_items",
   "persona_captured",
@@ -169,6 +174,39 @@
    "options": "Event Notifications"
   },
   {
+   "fieldname": "reminder_emails_section",
+   "fieldtype": "Section Break",
+   "label": "Reminder Emails"
+  },
+  {
+   "default": "1",
+   "description": "Send an email at every reminder time, together with the in-app notification.",
+   "fieldname": "enable_reminder_emails",
+   "fieldtype": "Check",
+   "label": "Email Reminders"
+  },
+  {
+   "default": "1",
+   "depends_on": "enable_reminder_emails",
+   "fieldname": "enable_event_reminder_emails",
+   "fieldtype": "Check",
+   "label": "Email Event Reminders"
+  },
+  {
+   "default": "1",
+   "depends_on": "enable_reminder_emails",
+   "fieldname": "enable_task_reminder_emails",
+   "fieldtype": "Check",
+   "label": "Email Task Reminders"
+  },
+  {
+   "description": "Reminders due before this moment are never emailed (no catch-up). Set automatically when reminder emails are switched on.",
+   "fieldname": "reminder_emails_enabled_on",
+   "fieldtype": "Datetime",
+   "label": "Reminder Emails Enabled On",
+   "read_only": 1
+  },
+  {
    "default": "Weekly",
    "fieldname": "default_calendar_view",
    "fieldtype": "Select",
@@ -251,7 +289,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-07 16:00:00.000000",
+ "modified": "2026-10-08 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "FCRM Settings",

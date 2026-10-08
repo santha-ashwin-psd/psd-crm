@@ -14,6 +14,7 @@
           <div class="flex flex-col flex-1 items-center gap-2">
             <div class="flex items-center gap-2 w-full">
               <FormControl
+                v-if="showType"
                 v-model="notification.type"
                 class="flex-1 shrink-0"
                 type="select"
@@ -80,7 +81,7 @@
         </div>
         <div v-else class="flex gap-1">
           <div class="flex flex-col flex-1 items-center gap-2">
-            <div class="flex items-center gap-2 w-full">
+            <div v-if="showType" class="flex items-center gap-2 w-full">
               <FormControl
                 v-model="notification.type"
                 class="flex-1 shrink-0"
@@ -155,6 +156,8 @@ import { computed, ref } from 'vue'
 
 const props = defineProps({
   isAllDay: { type: Boolean, default: false },
+  // Tasks always remind by email and in-app, so they hide the type picker.
+  showType: { type: Boolean, default: true },
 })
 
 const notifications = defineModel({ type: Array, default: () => [] })
