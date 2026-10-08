@@ -385,7 +385,8 @@ import { DEFAULT_PAGE_LENGTH, usePageLength } from '@/composables/pageLength'
 import { formatError } from '@/utils/formatError'
 import { isMobileView } from '@/composables/settings'
 import Draggable from 'vuedraggable'
-import _ from 'lodash'
+// Only isEqual: importing all of lodash added ~500 KB to every list page.
+import isEqual from 'lodash/isEqual'
 import ImportIcon from '~icons/lucide/import'
 
 const props = defineProps({
@@ -1345,11 +1346,14 @@ function createView() {
 }
 
 function setAsDefault(v) {
-  call('xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.set_as_default', {
-    name: v.name,
-    type: v.type,
-    doctype: v.dt,
-  }).then(() => {
+  call(
+    'xbr_crm.fcrm.doctype.crm_view_settings.crm_view_settings.set_as_default',
+    {
+      name: v.name,
+      type: v.type,
+      doctype: v.dt,
+    },
+  ).then(() => {
     reloadView()
     list.value.reload()
   })
@@ -1528,7 +1532,7 @@ defineExpose({
 watch(
   () => getView(route.query.view, route.params.viewType, props.doctype),
   (value, old_value) => {
-    if (_.isEqual(value, old_value)) return
+    if (isEqual(value, old_value)) return
     reload()
   },
   { deep: true },

@@ -92,13 +92,23 @@ vi.mock('@twilio/voice-sdk', () => ({
 vi.mock('frappe-ui', async (importOriginal) => {
   const actual = await importOriginal()
   const { reactive } = await import('vue')
-  api.toast = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() }
+  api.toast = {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+  }
   return {
     ...actual,
     toast: api.toast,
     call: (...a) => api.call(...a),
     createResource: (opts = {}) => {
-      const r = reactive({ ...opts, data: null, fetch: vi.fn(), reload: vi.fn() })
+      const r = reactive({
+        ...opts,
+        data: null,
+        fetch: vi.fn(),
+        reload: vi.fn(),
+      })
       api.resources.push(r)
       return r
     },
@@ -270,7 +280,8 @@ describe('CallUI', () => {
       const wrapper = mount()
       wrapper.vm.makeCall('+911234')
       expect(exotelOf(wrapper).makeOutgoingCall).toHaveBeenCalledWith('+911234')
-      expect(twilioOf(wrapper).makeOutgoingCall).not.toHaveBeenCalled()
+      // A disabled Twilio is not even loaded, so nothing can be handed to it.
+      expect(twilioOf(wrapper)).toBeNull()
     })
 
     it('asks again when the stored preference is no longer available', () => {
@@ -348,7 +359,10 @@ describe('ExotelCallUI', () => {
     it('subscribes when set up', () => {
       const wrapper = mount()
       wrapper.vm.setup()
-      expect(api.socket.on).toHaveBeenCalledWith('exotel_call', expect.any(Function))
+      expect(api.socket.on).toHaveBeenCalledWith(
+        'exotel_call',
+        expect.any(Function),
+      )
     })
 
     it('does not stack listeners when set up again', () => {
@@ -742,7 +756,9 @@ describe('TaskPanel', () => {
 
   it('renders every part of the form', () => {
     const wrapper = mount({ title: '', status: 'Backlog', priority: 'Low' })
-    expect(wrapper.findComponent({ name: 'TextEditorStub' }).exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'TextEditorStub' }).exists()).toBe(
+      true,
+    )
     expect(wrapper.findComponent({ name: 'LinkStub' }).exists()).toBe(true)
   })
 })

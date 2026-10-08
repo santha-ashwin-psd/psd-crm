@@ -134,7 +134,7 @@
     </div>
 
     <div class="crm-sidebar-user">
-      <Settings />
+      <Settings v-if="settingsUsed" />
     </div>
 
     <HelpModal
@@ -178,7 +178,11 @@ import CollapseSidebar from '@/components/Icons/CollapseSidebar.vue'
 import HelpIcon from '@/components/Icons/HelpIcon.vue'
 import SidebarLink from '@/components/SidebarLink.vue'
 import BrandLogo from '@/components/BrandLogo.vue'
-import Settings from '@/components/Settings/Settings.vue'
+// Settings (form builder, integrations, SLAs, ...) is fetched the first time it
+// is opened rather than with every page, then kept mounted.
+const Settings = defineAsyncComponent(
+  () => import('@/components/Settings/Settings.vue'),
+)
 import { getSettings } from '@/stores/settings'
 import { isLeadsEnabled } from '@/utils/leads'
 import SalesHierarchyBanner from '@/components/SalesHierarchyBanner.vue'
@@ -201,10 +205,27 @@ import {
 } from 'frappe-ui/frappe'
 import router from '@/router'
 import { useStorage } from '@vueuse/core'
-import { ref, reactive, computed, markRaw, onMounted } from 'vue'
+import {
+  ref,
+  reactive,
+  computed,
+  markRaw,
+  onMounted,
+  watch,
+  defineAsyncComponent,
+} from 'vue'
 
 const { getPinnedViews, getPublicViews } = viewsStore()
 const { brand } = getSettings()
+
+const settingsUsed = ref(false)
+watch(
+  showSettings,
+  (open) => {
+    if (open) settingsUsed.value = true
+  },
+  { immediate: true },
+)
 const { capture } = useTelemetry()
 const { send } = useBroadcast()
 

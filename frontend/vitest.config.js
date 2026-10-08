@@ -56,6 +56,11 @@ export default defineConfig({
         replacement: path.resolve(__dirname, 'tests/helpers/iconStub.js') + '?',
       },
       { find: '@', replacement: path.resolve(__dirname, 'src') },
+      // Same slim ECharts the app builds with (see vite.config.js).
+      {
+        find: /^echarts$/,
+        replacement: path.resolve(__dirname, 'src/utils/echarts.js'),
+      },
     ],
   },
 })

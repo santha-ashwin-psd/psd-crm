@@ -1,5 +1,5 @@
 <template>
-  <TwilioCallUI ref="twilio" />
+  <TwilioCallUI v-if="isEnabled('twilio')" ref="twilio" />
   <ExotelCallUI ref="exotel" />
   <CrmDialog
     v-model:open="show"
@@ -46,12 +46,15 @@
 </template>
 <script setup>
 import CrmDialog from '@/components/Modals/CrmDialog.vue'
-import TwilioCallUI from '@/components/Telephony/TwilioCallUI.vue'
+// Twilio's voice SDK is large (~800 KB); load it only on sites that use Twilio.
+const TwilioCallUI = defineAsyncComponent(
+  () => import('@/components/Telephony/TwilioCallUI.vue'),
+)
 import ExotelCallUI from '@/components/Telephony/ExotelCallUI.vue'
 import { defaultCallingMedium, useTelephony } from '@/composables/telephony'
 import { globalStore } from '@/stores/global'
 import { FormControl, call, toast } from 'frappe-ui'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue'
 
 const { setMakeCall } = globalStore()
 const { isEnabled, isAnyEnabled } = useTelephony()
@@ -134,4 +137,8 @@ watch(
     }),
   { immediate: true },
 )
+
+// The Twilio component loads asynchronously, after the watch above has run;
+// set it up when it arrives.
+watch(twilio, (component) => component?.setup?.())
 </script>

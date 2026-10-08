@@ -67,9 +67,14 @@ export default defineConfig(async ({ mode }) => {
       }),
     ],
     resolve: {
-      alias: {
-        '@': path.resolve(__dirname, 'src'),
-      },
+      alias: [
+        { find: '@', replacement: path.resolve(__dirname, 'src') },
+        // Exact match only: `echarts/core` etc. must still reach the package.
+        {
+          find: /^echarts$/,
+          replacement: path.resolve(__dirname, 'src/utils/echarts.js'),
+        },
+      ],
       // ensure a locally linked frappe-ui reuses the host app's single copy of each peer.
       dedupe: ['vue', 'vue-router', 'frappe-ui', 'dompurify'],
     },
@@ -137,8 +142,17 @@ async function importFrappeUIPlugin(isDev, config) {
 }
 
 function getAliases(config) {
-  return {
+  return [
     ...config.resolve.alias,
+    ...Object.entries(localFrappeUIAliases()).map(([find, replacement]) => ({
+      find,
+      replacement,
+    })),
+  ]
+}
+
+function localFrappeUIAliases() {
+  return {
     'frappe-ui/tailwind': path.resolve(
       __dirname,
       '../frappe-ui/tailwind/preset.js',
