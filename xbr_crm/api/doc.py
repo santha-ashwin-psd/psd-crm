@@ -261,6 +261,57 @@ def update_in_standard_filter(fieldname, doctype, value):
 		)
 
 
+def _link_column_order(options_doctype: str) -> list[str]:
+	"""The board order of a Link column field's values.
+
+	Status doctypes carry it in `position`; anything else falls back to the order
+	the records were last touched.
+	"""
+	has_position = frappe.get_meta(options_doctype).has_field("position")
+	return frappe.get_all(
+		options_doctype,
+		order_by="position asc, modified asc" if has_position else "modified asc",
+		pluck="name",
+	)
+
+
+def normalise_kanban_columns(columns: list, order: list[str]) -> list:
+	"""A saved board's columns, made to match the values that exist now.
+
+	A saved board keeps its own column list, so it goes stale when the values
+	change: renaming two stages onto one left the same column twice, removed
+	stages stayed, and new stages never appeared. Here duplicates and values that
+	no longer exist are dropped, and missing values are added after the nearest
+	earlier value on the board. The user's own order, hidden (`delete`) columns
+	and per-column settings are kept.
+	"""
+	existing = set(order)
+	rank = {name: i for i, name in enumerate(order)}
+	seen: set[str] = set()
+	out = []
+	for column in columns:
+		name = column.get("name") if isinstance(column, dict) else None
+		if not name:
+			out.append(column)
+			continue
+		if name in seen or name not in existing:
+			continue
+		seen.add(name)
+		out.append(column)
+
+	for name in order:
+		if name in seen:
+			continue
+		earlier = [
+			i
+			for i, column in enumerate(out)
+			if isinstance(column, dict) and rank.get(column.get("name"), len(order)) < rank[name]
+		]
+		out.insert(earlier[-1] + 1 if earlier else 0, {"name": name})
+		seen.add(name)
+	return out
+
+
 @frappe.whitelist()
 def get_data(
 	doctype: str,
@@ -384,16 +435,15 @@ def get_data(
 		if not kanban_columns and column_field:
 			field_meta = frappe.get_meta(doctype).get_field(column_field)
 			if field_meta.fieldtype == "Link":
-				# Status doctypes carry the board order in `position`; anything else
-				# falls back to the order the records were last touched.
-				has_position = frappe.get_meta(field_meta.options).has_field("position")
-				kanban_columns = frappe.get_all(
-					field_meta.options,
-					fields=["name"],
-					order_by="position asc, modified asc" if has_position else "modified asc",
-				)
+				kanban_columns = [{"name": name} for name in _link_column_order(field_meta.options)]
 			elif field_meta.fieldtype == "Select":
 				kanban_columns = [{"name": option} for option in field_meta.options.split("\n")]
+		elif kanban_columns and column_field:
+			field_meta = frappe.get_meta(doctype).get_field(column_field)
+			if field_meta and field_meta.fieldtype == "Link":
+				kanban_columns = normalise_kanban_columns(
+					kanban_columns, _link_column_order(field_meta.options)
+				)
 
 		if not title_field:
 			title_field = "name"

@@ -81,10 +81,24 @@ def _remap_settings():
 			remapped = [
 				dict(c, name=_remap(c["name"])) if isinstance(c, dict) and "name" in c else c for c in columns
 			]
+			remapped = _dedupe_columns(remapped)
 			if remapped != columns:
 				updates["kanban_columns"] = json.dumps(remapped)
 		if updates:
 			frappe.db.set_value("CRM View Settings", view.name, updates, update_modified=False)
+
+
+def _dedupe_columns(columns: list) -> list:
+	"""Two old stages map onto Negotiation/Review: keep one column per stage."""
+	seen = set()
+	out = []
+	for column in columns:
+		name = column.get("name") if isinstance(column, dict) else None
+		if name and name in seen:
+			continue
+		seen.add(name)
+		out.append(column)
+	return out
 
 
 def _load(raw):

@@ -61,3 +61,74 @@ class TestPipelineStages(FrappeTestCase):
 		# Same tie-break as the board: test fixtures add stages that share positions.
 		expected = frappe.get_all("CRM Deal Status", order_by="position asc, modified asc", pluck="name")
 		self.assertEqual([c["name"] for c in data["kanban_columns"]], expected)
+
+
+# The live board: a kanban view saved before the stage change. The patch renamed
+# its columns in place, and two old stages became Negotiation/Review.
+OLD_SAVED_BOARD = [
+	{"name": "Qualification"},
+	{"name": "Demo/Making"},
+	{"name": "Proposal/Quotation", "page_length": 40},
+	{"name": "Negotiation"},
+	{"name": "Ready to Close"},
+	{"name": "Won"},
+	{"name": "Lost", "delete": True},
+]
+
+
+class TestSavedKanbanBoards(FrappeTestCase):
+	def test_patch_rename_keeps_one_column_per_stage(self):
+		from xbr_crm.patches.v1_1.pipeline_stages import _dedupe_columns
+
+		renamed = _dedupe_columns([dict(c, name=_remap(c["name"])) for c in OLD_SAVED_BOARD])
+		names = [c["name"] for c in renamed]
+		self.assertEqual(names.count("Negotiation/Review"), 1)
+		self.assertEqual(len(names), len(set(names)))
+
+	def test_stale_board_shows_every_stage_once(self):
+		"""A board already saved with duplicates and old names is repaired on load."""
+		from xbr_crm.api.doc import normalise_kanban_columns
+
+		stale = [dict(c, name=_remap(c["name"])) for c in OLD_SAVED_BOARD] + [{"name": "Removed Stage"}]
+		order = list(DEFAULT_DEAL_STATUSES)
+		out = normalise_kanban_columns(stale, order)
+		names = [c["name"] for c in out]
+
+		self.assertEqual(sorted(names), sorted(order), "every current stage exactly once")
+		self.assertNotIn("Removed Stage", names)
+		# Followup and Future Requirements were not on the old board: each lands
+		# after the stage that precedes it.
+		self.assertEqual(names.index("Followup"), names.index("Proposal/Price Quote") + 1)
+		self.assertEqual(names.index("Future Requirements"), names.index("Negotiation/Review") + 1)
+
+	def test_users_own_order_and_settings_are_kept(self):
+		from xbr_crm.api.doc import normalise_kanban_columns
+
+		saved = [
+			{"name": "Closed Won"},
+			{"name": "Needs Analysis", "page_length": 40},
+			{"name": "Closed Lost", "delete": True},
+		]
+		out = normalise_kanban_columns(saved, list(DEFAULT_DEAL_STATUSES))
+		names = [c["name"] for c in out]
+		self.assertLess(names.index("Closed Won"), names.index("Needs Analysis"), "user's order kept")
+		self.assertEqual(out[names.index("Needs Analysis")]["page_length"], 40)
+		self.assertTrue(out[names.index("Closed Lost")]["delete"], "hidden column stays hidden")
+
+	def test_board_loaded_with_a_stale_column_list(self):
+		from xbr_crm.api.doc import get_data
+
+		frappe.set_user("Administrator")
+		stale = [dict(c, name=_remap(c["name"])) for c in OLD_SAVED_BOARD]
+		data = get_data(
+			doctype="CRM Deal",
+			filters={},
+			order_by="modified desc",
+			column_field="status",
+			kanban_columns=stale,
+			view={"view_type": "kanban"},
+		)
+		names = [c["name"] for c in data["kanban_columns"]]
+		self.assertEqual(len(names), len(set(names)), names)
+		self.assertTrue(set(DEFAULT_DEAL_STATUSES) <= set(names))
+		self.assertEqual(len(data["data"]), len(names), "one data column per board column")
