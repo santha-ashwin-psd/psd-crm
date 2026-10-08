@@ -33,10 +33,21 @@
   <!-- Free-text quick filters are the toolbar's search box, so they carry a
        magnifier. TextInput reserves the left padding itself once a #prefix
        slot is present, so no padding override is needed here. -->
+  <!-- type="search" and a neutral name keep browsers from autofilling these
+       boxes: Chrome ignores autocomplete="off" for address data, so a box
+       labelled "Email Address" or "Phone" got the user's own email and phone
+       filled in. That applied as a filter and was saved to the default view,
+       so the list opened filtered on every visit. -->
   <FormControl
     v-else
     v-model="filter.value"
-    type="text"
+    type="search"
+    :name="`crm-quick-filter-${filter.fieldname}`"
+    autocomplete="off"
+    data-1p-ignore
+    data-lpignore="true"
+    data-form-type="other"
+    class="crm-quick-filter-search"
     :placeholder="filter.label"
     @input.stop="debouncedFn(filter, $event.target.value)"
   >
@@ -47,12 +58,7 @@
 </template>
 <script setup>
 import Link from '@/components/Controls/Link.vue'
-import {
-  FormControl,
-  DatePicker,
-  DateTimePicker,
-  FeatherIcon,
-} from 'frappe-ui'
+import { FormControl, DatePicker, DateTimePicker, FeatherIcon } from 'frappe-ui'
 import { useDebounceFn } from '@vueuse/core'
 import { reactive, watch } from 'vue'
 
@@ -78,3 +84,14 @@ function updateFilter(f, value) {
   emit('applyQuickFilter', f, value)
 }
 </script>
+
+<style scoped>
+/* The toolbar has its own clear button; hide the browser's search adornments. */
+.crm-quick-filter-search
+  :deep(input[type='search']::-webkit-search-cancel-button),
+.crm-quick-filter-search
+  :deep(input[type='search']::-webkit-search-decoration) {
+  -webkit-appearance: none;
+  appearance: none;
+}
+</style>

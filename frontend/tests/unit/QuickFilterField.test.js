@@ -36,9 +36,9 @@ function mountFilter(filter) {
 describe('QuickFilterField', () => {
   describe('choosing a control for the field type', () => {
     it('renders a checkbox for Check', () => {
-      expect(mountFilter({ fieldtype: 'Check' }).find('.fc').attributes('data-type')).toBe(
-        'checkbox',
-      )
+      expect(
+        mountFilter({ fieldtype: 'Check' }).find('.fc').attributes('data-type'),
+      ).toBe('checkbox')
     })
 
     it('renders a select for Select', () => {
@@ -50,7 +50,10 @@ describe('QuickFilterField', () => {
     })
 
     it('renders the link control for Link, carrying the target doctype', () => {
-      const wrapper = mountFilter({ fieldtype: 'Link', options: 'CRM Organization' })
+      const wrapper = mountFilter({
+        fieldtype: 'Link',
+        options: 'CRM Organization',
+      })
       expect(wrapper.find('.link-control').attributes('data-doctype')).toBe(
         'CRM Organization',
       )
@@ -67,14 +70,14 @@ describe('QuickFilterField', () => {
       expect(wrapper.find('.datetime-picker').exists()).toBe(true)
     })
 
-    it('falls back to a text input for anything else', () => {
+    it('falls back to a search box for anything else', () => {
       expect(
         mountFilter({ fieldtype: 'Data' }).find('.fc').attributes('data-type'),
-      ).toBe('text')
+      ).toBe('search')
     })
 
-    it('treats a missing fieldtype as text', () => {
-      expect(mountFilter({}).find('.fc').attributes('data-type')).toBe('text')
+    it('treats a missing fieldtype as a search box', () => {
+      expect(mountFilter({}).find('.fc').attributes('data-type')).toBe('search')
     })
   })
 
@@ -128,5 +131,28 @@ describe('QuickFilterField', () => {
         fieldname: 'status',
       })
     })
+  })
+})
+
+describe('QuickFilterField free-text search boxes', () => {
+  // Browsers autofilled boxes labelled "Email Address" / "Phone" with the
+  // user's own details, which applied (and saved) a filter by accident.
+  const box = () =>
+    mountFilter({
+      fieldtype: 'Data',
+      fieldname: 'email_id',
+      label: 'Email Address',
+    }).find('.fc')
+
+  it('is a search input, which browsers do not autofill', () => {
+    expect(box().attributes('data-type')).toBe('search')
+  })
+
+  it('carries a neutral name and opts out of autofill and password managers', () => {
+    const attrs = box().attributes()
+    expect(attrs.name).toBe('crm-quick-filter-email_id')
+    expect(attrs.autocomplete).toBe('off')
+    expect(attrs['data-lpignore']).toBe('true')
+    expect('data-1p-ignore' in attrs).toBe(true)
   })
 })
