@@ -21,6 +21,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from xbr_crm.api import web_lead
 from xbr_crm.api.web_lead import capture_inquiry, normalize_mobile
+from xbr_crm.fcrm.doctype.crm_deal.crm_deal import default_deal_status
 
 TEST_COMPANY = "_Test Web Lead Co"
 OTHER_COMPANY = "_Test Other Co"
@@ -273,10 +274,16 @@ class TestWebLead(FrappeTestCase):
 			pluck="content",
 		)
 
-	def close_deal(self, deal, status="Won"):
+	def stage_of_type(self, status_type):
+		"""A pipeline stage of this type, so the tests do not depend on stage names."""
+		return frappe.get_all(
+			"CRM Deal Status", filters={"type": status_type}, order_by="position asc", pluck="name", limit=1
+		)[0]
+
+	def close_deal(self, deal, status_type="Won"):
 		# Straight to the database: the test is about what the endpoint does with a
 		# closed pipeline, not about the rules for closing one (Lost needs a reason).
-		frappe.db.set_value("CRM Deal", deal, "status", status)
+		frappe.db.set_value("CRM Deal", deal, "status", self.stage_of_type(status_type))
 		frappe.db.commit()
 
 	def _age_submission_log(self, minutes=None):
@@ -319,7 +326,7 @@ class TestWebLead(FrappeTestCase):
 		self.assertEqual(deal.source, "Website")
 		self.assertEqual(deal.custom_created_via, "Website")
 		# Not set by us — the controller's own default must still win.
-		self.assertEqual(deal.status, "Qualification")
+		self.assertEqual(deal.status, default_deal_status())
 
 		# The person is a Contact, linked as the pipeline's primary contact, and
 		# the pipeline mirrors its email and mobile.
@@ -642,7 +649,7 @@ class TestWebLead(FrappeTestCase):
 
 	def test_ongoing_pipeline_still_counts_as_open(self):
 		first, _ = self.post(self.consultation_payload())
-		self.close_deal(first["pipeline"], status="Negotiation")
+		self.close_deal(first["pipeline"], status_type="Ongoing")
 		self._age_submission_log()
 
 		second, _ = self.post(self.consultation_payload())
@@ -661,13 +668,23 @@ class TestWebLead(FrappeTestCase):
 		# The second form's answers must not be lost — they go on as a note.
 		self.assertTrue(any("Masters" in n for n in self.notes_on(first["pipeline"])))
 
+	def test_on_hold_pipeline_still_counts_as_open(self):
+		"""A parked pipeline (e.g. Future Requirements) is not closed: note it."""
+		first, _ = self.post(self.consultation_payload())
+		self.close_deal(first["pipeline"], status_type="On Hold")
+		self._age_submission_log()
+
+		second, _ = self.post(self.consultation_payload())
+		self.assertTrue(second["duplicate"])
+		self.assertEqual(second["pipeline"], first["pipeline"])
+
 	def test_closed_pipeline_starts_a_new_one(self):
-		for status in ("Won", "Lost"):
-			with self.subTest(closed_as=status):
+		for status_type in ("Won", "Lost"):
+			with self.subTest(stage_type=status_type):
 				_purge_tenant_records()
 				frappe.db.commit()
 				first, _ = self.post(self.consultation_payload())
-				self.close_deal(first["pipeline"], status=status)
+				self.close_deal(first["pipeline"], status_type=status_type)
 				# A real later re-inquiry, not a transport retry — see
 				# test_retry_wins_over_the_closed_rule for the other side of this.
 				self._age_submission_log()
@@ -795,7 +812,7 @@ class TestWebLead(FrappeTestCase):
 		)
 		self.assertEqual(status, 200)
 		deal = frappe.get_doc("CRM Deal", result["pipeline"])
-		self.assertEqual(deal.status, "Qualification")
+		self.assertEqual(deal.status, default_deal_status())
 		self.assertEqual(deal.crm_company, TEST_COMPANY)
 		self.assertEqual(deal.deal_owner, OWNER_USER)
 		self.assertNotEqual(deal.probability, 99)

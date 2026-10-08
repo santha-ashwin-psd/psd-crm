@@ -96,62 +96,35 @@ def add_default_lead_statuses():
 		doc.insert()
 
 
-def add_default_deal_statuses():
-	statuses = {
-		"Qualification": {
-			"color": "gray",
-			"type": "Open",
-			"probability": 10,
-			"position": 1,
-		},
-		"Demo/Making": {
-			"color": "orange",
-			"type": "Ongoing",
-			"probability": 25,
-			"position": 2,
-		},
-		"Proposal/Quotation": {
-			"color": "blue",
-			"type": "Ongoing",
-			"probability": 50,
-			"position": 3,
-		},
-		"Negotiation": {
-			"color": "yellow",
-			"type": "Ongoing",
-			"probability": 70,
-			"position": 4,
-		},
-		"Ready to Close": {
-			"color": "purple",
-			"type": "Ongoing",
-			"probability": 90,
-			"position": 5,
-		},
-		"Won": {
-			"color": "green",
-			"type": "Won",
-			"probability": 100,
-			"position": 6,
-		},
-		"Lost": {
-			"color": "red",
-			"type": "Lost",
-			"probability": 0,
-			"position": 7,
-		},
-	}
+# The pipeline stages, in board order. Name -> (type, probability, color).
+# Type drives behaviour, not the name: Open/Ongoing/On Hold are still being
+# worked, Won/Lost are closed (Lost asks for a lost reason). The first Open stage
+# is where every new pipeline starts.
+DEFAULT_DEAL_STATUSES = {
+	"Needs Analysis": ("Open", 10, "gray"),
+	"Qualification": ("Ongoing", 20, "blue"),
+	"Proposal/Price Quote": ("Ongoing", 40, "cyan"),
+	"Followup": ("Ongoing", 50, "amber"),
+	"Negotiation/Review": ("Ongoing", 70, "orange"),
+	"Future Requirements": ("On Hold", 10, "violet"),
+	"Closed Won": ("Won", 100, "green"),
+	"Closed Lost": ("Lost", 0, "red"),
+	"Disqualified": ("Lost", 0, "pink"),
+	"Existing Customer": ("Won", 100, "teal"),
+}
 
-	for status in statuses:
+
+def add_default_deal_statuses():
+	for position, (status, (status_type, probability, color)) in enumerate(DEFAULT_DEAL_STATUSES.items(), 1):
 		if frappe.db.exists("CRM Deal Status", status):
 			continue
 
 		doc = frappe.new_doc("CRM Deal Status")
 		doc.deal_status = status
-		doc.color = statuses[status]["color"]
-		doc.type = statuses[status]["type"]
-		doc.probability = statuses[status]["probability"]
-		doc.position = statuses[status]["position"]
+		doc.color = color
+		doc.type = status_type
+		doc.probability = probability
+		doc.position = position
 		doc.insert()
 
 

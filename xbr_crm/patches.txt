@@ -34,3 +34,4 @@ xbr_crm.patches.v1_0.reorder_address_quick_entry_layout
 xbr_crm.patches.v1_0.setup_crm_tenancy
 xbr_crm.patches.v1_1.create_default_territories
 xbr_crm.patches.v1_1.pipeline_naming_series
+xbr_crm.patches.v1_1.pipeline_stages

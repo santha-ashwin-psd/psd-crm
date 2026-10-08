@@ -128,11 +128,13 @@ def _mappable_fields(document_type: str) -> list[dict]:
 def _default_status(document_type: str) -> str | None:
 	"""The status a new Lead/Deal defaults to — mirrors the doctype controllers so
 	the hidden 'Status' field is pre-filled with the value the CRM would use."""
-	status_dt = "CRM Lead Status" if document_type == "CRM Lead" else "CRM Deal Status"
-	preferred = "New" if document_type == "CRM Lead" else "Qualification"
-	if frappe.db.exists(status_dt, preferred):
-		return preferred
-	rows = frappe.get_all(status_dt, {"type": "Open"}, pluck="name")
+	if document_type == "CRM Deal":
+		from xbr_crm.fcrm.doctype.crm_deal.crm_deal import default_deal_status
+
+		return default_deal_status()
+	if frappe.db.exists("CRM Lead Status", "New"):
+		return "New"
+	rows = frappe.get_all("CRM Lead Status", {"type": "Open"}, pluck="name")
 	return rows[0] if rows else None
 
 

@@ -119,10 +119,7 @@ class CRMDeal(Document):
 
 	def validate_status(self):
 		if self.is_new() and not self.status:
-			if frappe.db.exists("CRM Deal Status", "Qualification"):
-				self.status = "Qualification"
-			else:
-				self.status = frappe.get_all("CRM Deal Status", {"type": "Open"}, pluck="name")[0]
+			self.status = default_deal_status()
 
 	def set_primary_contact(self, contact=None):
 		if not self.contacts:
@@ -376,6 +373,21 @@ class CRMDeal(Document):
 			"title_field": "organization",
 			"kanban_fields": '["annual_revenue", "email", "mobile_no", "_assign", "modified"]',
 		}
+
+
+def default_deal_status() -> str | None:
+	"""Where a new pipeline starts: the first Open stage on the board.
+
+	Falls back to the first stage of any type, so a site whose stages were all
+	retyped still gets a valid status rather than an error.
+	"""
+	for filters in ({"type": "Open"}, {}):
+		first = frappe.get_all(
+			"CRM Deal Status", filters=filters, order_by="position asc", pluck="name", limit=1
+		)
+		if first:
+			return first[0]
+	return None
 
 
 @frappe.whitelist()

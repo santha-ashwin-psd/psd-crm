@@ -384,10 +384,13 @@ def get_data(
 		if not kanban_columns and column_field:
 			field_meta = frappe.get_meta(doctype).get_field(column_field)
 			if field_meta.fieldtype == "Link":
+				# Status doctypes carry the board order in `position`; anything else
+				# falls back to the order the records were last touched.
+				has_position = frappe.get_meta(field_meta.options).has_field("position")
 				kanban_columns = frappe.get_all(
 					field_meta.options,
 					fields=["name"],
-					order_by="modified asc",
+					order_by="position asc, modified asc" if has_position else "modified asc",
 				)
 			elif field_meta.fieldtype == "Select":
 				kanban_columns = [{"name": option} for option in field_meta.options.split("\n")]
