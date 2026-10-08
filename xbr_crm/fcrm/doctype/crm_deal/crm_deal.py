@@ -424,23 +424,35 @@ def set_primary_contact(deal: str, contact: str):
 
 
 def create_organization(doc):
+	from xbr_crm.api.pipeline_entry import matching_organization
+
 	if not doc.get("organization_name"):
 		return
 
-	existing_organization = frappe.db.exists(
-		"CRM Organization", {"organization_name": doc.get("organization_name")}
-	)
+	# Reuse only this company's organisation of that name, never another's.
+	existing_organization = matching_organization(doc.get("organization_name"))
 	if existing_organization:
 		return existing_organization
+	# Organisations are named after themselves, so a name another company already
+	# uses cannot be created again. Say so instead of linking theirs.
+	if frappe.db.exists("CRM Organization", doc.get("organization_name").strip()):
+		frappe.throw(
+			_(
+				"An organisation called {0} already exists in another company. "
+				"Use a slightly different name, for example with the city."
+			).format(frappe.bold(doc.get("organization_name").strip())),
+			title=_("Organisation name taken"),
+		)
 
 	organization = frappe.new_doc("CRM Organization")
 	organization.update(
 		{
-			"organization_name": doc.get("organization_name"),
+			"organization_name": doc.get("organization_name").strip(),
 			"website": doc.get("website"),
 			"territory": doc.get("territory"),
 			"industry": doc.get("industry"),
 			"annual_revenue": doc.get("annual_revenue"),
+			"no_of_employees": doc.get("no_of_employees"),
 		}
 	)
 	organization.insert(ignore_permissions=True)
@@ -448,22 +460,18 @@ def create_organization(doc):
 
 
 def contact_exists(doc):
-	email_exist = frappe.db.exists("Contact Email", {"email_id": doc.get("email")})
-	mobile_exist = frappe.db.exists("Contact Phone", {"phone": doc.get("mobile_no")})
+	"""This company's contact with the same mobile (any format) or email."""
+	from xbr_crm.api.pipeline_entry import matching_contacts
 
-	doctype = "Contact Email" if email_exist else "Contact Phone"
-	name = email_exist or mobile_exist
-
-	if name:
-		return frappe.db.get_value(doctype, name, "parent")
-
-	return False
+	matches = matching_contacts(doc.get("email"), doc.get("mobile_no"), limit=1)
+	return matches[0]["name"] if matches else False
 
 
-def create_contact(doc):
-	existing_contact = contact_exists(doc)
-	if existing_contact:
-		return existing_contact
+def create_contact(doc, reuse_existing=True):
+	if reuse_existing:
+		existing_contact = contact_exists(doc)
+		if existing_contact:
+			return existing_contact
 
 	contact = frappe.new_doc("Contact")
 	contact.update(
@@ -490,13 +498,34 @@ def create_contact(doc):
 
 @frappe.whitelist()
 def create_deal(doc: dict):
+	"""Create a pipeline from the Create Pipeline form.
+
+	Besides the pipeline's own fields, `doc` may carry:
+	- `create_new_contact`: make a new contact even if one with this mobile/email
+	  exists (the form's "Create anyway"); otherwise that contact is reused.
+	- `note`: text saved as the pipeline's first note.
+	"""
+	from xbr_crm.api.pipeline_entry import clean_email, clean_mobile
+
+	doc = dict(doc)
+	note = (doc.pop("note", None) or "").strip()
+	reuse_contact = not frappe.utils.cint(doc.pop("create_new_contact", 0))
+
+	for field in ("first_name", "last_name", "organization_name", "website"):
+		if isinstance(doc.get(field), str):
+			doc[field] = doc[field].strip() or None
+	doc["mobile_no"] = clean_mobile(doc.get("mobile_no"))
+	doc["email"] = clean_email(doc.get("email"))
+	if doc.get("website") and not doc["website"].startswith(("http://", "https://")):
+		doc["website"] = "https://" + doc["website"]
+
 	deal = frappe.new_doc("CRM Deal")
 
 	contact = doc.get("contact")
 	if not contact and (
 		doc.get("first_name") or doc.get("last_name") or doc.get("email") or doc.get("mobile_no")
 	):
-		contact = create_contact(doc)
+		contact = create_contact(doc, reuse_existing=reuse_contact)
 
 	deal.update(
 		{
@@ -510,4 +539,16 @@ def create_deal(doc: dict):
 	deal.update(doc)
 
 	deal.insert(ignore_permissions=True)
+
+	if note:
+		frappe.get_doc(
+			{
+				"doctype": "FCRM Note",
+				"title": note.splitlines()[0][:140],
+				"content": frappe.utils.escape_html(note).replace("\n", "<br>"),
+				"reference_doctype": "CRM Deal",
+				"reference_docname": deal.name,
+			}
+		).insert(ignore_permissions=True)
+
 	return deal.name

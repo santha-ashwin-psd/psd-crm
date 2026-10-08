@@ -1,58 +1,63 @@
-const api = vi.hoisted(() => ({
-  call: vi.fn(),
-  capture: vi.fn(),
-  resources: [],
-  toast: null,
-}))
+const api = vi.hoisted(() => ({ call: vi.fn(), capture: vi.fn(), toast: null }))
 
 vi.mock('frappe-ui', async (importOriginal) => {
   const actual = await importOriginal()
   const { reactive } = await import('vue')
   api.toast = {
-    success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
   }
   return {
     ...actual,
     call: api.call,
     toast: api.toast,
-    createResource: (options) => {
-      api.resources.push(options)
-      return reactive({
+    createResource: (options) =>
+      reactive({
         ...options,
         data: [],
         fetch: vi.fn(),
         reload: vi.fn(),
         submit: vi.fn(),
-      })
-    },
+      }),
   }
 })
 
-vi.mock('frappe-ui/frappe', async (importOriginal) => {
-  const actual = await importOriginal()
-  return { ...actual, useTelemetry: () => ({ capture: api.capture }) }
-})
+vi.mock('frappe-ui/frappe', async (importOriginal) => ({
+  ...(await importOriginal()),
+  useTelemetry: () => ({ capture: api.capture }),
+}))
 
-const doc = vi.hoisted(() => ({ ref: null }))
+const doc = vi.hoisted(() => ({ ref: null, beforeCreate: null }))
 vi.mock('@/data/document', async () => {
   const { reactive } = await import('vue')
   doc.ref = reactive({ doc: {} })
   return {
-    useDocument: () => ({ document: doc.ref, triggerOnBeforeCreate: vi.fn() }),
+    useDocument: () => ({
+      document: doc.ref,
+      triggerOnBeforeCreate: doc.beforeCreate,
+    }),
   }
 })
 
 vi.mock('@/stores/users', () => ({
   usersStore: () => ({
-    getUser: () => ({ name: 'ada@example.com' }),
+    getUser: (name) => ({ name: name || 'ada@example.com', full_name: 'Ada' }),
     isManager: () => true,
   }),
 }))
 
+vi.mock('@/stores/settings', async () => {
+  const { ref } = await import('vue')
+  return { getSettings: () => ({ settings: ref({ currency: 'INR' }) }) }
+})
+
 vi.mock('@/stores/statuses', () => ({
   statusesStore: () => ({
-    getDealStatus: () => ({ color: 'blue' }),
+    getDealStatus: (name) => ({ type: name === 'Won' ? 'Won' : 'Open' }),
     statusOptions: () => [
+      { label: 'Won', value: 'Won' },
       { label: 'Qualification', value: 'Qualification' },
       { label: 'Demo', value: 'Demo' },
     ],
@@ -60,310 +65,257 @@ vi.mock('@/stores/statuses', () => ({
 }))
 
 const nav = vi.hoisted(() => ({ push: vi.fn() }))
-vi.mock('vue-router', async (importOriginal) => {
-  const actual = await importOriginal()
-  return { ...actual, useRouter: () => nav }
-})
+vi.mock('vue-router', async (importOriginal) => ({
+  ...(await importOriginal()),
+  useRouter: () => nav,
+}))
 
 import DealModal from '@/components/Modals/DealModal.vue'
 import { mountComponent } from '../helpers/mount'
 import { flushPromises } from '@vue/test-utils'
-import {
-  showQuickEntryModal,
-  quickEntryProps,
-} from '@/composables/modals'
-import { nextTick } from 'vue'
+import { saveDraft, loadDraft } from '@/utils/pipelineEntry'
+
+const CREATE = 'xbr_crm.fcrm.doctype.crm_deal.crm_deal.create_deal'
+const DUPES = 'xbr_crm.api.pipeline_entry.find_duplicates'
 
 const mountModal = (defaults = {}) => {
   doc.ref.doc = {}
-  api.resources = []
   return mountComponent(DealModal, {
     props: { modelValue: true, defaults },
     global: {
-      stubs: { Dialog: true, FieldLayout: true, EditIcon: true, FeatherIcon: true, Switch: true },
+      stubs: {
+        Dialog: true,
+        FieldLayout: true,
+        EditIcon: true,
+        FeatherIcon: true,
+        Link: true,
+        Autocomplete: true,
+        DatePicker: true,
+        UserAvatar: true,
+        Avatar: true,
+        RouterLink: true,
+        ErrorMessage: true,
+      },
     },
   })
 }
 
-/** The inline resource DealModal builds inside createDeal(). */
-const createOptions = async (wrapper) => {
-  api.resources = []
-  await wrapper.vm.createDeal()
-  await flushPromises()
-  return api.resources.find((r) => r.url?.includes('create_deal'))
-}
+const sent = () => api.call.mock.calls.find((c) => c[0] === CREATE)?.[1].doc
 
-const validationError = async (wrapper) => (await createOptions(wrapper)).validate()
-
-/** The layout transform, driven with a synthetic tab tree. */
-const layoutWith = (sectionNames) => [
-  {
-    sections: sectionNames.map((name) => ({
-      name,
-      columns: [{ fields: [] }],
-    })),
-  },
-]
-
-const runTransform = (wrapper, sections) => {
-  const tabs = api.resources.find((r) => r.url?.includes('get_fields_layout'))
-  tabs.transform(layoutWith(sections))
-}
-
-describe('DealModal', () => {
+describe('DealModal (Create Pipeline)', () => {
   beforeEach(() => {
-    api.call.mockReset().mockResolvedValue({ fields: {}, notes: [] })
+    localStorage.clear()
+    doc.beforeCreate = vi.fn()
+    api.call
+      .mockReset()
+      .mockImplementation(async (method) =>
+        method === CREATE ? 'PIPE-2026-00001' : [],
+      )
     api.capture.mockClear()
+    api.toast.success.mockClear()
     nav.push.mockClear()
   })
 
-  describe('defaults applied when the form opens', () => {
-    it('preselects a company size', () => {
-      expect(mountModal().vm.deal.doc.no_of_employees).toBe('1-10')
+  describe('defaults', () => {
+    it('owner is the current user, stage the first open one, currency from settings', () => {
+      mountModal()
+      expect(doc.ref.doc).toMatchObject({
+        deal_owner: 'ada@example.com',
+        status: 'Qualification',
+        currency: 'INR',
+        no_of_employees: '1-10',
+      })
     })
-
-    it('assigns the deal to the current user', () => {
-      expect(mountModal().vm.deal.doc.deal_owner).toBe('ada@example.com')
-    })
-
-    it('picks the first status', () => {
-      expect(mountModal().vm.deal.doc.status).toBe('Qualification')
-    })
-
     it('lets the caller override them', () => {
-      const wrapper = mountModal({ status: 'Demo', deal_owner: 'bob@example.com' })
-      expect(wrapper.vm.deal.doc.status).toBe('Demo')
-      expect(wrapper.vm.deal.doc.deal_owner).toBe('bob@example.com')
+      mountModal({ status: 'Demo', deal_owner: 'bob@example.com' })
+      expect(doc.ref.doc).toMatchObject({
+        status: 'Demo',
+        deal_owner: 'bob@example.com',
+      })
     })
   })
 
   describe('validation', () => {
-    it('requires a status', async () => {
-      const wrapper = mountModal()
-      wrapper.vm.deal.doc.status = ''
-      expect(await validationError(wrapper)).toBe('Status is required')
-    })
-
-    it('rejects an address with no @', async () => {
-      const wrapper = mountModal({ email: 'nope' })
-      expect(await validationError(wrapper)).toBe('Invalid email address')
-    })
-
-    it('rejects a mobile number containing letters', async () => {
-      const wrapper = mountModal({ mobile_no: '12ab34' })
-      expect(await validationError(wrapper)).toBe('Mobile No. should be a number')
-    })
-
-    it('accepts a formatted mobile number', async () => {
-      const wrapper = mountModal({ mobile_no: '+44 (0)20 7946-0958' })
-      expect(await validationError(wrapper)).toBeUndefined()
-    })
-
-    it('strips thousands separators from revenue', async () => {
-      const wrapper = mountModal({ annual_revenue: '2,500,000' })
-      await validationError(wrapper)
-      expect(wrapper.vm.deal.doc.annual_revenue).toBe('2500000')
-    })
-
-    it('rejects revenue that is not a number', async () => {
-      const wrapper = mountModal({ annual_revenue: 'loads' })
-      expect(await validationError(wrapper)).toBe(
-        'Annual Revenue should be a number',
-      )
-    })
-
-    it('passes a clean deal', async () => {
-      const wrapper = mountModal()
-      expect(await validationError(wrapper)).toBeUndefined()
-      expect(wrapper.vm.isDealCreating).toBe(true)
-    })
-  })
-
-  describe('existing versus new contact', () => {
-    it('clears the typed contact fields when an existing one is chosen', async () => {
-      // Sending both a contact link and loose name fields would create a duplicate.
-      const wrapper = mountModal({
-        first_name: 'Ada',
-        email: 'ada@example.com',
+    it('shows every error at once and sends nothing', async () => {
+      const w = mountModal()
+      Object.assign(doc.ref.doc, {
         mobile_no: '123',
-        contact: 'CONTACT-1',
+        email: 'nope',
+        probability: 300,
       })
-      wrapper.vm.chooseExistingContact = true
-      await createOptions(wrapper)
-      expect(wrapper.vm.deal.doc.first_name).toBeNull()
-      expect(wrapper.vm.deal.doc.email).toBeNull()
-      expect(wrapper.vm.deal.doc.contact).toBe('CONTACT-1')
-    })
-
-    it('clears the contact link when a new contact is typed', async () => {
-      const wrapper = mountModal({ first_name: 'Ada', contact: 'CONTACT-1' })
-      wrapper.vm.chooseExistingContact = false
-      await createOptions(wrapper)
-      expect(wrapper.vm.deal.doc.contact).toBeNull()
-      expect(wrapper.vm.deal.doc.first_name).toBe('Ada')
+      await w.vm.create()
+      expect(Object.keys(w.vm.errors).sort()).toEqual([
+        'email',
+        'first_name',
+        'mobile_no',
+        'probability',
+      ])
+      expect(sent()).toBeUndefined()
     })
   })
 
-  describe('the website field', () => {
-    it('adds a scheme when the user omits it', async () => {
-      const wrapper = mountModal({ website: 'acme.com' })
-      await createOptions(wrapper)
-      expect(wrapper.vm.deal.doc.website).toBe('https://acme.com')
+  describe('what is sent', () => {
+    it('a new contact with a normalised mobile, value as a number, and the note', async () => {
+      const w = mountModal()
+      Object.assign(doc.ref.doc, {
+        first_name: 'Riya',
+        mobile_no: '98765 43210',
+        email: 'riya@acme.in',
+        deal_value: '2,50,000',
+      })
+      w.vm.note = 'Met at the expo'
+      await w.vm.create()
+      expect(sent()).toMatchObject({
+        first_name: 'Riya',
+        mobile_no: '+919876543210',
+        contact: null,
+        deal_value: 250000,
+        note: 'Met at the expo',
+        create_new_contact: 0,
+        currency: 'INR',
+      })
     })
 
-    it('leaves an explicit scheme alone', async () => {
-      const wrapper = mountModal({ website: 'https://acme.com' })
-      await createOptions(wrapper)
-      expect(wrapper.vm.deal.doc.website).toBe('https://acme.com')
-    })
-  })
-
-  describe('which sections the layout contains', () => {
-    it('sees organization sections when the layout has them', () => {
-      const wrapper = mountModal()
-      runTransform(wrapper, ['organization_section'])
-      expect(wrapper.vm.hasOrganizationSections).toBe(true)
-    })
-
-    it('sees no organization sections when the layout has none', () => {
-      const wrapper = mountModal()
-      runTransform(wrapper, ['contact_section'])
-      expect(wrapper.vm.hasOrganizationSections).toBe(false)
+    it('an existing contact instead of typed contact fields', async () => {
+      const w = mountModal()
+      doc.ref.doc.first_name = 'typed'
+      w.vm.useContact({
+        name: 'CON-1',
+        full_name: 'Riya',
+        organization: 'Acme',
+      })
+      await w.vm.create()
+      expect(sent()).toMatchObject({
+        contact: 'CON-1',
+        first_name: null,
+        organization: 'Acme',
+      })
     })
 
-    it('sees contact sections when the layout has them', () => {
-      const wrapper = mountModal()
-      runTransform(wrapper, ['contact_section'])
-      expect(wrapper.vm.hasContactSections).toBe(true)
+    it('a new organisation by name, not a link', async () => {
+      const w = mountModal()
+      w.vm.startNewOrganization('Acme Kochi')
+      await w.vm.create()
+      expect(sent()).toMatchObject({
+        organization: null,
+        organization_name: 'Acme Kochi',
+      })
     })
 
-    it('sees no contact sections when the layout has none', () => {
-      // Mirrors the organization case — the flag has to be recomputed on each
-      // layout, not left at its initial value.
-      const wrapper = mountModal()
-      runTransform(wrapper, ['organization_section'])
-      expect(wrapper.vm.hasContactSections).toBe(false)
-    })
-  })
-
-  // Four sections, two pairs: picking an existing organization shows the
-  // picker and hides the "new organization" fields, and vice versa. Nothing
-  // asserted which section each toggle acted on, so the pairs could be crossed
-  // and the form would offer a picker and a blank form at the same time.
-  describe('choosing an existing record versus typing a new one', () => {
-    const withSections = async () => {
-      const wrapper = mountModal()
-      wrapper.vm.tabs.data = [
-        {
-          sections: [
-            'organization_section',
-            'organization_details_section',
-            'contact_section',
-            'contact_details_section',
-          ].map((name) => ({ name, hidden: undefined, columns: [{ fields: [] }] })),
-        },
-      ]
-      await nextTick()
-      return wrapper
-    }
-
-    const hiddenMap = (wrapper) =>
-      Object.fromEntries(
-        wrapper.vm.tabs.data[0].sections.map((s) => [s.name, s.hidden]),
-      )
-
-    it('shows the organization picker and hides the new-organization fields', async () => {
-      const wrapper = await withSections()
-      wrapper.vm.chooseExistingOrganization = true
-      await nextTick()
-      const h = hiddenMap(wrapper)
-      expect(h.organization_section).toBe(false)
-      expect(h.organization_details_section).toBe(true)
-    })
-
-    it('swaps them back when a new organization is typed', async () => {
-      const wrapper = await withSections()
-      wrapper.vm.chooseExistingOrganization = true
-      await nextTick()
-      wrapper.vm.chooseExistingOrganization = false
-      await nextTick()
-      const h = hiddenMap(wrapper)
-      expect(h.organization_section).toBe(true)
-      expect(h.organization_details_section).toBe(false)
-    })
-
-    it('does the same for the contact pair', async () => {
-      const wrapper = await withSections()
-      wrapper.vm.chooseExistingContact = true
-      await nextTick()
-      const h = hiddenMap(wrapper)
-      expect(h.contact_section).toBe(false)
-      expect(h.contact_details_section).toBe(true)
-    })
-
-    it('leaves the contact pair alone when only the organization toggle moves', async () => {
-      const wrapper = await withSections()
-      wrapper.vm.chooseExistingContact = true
-      await nextTick()
-      wrapper.vm.chooseExistingOrganization = true
-      await nextTick()
-      const h = hiddenMap(wrapper)
-      expect(h.contact_section).toBe(false)
-      expect(h.contact_details_section).toBe(true)
+    it('runs form scripts before creating', async () => {
+      const w = mountModal()
+      await w.vm.create()
+      expect(doc.beforeCreate).toHaveBeenCalled()
     })
   })
 
-  describe('after the server accepts', () => {
-    it('closes and opens the new deal', async () => {
-      const wrapper = mountModal()
-      const options = await createOptions(wrapper)
-      options.onSuccess('DEAL-9')
+  describe('after creating', () => {
+    it('Create opens the new pipeline', async () => {
+      const w = mountModal()
+      await w.vm.create(false)
       expect(nav.push).toHaveBeenCalledWith({
         name: 'Deal',
-        params: { dealId: 'DEAL-9' },
+        params: { dealId: 'PIPE-2026-00001' },
       })
-      expect(wrapper.vm.isDealCreating).toBe(false)
+      expect(w.emitted('update:modelValue')?.at(-1)).toEqual([false])
+    })
+
+    it('Create & New stays open, clears the form and keeps owner, stage and source', async () => {
+      const w = mountModal()
+      Object.assign(doc.ref.doc, {
+        first_name: 'Riya',
+        status: 'Demo',
+        source: 'Expo',
+        deal_value: 10,
+      })
+      w.vm.note = 'x'
+      await w.vm.create(true)
+      expect(nav.push).not.toHaveBeenCalled()
+      expect(api.toast.success).toHaveBeenCalled()
+      expect(doc.ref.doc.first_name).toBeUndefined()
+      expect(doc.ref.doc.deal_value).toBeUndefined()
+      expect(doc.ref.doc).toMatchObject({
+        status: 'Demo',
+        source: 'Expo',
+        deal_owner: 'ada@example.com',
+      })
+      expect(w.vm.note).toBe('')
+    })
+
+    it('shows the server message when creating fails', async () => {
+      api.call.mockRejectedValue({ messages: ['Organisation name taken'] })
+      const w = mountModal()
+      await w.vm.create()
+      expect(w.vm.error).toBe('Organisation name taken')
+      expect(w.vm.creating).toBe(false)
     })
   })
 
-  describe('when the server refuses', () => {
-    it('shows the joined server messages', async () => {
-      const wrapper = mountModal()
-      const options = await createOptions(wrapper)
-      options.onError({ messages: ['Bad', 'Worse'] })
-      expect(wrapper.vm.error).toBe('Bad\nWorse')
-    })
-
-    it('falls back to a plain error', async () => {
-      const wrapper = mountModal()
-      const options = await createOptions(wrapper)
-      options.onError(new Error('offline'))
-      expect(wrapper.vm.error).toBe('offline')
+  describe('keyboard', () => {
+    it('Ctrl/Cmd+Enter creates; with Shift it is Create & New', async () => {
+      const w = mountModal()
+      const spy = vi.spyOn(w.vm, 'create')
+      const root = w.find('.flex.flex-col.gap-6')
+      await root.trigger('keydown', { key: 'Enter', metaKey: true })
+      await flushPromises()
+      expect(nav.push).toHaveBeenCalled()
+      nav.push.mockClear()
+      await root.trigger('keydown', {
+        key: 'Enter',
+        ctrlKey: true,
+        shiftKey: true,
+      })
+      await flushPromises()
+      expect(nav.push).not.toHaveBeenCalled()
+      expect(api.toast.success).toHaveBeenCalled()
+      spy.mockRestore()
     })
   })
 
-  // The "switch to the short form" link at the top of the modal. It hands off
-  // to the shared quick-entry modal and closes this one — get the handoff
-  // wrong and the user is left with two dialogs, or none.
-  describe('switching to the quick form', () => {
-    beforeEach(() => {
-      showQuickEntryModal.value = false
-      quickEntryProps.value = {}
+  describe('duplicates', () => {
+    it('warns about a contact with the same mobile and can use it', async () => {
+      vi.useFakeTimers()
+      api.call.mockImplementation(async (method) =>
+        method === DUPES
+          ? [{ name: 'CON-9', full_name: 'Riya', matched_on: 'mobile' }]
+          : 'PIPE-1',
+      )
+      const w = mountModal()
+      doc.ref.doc.mobile_no = '9876543210'
+      await vi.advanceTimersByTimeAsync(500)
+      vi.useRealTimers()
+      await flushPromises()
+      expect(api.call).toHaveBeenCalledWith(DUPES, {
+        mobile_no: '+919876543210',
+        email: '',
+      })
+      expect(w.text()).toContain('Riya already has this mobile number.')
+      w.vm.useContact(w.vm.duplicates[0])
+      expect(doc.ref.doc.contact).toBe('CON-9')
+    })
+  })
+
+  describe('draft', () => {
+    it('offers to restore an unfinished entry', async () => {
+      saveDraft(
+        'ada@example.com',
+        { first_name: 'Half', status: 'Demo' },
+        'started',
+      )
+      const w = mountModal()
+      await flushPromises()
+      expect(w.text()).toContain('You have an unsaved pipeline')
+      await w.vm.restoreDraft()
+      expect(doc.ref.doc.first_name).toBe('Half')
+      expect(w.vm.note).toBe('started')
     })
 
-    it('opens the quick-entry modal for a deal', async () => {
-      const wrapper = mountModal()
-      wrapper.vm.openQuickEntryModal()
-      expect(showQuickEntryModal.value).toBe(true)
-      expect(quickEntryProps.value).toMatchObject({ doctype: 'CRM Deal' })
-    })
-
-    it('closes this modal once the other is up', async () => {
-      const wrapper = mountModal()
-      wrapper.vm.openQuickEntryModal()
-      await nextTick()
-      await nextTick()
-      expect(wrapper.vm.show).toBe(false)
+    it('is cleared once the pipeline is created', async () => {
+      saveDraft('ada@example.com', { first_name: 'Half' }, '')
+      const w = mountModal()
+      w.vm.discardDraft()
+      await w.vm.create()
+      expect(loadDraft('ada@example.com')).toBeNull()
     })
   })
 })
