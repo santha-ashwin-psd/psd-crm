@@ -100,7 +100,7 @@ describe('captionFor', () => {
     expect(captionFor('won_deals')).toBe('Total wins')
     expect(captionFor('average_won_deal_value')).toBe('Per won deal')
     expect(captionFor('average_deal_value')).toBe('Per open deal')
-    expect(captionFor('average_time_to_close_a_deal')).toBe('For open deals')
+    expect(captionFor('average_time_to_close_a_deal')).toBe('For won deals')
     expect(captionFor('average_time_to_close_a_lead')).toBe('All time')
   })
 

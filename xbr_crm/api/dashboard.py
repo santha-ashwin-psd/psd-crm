@@ -66,7 +66,7 @@ def get_dashboard(from_date: str | None = None, to_date: str | None = None, user
 	# Hidden, not deleted: the stored layout keeps its lead cards for when Leads
 	# are switched back on.
 	if not leads_enabled():
-		layout = [l for l in layout if l.get("name") not in LEAD_DASHBOARD_CARDS]
+		layout = _without_cards(layout, LEAD_DASHBOARD_CARDS)
 
 	for l in layout:
 		method_name = f"get_{l['name']}"
@@ -77,6 +77,35 @@ def get_dashboard(from_date: str | None = None, to_date: str | None = None, user
 			l["data"] = None
 
 	return layout
+
+
+GRID_COLUMNS = 20
+
+
+def _without_cards(layout: list, names) -> list:
+	"""The layout minus the named cards, with the rows they sat in closed up.
+
+	Removing a card leaves a hole at its saved position, and the grid then pulls
+	cards from the next row up into it — which scatters a KPI row. So every row
+	that lost a card has its remaining cards spread evenly across the full width,
+	in their original order. Display only: the saved layout is not changed.
+	"""
+	removed_rows = {(l.get("layout") or {}).get("y") for l in layout if l.get("name") in names}
+	kept = [l for l in layout if l.get("name") not in names]
+	for y in removed_rows:
+		row = sorted(
+			(l for l in kept if (l.get("layout") or {}).get("y") == y),
+			key=lambda l: l["layout"].get("x", 0),
+		)
+		if not row:
+			continue
+		width, extra = divmod(GRID_COLUMNS, len(row))
+		x = 0
+		for i, item in enumerate(row):
+			w = width + (1 if i < extra else 0)
+			item["layout"] = {**item["layout"], "x": x, "w": w}
+			x += w
+	return kept
 
 
 @frappe.whitelist()
@@ -767,31 +796,20 @@ def get_forecasted_revenue(from_date: str | None = None, to_date: str | None = N
 
 def get_funnel_conversion(from_date: str | None = None, to_date: str | None = None, user: str | None = None):
 	"""
-	Get funnel conversion data for the dashboard.
+	Get funnel conversion data for the dashboard: how many pipelines reached
+	each stage (see get_stage_reach_counts), led by the lead count when Leads
+	are switched on.
 	[
-		{ stage: 'Leads', count: 120 },
-		{ stage: 'Qualification', count: 100 },
-		{ stage: 'Negotiation', count: 80 },
-		{ stage: 'Ready to Close', count: 60 },
-		{ stage: 'Won', count: 30 },
+		{ stage: 'Leads', count: 120 },          # only with Leads on
+		{ stage: 'Needs Analysis', count: 100 },
+		{ stage: 'Qualification', count: 80 },
 		...
+		{ stage: 'Won', count: 30 },
 	]
 	"""
-	lead_conds = ""
-	deal_conds = ""
-
 	if not from_date or not to_date:
 		from_date = frappe.utils.get_first_day(from_date or frappe.utils.nowdate())
 		to_date = frappe.utils.get_last_day(to_date or frappe.utils.nowdate())
-
-	lead_filters = {"from": from_date, "to": to_date}
-	deal_filters = {"from": from_date, "to": to_date}
-
-	if user:
-		lead_conds += " AND lead_owner = %(user)s"
-		deal_conds += " AND deal_owner = %(user)s"
-		lead_filters["user"] = user
-		deal_filters["user"] = user
 
 	result = []
 	show_leads = leads_enabled()
@@ -814,7 +832,7 @@ def get_funnel_conversion(from_date: str | None = None, to_date: str | None = No
 	if show_leads:
 		result.append({"stage": "Leads", "count": total_leads_count})
 
-	result += get_deal_status_change_counts(from_date, to_date, deal_conds, deal_filters)
+	result += get_stage_reach_counts(from_date, to_date, user)
 
 	return {
 		"data": result or [],
@@ -1187,6 +1205,77 @@ def get_base_currency_symbol():
 	"""
 	base_currency = frappe.db.get_single_value("FCRM Settings", "currency") or "USD"
 	return frappe.db.get_value("Currency", base_currency, "symbol") or ""
+
+
+def get_stage_reach_counts(from_date: str, to_date: str, user: str | None = None) -> list[dict]:
+	"""How many pipelines created in the period reached each stage, in board order.
+
+	A pipeline has reached every working stage (Open/Ongoing) up to the furthest
+	one it has been in — its current stage or any stage in its change history —
+	so a pipeline now in Followup also counts for Needs Analysis, Qualification
+	and Proposal/Price Quote. The last bar, "Won", counts pipelines that ended in
+	any Won stage (Closed Won, Existing Customer) — one bar, so the funnel only
+	ever narrows.
+	On Hold and Lost stages are not steps on the way to a sale and are left out;
+	a pipeline that was lost or parked still counts for the stages it reached.
+
+	History entries written before the stages were renamed still carry the old
+	names; they are read as their new names.
+	"""
+	from xbr_crm.patches.v1_1.pipeline_stages import OLD_TO_NEW
+
+	statuses = frappe.get_all(
+		"CRM Deal Status", fields=["name", "type", "position"], order_by="position asc, modified asc"
+	)
+	working = [s for s in statuses if s.type in ("Open", "Ongoing")]
+	won = [s for s in statuses if s.type == "Won"]
+	if not working and not won:
+		return []
+	rank = {s.name: i for i, s in enumerate(working)}
+	won_names = {s.name for s in won}
+
+	Deal = DocType("CRM Deal")
+	query = (
+		_scoped(frappe.qb.from_(Deal), Deal)
+		.select(Deal.name, Deal.status)
+		.where(Date(Deal.creation).between(from_date, to_date))
+	)
+	if user:
+		query = query.where(Deal.deal_owner == user)
+	deals = query.run(as_dict=True)
+	if not deals:
+		return []
+
+	furthest = {d.name: (rank[d.status] if d.status in rank else 0) for d in deals}
+	Log = DocType("CRM Status Change Log")
+	# Each history row names the stage a pipeline was in (`from`) and, once it
+	# moved on, where it went (`to`); both count as stages it reached.
+	logs = (
+		frappe.qb.from_(Log)
+		.select(Log.parent, Log["from"], Log.to)
+		.where((Log.parenttype == "CRM Deal") & Log.parent.isin(list(furthest)))
+		.run(as_dict=True)
+	)
+	for log in logs:
+		for name in (log["from"], log.to):
+			# Translate only names that are no longer stages.
+			stage = name if name in rank else OLD_TO_NEW.get(name, name)
+			if stage in rank:
+				furthest[log.parent] = max(furthest[log.parent], rank[stage])
+
+	won_count = 0
+	for d in deals:
+		if d.status in won_names:
+			won_count += 1
+			# A won pipeline went through every working stage.
+			furthest[d.name] = len(working) - 1
+
+	result = [
+		{"stage": s.name, "count": sum(1 for f in furthest.values() if f >= i)} for i, s in enumerate(working)
+	]
+	if won:
+		result.append({"stage": _("Won"), "count": won_count})
+	return result
 
 
 def get_deal_status_change_counts(

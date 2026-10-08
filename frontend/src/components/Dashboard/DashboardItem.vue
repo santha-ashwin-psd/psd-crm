@@ -132,7 +132,7 @@
         </div>
         <DonutChart
           v-else-if="item.data && hasChartData(item)"
-          :config="item.data"
+          :config="untitledConfig(item)"
         />
         <EmptyState
           v-else
@@ -162,6 +162,7 @@ import {
   compactConfig,
   measureFor,
   headlessConfig,
+  untitledConfig,
   hasChartData,
   emptyChartCopy,
   donutSegments,

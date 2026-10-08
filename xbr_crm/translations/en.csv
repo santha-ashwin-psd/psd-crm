@@ -82,7 +82,7 @@ Enter details to establish a new pipeline deal,Enter details to create a new pip
 Error converting to deal: {0},Error converting to pipeline: {0}
 Expected Deal Value,Expected Pipeline Value
 Expected deal value is required.,Expected pipeline value is required.
-For open deals,For open pipelines
+For won deals,For won pipelines
 Geographic distribution of deals and revenue,Geographic distribution of pipelines and revenue
 Go to Deals,Go to Pipeline
 "It will make deal's ""Expected Closure Date"" & ""Expected Deal Value"" mandatory to get accurate forecasting insights","It will make pipeline's ""Expected Closure Date"" & ""Expected Pipeline Value"" mandatory to get accurate forecasting insights"

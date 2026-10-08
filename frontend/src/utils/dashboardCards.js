@@ -68,7 +68,7 @@ export const CAPTIONS = {
   won_deals: () => __('Total wins'),
   average_won_deal_value: () => __('Per won deal'),
   average_deal_value: () => __('Per open deal'),
-  average_time_to_close_a_deal: () => __('For open deals'),
+  average_time_to_close_a_deal: () => __('For won deals'),
 }
 
 /**
@@ -198,6 +198,17 @@ export const SERIES_COLORS = {
   won_deals: '#f59e0b',
   forecasted: '#2563eb',
   actual: '#f59e0b',
+}
+
+/**
+ * A chart config without its own title and subtitle. The panel header already
+ * shows them; left in, the chart draws the same heading a second time.
+ *
+ * @param {object} item - A dashboard layout item.
+ * @returns {object} The item's chart config, untitled.
+ */
+export function untitledConfig(item) {
+  return { ...item.data, title: '', subtitle: '' }
 }
 
 /**
