@@ -25,11 +25,20 @@ const props = defineProps({
   content: { type: String, required: true },
 })
 
-const files = import.meta.glob('/src/index.css', {
-  eager: true,
-  query: '?inline',
-})
-const css = files['/src/index.css'].default
+// The email frame reuses the stylesheets this page already loaded, by
+// reference. It used to embed the whole app stylesheet (~5 MB) in the bundle
+// and paste it into every email's frame, so each email made the browser parse
+// it again: the main reason a pipeline with emails was slow to open.
+function appStyles() {
+  const links = [...document.querySelectorAll('link[rel="stylesheet"]')]
+    .map((link) => `<link rel="stylesheet" href="${link.href}">`)
+    .join('')
+  if (links) return links
+  // Vite dev server: styles are injected as <style> tags instead.
+  return [...document.querySelectorAll('style')]
+    .map((style) => `<style>${style.textContent}</style>`)
+    .join('')
+}
 
 const iframeRef = ref(null)
 const _content = ref(props.content)
@@ -128,8 +137,8 @@ const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
+  ${appStyles()}
   <style>
-    ${css}
     /* index.css paints body with --crm-bg (the page canvas). Inside this iframe
        the email must sit on the surrounding card surface, not a gray band.
 

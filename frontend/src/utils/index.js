@@ -3,7 +3,6 @@ import TaskStatusIcon from '@/components/Icons/TaskStatusIcon.vue'
 import TaskPriorityIcon from '@/components/Icons/TaskPriorityIcon.vue'
 import { usersStore } from '@/stores/users'
 import { getMeta } from '@/stores/meta'
-import { gemoji } from 'gemoji'
 import DOMPurify from 'dompurify'
 import { toast, dayjsLocal, dayjs, getConfig, FeatherIcon } from 'frappe-ui'
 import { h } from 'vue'
@@ -435,9 +434,19 @@ export function parseColor(color) {
   return textColor
 }
 
+// One emoji (including flags, keycaps and ZWJ sequences) and nothing else.
+// Checked by Unicode property rather than against the full emoji list, which
+// put a 300 KB database in the main bundle and rebuilt a 1,900-item array on
+// every call.
+const EMOJI_RE =
+  /^(?:\p{Extended_Pictographic}|\p{Regional_Indicator}|\p{Emoji_Component}|\u200d|\ufe0f|\u20e3)+$/u
+
 export function isEmoji(str) {
-  const emojiList = gemoji.map((emoji) => emoji.emoji)
-  return emojiList.includes(str)
+  if (typeof str !== 'string' || !str) return false
+  // Emoji_Component also covers plain digits, # and *, and characters such as
+  // © are pictographic but text unless shown in emoji style: require emoji
+  // presentation somewhere (an emoji glyph, U+FE0F or a keycap).
+  return EMOJI_RE.test(str) && /\p{Emoji_Presentation}|\ufe0f|\u20e3/u.test(str)
 }
 
 export function isTouchScreenDevice() {

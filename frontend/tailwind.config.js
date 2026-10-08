@@ -10,7 +10,17 @@ export default {
     './node_modules/frappe-ui/frappe/**/*.{vue,js,ts,jsx,tsx}',
     '../node_modules/frappe-ui/frappe/**/*.{vue,js,ts,jsx,tsx}',
   ],
-  safelist: [{ pattern: /!(text|bg)-/, variants: ['hover', 'active'] }],
+  // Only the status colours built at runtime by utils.parseColor
+  // (`!text-${color}-600/700`); every other class is found by scanning the
+  // source. The old pattern, /!(text|bg)-/ with hover and active variants,
+  // generated every colour in three states: ~3 MB of unused CSS.
+  safelist: [
+    {
+      pattern:
+        /^!text-(gray|blue|green|red|pink|orange|amber|yellow|cyan|teal|violet|purple)-(600|700)$/,
+    },
+    '!text-ink-gray-9',
+  ],
   theme: {
     extend: {
       fontFamily: {

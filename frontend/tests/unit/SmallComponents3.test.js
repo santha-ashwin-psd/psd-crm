@@ -2,7 +2,12 @@ const api = vi.hoisted(() => ({ toast: null, call: vi.fn(async () => ({})) }))
 
 vi.mock('frappe-ui', async (importOriginal) => {
   const actual = await importOriginal()
-  api.toast = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() }
+  api.toast = {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+  }
   return { ...actual, toast: api.toast, call: (...a) => api.call(...a) }
 })
 
@@ -44,41 +49,47 @@ const STUBS = {
 describe('IconPicker', () => {
   const mount = (props = {}) =>
     mountComponent(IconPicker, { props, global: { stubs: STUBS } })
+  // The emoji database now loads after mount; wait for it.
+  const mountLoaded = async (props = {}) => {
+    const wrapper = mount(props)
+    await wrapper.vm.loadEmojis()
+    return wrapper
+  }
 
   describe('the emoji list', () => {
-    it('groups every emoji by category', () => {
-      const groups = mount().vm.emojiGroups
+    it('groups every emoji by category', async () => {
+      const groups = (await mountLoaded()).vm.emojiGroups
       expect(Object.keys(groups).length).toBeGreaterThan(1)
       for (const list of Object.values(groups)) {
         expect(list.length).toBeGreaterThan(0)
       }
     })
 
-    it('narrows to a search term', () => {
-      const wrapper = mount()
+    it('narrows to a search term', async () => {
+      const wrapper = await mountLoaded()
       wrapper.vm.search = 'rocket'
       const all = Object.values(wrapper.vm.emojiGroups).flat()
       expect(all.length).toBeGreaterThan(0)
       expect(all.length).toBeLessThan(100)
     })
 
-    it('matches on name, description or tag, not just the character', () => {
-      const wrapper = mount()
+    it('matches on name, description or tag, not just the character', async () => {
+      const wrapper = await mountLoaded()
       wrapper.vm.search = 'rocket'
       const all = Object.values(wrapper.vm.emojiGroups).flat()
       expect(all.some((e) => e.emoji === '🚀')).toBe(true)
     })
 
-    it('ignores case', () => {
-      const wrapper = mount()
+    it('ignores case', async () => {
+      const wrapper = await mountLoaded()
       wrapper.vm.search = 'ROCKET'
-      expect(Object.values(wrapper.vm.emojiGroups).flat().length).toBeGreaterThan(
-        0,
-      )
+      expect(
+        Object.values(wrapper.vm.emojiGroups).flat().length,
+      ).toBeGreaterThan(0)
     })
 
-    it('says so when nothing matches, rather than showing an empty panel', () => {
-      const wrapper = mount()
+    it('says so when nothing matches, rather than showing an empty panel', async () => {
+      const wrapper = await mountLoaded()
       wrapper.vm.search = 'zzzzzznotanemoji'
       expect(Object.keys(wrapper.vm.emojiGroups)).toEqual(['No results'])
     })
@@ -91,18 +102,18 @@ describe('IconPicker', () => {
   })
 
   describe('picking at random', () => {
-    it('sets an emoji', () => {
-      const wrapper = mount()
-      wrapper.vm.setRandom()
+    it('sets an emoji', async () => {
+      const wrapper = await mountLoaded()
+      await wrapper.vm.setRandom()
       expect(wrapper.vm.emoji).toBeTruthy()
     })
 
-    it('stays in range across many draws', () => {
+    it('stays in range across many draws', async () => {
       // `randomInt(0, total - 1)` is inclusive at both ends; an off-by-one
       // would occasionally index past the array and set undefined.
-      const wrapper = mount()
+      const wrapper = await mountLoaded()
       for (let i = 0; i < 200; i++) {
-        wrapper.vm.setRandom()
+        await wrapper.vm.setRandom()
         expect(wrapper.vm.emoji).toBeTruthy()
       }
     })
@@ -238,11 +249,14 @@ describe('BulkDeleteLinkedDocModal', () => {
       wrapper.vm.confirmDelete()
       wrapper.vm.deleteDocs()
       await flushPromises()
-      expect(api.call).toHaveBeenCalledWith('xbr_crm.api.doc.delete_bulk_docs', {
-        items: ['A', 'B'],
-        doctype: 'CRM Deal',
-        delete_linked: true,
-      })
+      expect(api.call).toHaveBeenCalledWith(
+        'xbr_crm.api.doc.delete_bulk_docs',
+        {
+          items: ['A', 'B'],
+          doctype: 'CRM Deal',
+          delete_linked: true,
+        },
+      )
     })
 
     it('closes and refreshes once done', async () => {

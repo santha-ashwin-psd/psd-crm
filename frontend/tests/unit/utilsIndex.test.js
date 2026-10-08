@@ -135,13 +135,17 @@ describe('getFormat', () => {
 
 describe('getSafeWebsiteUrl', () => {
   it('accepts http and https', () => {
-    expect(getSafeWebsiteUrl('https://example.com')).toBe('https://example.com/')
+    expect(getSafeWebsiteUrl('https://example.com')).toBe(
+      'https://example.com/',
+    )
     expect(getSafeWebsiteUrl('http://example.com')).toBe('http://example.com/')
   })
 
   it('assumes https for a bare domain', () => {
     expect(getSafeWebsiteUrl('example.com')).toBe('https://example.com/')
-    expect(getSafeWebsiteUrl('www.example.com')).toBe('https://www.example.com/')
+    expect(getSafeWebsiteUrl('www.example.com')).toBe(
+      'https://www.example.com/',
+    )
   })
 
   it('rejects javascript: urls', () => {
@@ -151,7 +155,9 @@ describe('getSafeWebsiteUrl', () => {
   })
 
   it('rejects other non-web protocols', () => {
-    expect(getSafeWebsiteUrl('data:text/html,<script>alert(1)</script>')).toBeNull()
+    expect(
+      getSafeWebsiteUrl('data:text/html,<script>alert(1)</script>'),
+    ).toBeNull()
     expect(getSafeWebsiteUrl('file:///etc/passwd')).toBeNull()
     expect(getSafeWebsiteUrl('ftp://example.com')).toBeNull()
     expect(getSafeWebsiteUrl('vbscript:msgbox(1)')).toBeNull()
@@ -722,5 +728,20 @@ describe('sanitizeText', () => {
 
   it('defaults to an empty string', () => {
     expect(sanitizeText()).toBe('')
+  })
+})
+
+describe('isEmoji without the emoji database', () => {
+  it('recognises flags, keycaps, skin tones and joined emoji', () => {
+    for (const e of ['🇮🇳', '1️⃣', '👍🏽', '👨‍👩‍👧', '❤️', '🚀']) {
+      expect(isEmoji(e)).toBe(true)
+    }
+  })
+
+  it('treats icon names, digits and symbols as text', () => {
+    for (const t of ['list', 'lucide-search', '123', '#', '*', '→', '©']) {
+      expect(isEmoji(t)).toBe(false)
+    }
+    expect(isEmoji(null)).toBe(false)
   })
 })

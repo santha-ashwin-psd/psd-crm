@@ -67,8 +67,13 @@
 </template>
 <script setup>
 import { Popover } from 'frappe-ui'
-import { gemoji } from 'gemoji'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, shallowRef } from 'vue'
+
+// The emoji database (~300 KB) is fetched after the page has loaded, not as
+// part of it: this picker sits in every comment and email box.
+const gemoji = shallowRef([])
+const loadEmojis = () => import('gemoji').then((m) => (gemoji.value = m.gemoji))
+onMounted(loadEmojis)
 
 const search = ref('')
 const emoji = defineModel({ type: String, default: '' })
@@ -78,7 +83,7 @@ const reactionEmojis = ref(['👍', '❤️', '😂', '😮', '😢', '🙏'])
 
 const emojiGroups = computed(() => {
   let groups = {}
-  for (let _emoji of gemoji) {
+  for (let _emoji of gemoji.value) {
     if (search.value) {
       let keywords = [_emoji.description, ..._emoji.names, ..._emoji.tags]
         .join(' ')
@@ -101,10 +106,11 @@ const emojiGroups = computed(() => {
   return groups
 })
 
-function setRandom() {
-  let total = gemoji.length
+async function setRandom() {
+  if (!gemoji.value.length) await loadEmojis()
+  let total = gemoji.value.length
   let index = randomInt(0, total - 1)
-  emoji.value = gemoji[index].emoji
+  emoji.value = gemoji.value[index].emoji
 }
 
 function randomInt(min, max) {
