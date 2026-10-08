@@ -150,7 +150,13 @@
 </template>
 <script setup>
 import BellIcon from '@/components/Icons/BellIcon.vue'
-import { min, max, handleIntervalChange } from '@/components/Calendar/utils'
+import {
+  min,
+  max,
+  handleIntervalChange,
+  reminderSummary,
+  formatReminderTime as formatTime,
+} from '@/components/Calendar/utils'
 import { TimePicker } from 'frappe-ui'
 import { computed, ref } from 'vue'
 
@@ -233,42 +239,6 @@ function addShowNotifications() {
 
 const notificationSummary = computed(() => {
   if (!notifications.value?.length) return __('Add Notification')
-  return notifications.value
-    .map((n) => {
-      let intervalLabel = ''
-      switch (n.interval) {
-        case 'minutes':
-          intervalLabel = n.before == 1 ? __('minute') : __('minutes')
-          break
-        case 'hours':
-          intervalLabel = n.before == 1 ? __('hour') : __('hours')
-          break
-        case 'days':
-          intervalLabel = n.before == 1 ? __('day') : __('days')
-          break
-        case 'weeks':
-          intervalLabel = n.before == 1 ? __('week') : __('weeks')
-          break
-      }
-      if (props.isAllDay) {
-        let time = formatTime(n.time)
-        return `${n.before} ${intervalLabel} before at ${time}`
-      } else {
-        return `${n.before} ${intervalLabel} before`
-      }
-    })
-    .join(', ')
+  return reminderSummary(notifications.value, props.isAllDay)
 })
-
-function formatTime(time) {
-  if (!time) {
-    time = '08:00'
-  }
-  const [hours, minutes] = time.split(':').map(Number)
-  const period = hours >= 12 ? 'pm' : 'am'
-  const formattedHours = hours % 12 || 12
-  return `${formattedHours.toString().padStart(1, '0')}:${minutes
-    .toString()
-    .padStart(2, '0')} ${period}`
-}
 </script>

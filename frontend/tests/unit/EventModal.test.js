@@ -13,9 +13,19 @@ vi.mock('@/composables/event', async (importOriginal) => {
   return { ...actual, useEvent: () => ({ eventsResource: res }) }
 })
 
+// The modal reads the event's reminders and attendees itself on open.
+const api = vi.hoisted(() => ({ call: vi.fn() }))
+vi.mock('frappe-ui', async (importOriginal) => ({
+  ...(await importOriginal()),
+  call: api.call,
+}))
+
 const dialog = vi.hoisted(() => ({ open: vi.fn() }))
 vi.mock('@/stores/global', () => ({
-  globalStore: () => ({ $dialog: dialog.open, $socket: { on: vi.fn(), off: vi.fn() } }),
+  globalStore: () => ({
+    $dialog: dialog.open,
+    $socket: { on: vi.fn(), off: vi.fn() },
+  }),
 }))
 
 import EventModal from '@/components/Modals/EventModal.vue'
@@ -47,9 +57,15 @@ const mountModal = (event = EXISTING, props = {}) =>
     },
     global: {
       stubs: {
-        Dialog: true, Switch: true, TextEditor: true, DatePicker: true,
-        TimePicker: true, Dropdown: true, ErrorMessage: true,
-        EventNotifications: true, Attendee: true,
+        Dialog: true,
+        Switch: true,
+        TextEditor: true,
+        DatePicker: true,
+        TimePicker: true,
+        Dropdown: true,
+        ErrorMessage: true,
+        EventNotifications: true,
+        Attendee: true,
       },
     },
   })
@@ -68,6 +84,9 @@ describe('EventModal', () => {
     res.delete.submit.mockClear()
     res.reload.mockClear().mockResolvedValue(undefined)
     dialog.open.mockClear()
+    api.call
+      .mockReset()
+      .mockResolvedValue({ event_participants: [], notifications: [] })
   })
 
   afterEach(() => vi.useRealTimers())
@@ -258,7 +277,10 @@ describe('EventModal', () => {
       const wrapper = mountModal()
       wrapper.vm.deleteEvent()
       dialog.open.mock.calls[0][0].actions[0].onClick(vi.fn())
-      expect(res.delete.submit).toHaveBeenCalledWith('EVENT-1', expect.anything())
+      expect(res.delete.submit).toHaveBeenCalledWith(
+        'EVENT-1',
+        expect.anything(),
+      )
     })
 
     it('closes everything after deleting', async () => {
@@ -285,7 +307,11 @@ describe('EventModal', () => {
       const wrapper = mountModal()
       wrapper.vm.peoples = [{ email: 'ada@example.com' }]
       expect(wrapper.vm._event.event_participants).toEqual([
-        { email: 'ada@example.com', reference_doctype: 'Contact', reference_docname: '' },
+        {
+          email: 'ada@example.com',
+          reference_doctype: 'Contact',
+          reference_docname: '',
+        },
       ])
     })
 
@@ -314,6 +340,77 @@ describe('EventModal', () => {
       for (const o of options) {
         expect((o.value ?? o) > '09:00').toBe(true)
       }
+    })
+  })
+
+  describe('reminders and attendees of an existing event', () => {
+    const SAVED = {
+      event_participants: [
+        {
+          email: 'client@example.org',
+          reference_doctype: 'Contact',
+          reference_docname: 'Client',
+        },
+      ],
+      notifications: [
+        { type: 'Email', before: 10, interval: 'minutes' },
+        { type: 'Email', before: 1, interval: 'hours' },
+      ],
+    }
+
+    it('reads them from the event when it opens', async () => {
+      api.call.mockResolvedValue(SAVED)
+      const vm = mountModal().vm
+      await flushPromises()
+      expect(api.call).toHaveBeenCalledWith('frappe.client.get', {
+        doctype: 'Event',
+        name: 'EVENT-1',
+      })
+      expect(vm._event.notifications).toEqual(SAVED.notifications)
+      expect(vm._event.event_participants).toEqual(SAVED.event_participants)
+    })
+
+    it('does not count them as an unsaved change', async () => {
+      api.call.mockResolvedValue(SAVED)
+      const vm = mountModal().vm
+      await flushPromises()
+      expect(vm.dirty).toBe(false)
+    })
+
+    it('keeps them when only the time is changed', async () => {
+      api.call.mockResolvedValue(SAVED)
+      const vm = mountModal().vm
+      await flushPromises()
+      vm.updateTime('11:00', true)
+      vm.update()
+      expect(payload(res.setValue).notifications).toEqual(SAVED.notifications)
+      expect(payload(res.setValue).event_participants).toEqual(
+        SAVED.event_participants,
+      )
+    })
+
+    it('blocks saving until they have loaded, so a save cannot wipe them', async () => {
+      let resolve
+      api.call.mockReturnValue(new Promise((r) => (resolve = r)))
+      const vm = mountModal().vm
+      expect(vm.loadingDetails).toBe(true)
+      resolve(SAVED)
+      await flushPromises()
+      expect(vm.loadingDetails).toBe(false)
+    })
+
+    it('stays blocked and says so when they cannot be read', async () => {
+      api.call.mockRejectedValue(new Error('offline'))
+      const vm = mountModal().vm
+      await flushPromises()
+      expect(vm.loadingDetails).toBe(true)
+      expect(vm.error).toMatch(/Could not load/)
+    })
+
+    it('does not read anything for a new event', async () => {
+      mountModal({})
+      await flushPromises()
+      expect(api.call).not.toHaveBeenCalled()
     })
   })
 })

@@ -189,6 +189,9 @@
               v-model="_event.notifications"
               :isAllDay="_event.isFullDay"
             />
+            <div class="mt-1.5 text-sm text-ink-gray-5">
+              {{ __('Each reminder is emailed to the owner and attendees.') }}
+            </div>
           </div>
         </div>
       </div>
@@ -197,25 +200,25 @@
       <ErrorMessage v-if="error" :message="__(error)" />
       <span v-else />
       <div class="flex gap-2 justify-end">
-          <Button :label="__('Cancel')" @click="show = false" />
-          <Button
-            variant="solid"
-            :label="
-              mode === 'edit'
-                ? __('Update')
-                : mode === 'duplicate'
-                  ? __('Duplicate')
-                  : __('Create')
-            "
-            :disabled="!dirty"
-            :loading="
-              mode === 'edit'
-                ? eventsResource.setValue.loading
-                : eventsResource.insert.loading
-            "
-            @click="update"
-          />
-        </div>
+        <Button :label="__('Cancel')" @click="show = false" />
+        <Button
+          variant="solid"
+          :label="
+            mode === 'edit'
+              ? __('Update')
+              : mode === 'duplicate'
+                ? __('Duplicate')
+                : __('Create')
+          "
+          :disabled="!dirty || loadingDetails"
+          :loading="
+            mode === 'edit'
+              ? eventsResource.setValue.loading
+              : eventsResource.insert.loading
+          "
+          @click="update"
+        />
+      </div>
     </template>
   </CrmDialog>
 </template>
@@ -231,6 +234,7 @@ import {
   TimePicker,
   dayjs,
   Dropdown,
+  call,
 } from 'frappe-ui'
 import { globalStore } from '@/stores/global'
 import { validateEmail } from '@/utils'
@@ -331,8 +335,34 @@ onMounted(() => {
     oldEvent.value = JSON.parse(JSON.stringify(_event.value))
 
     setTimeout(() => title.value?.el?.focus(), 100)
+
+    if (props.event.name) loadDetails(props.event.name)
   }
 })
+
+// The event passed in comes from the activity list, which does not carry its
+// reminders and attendees. Saving without them would delete both, so they are
+// read from the event itself and Update stays disabled until they arrive.
+const loadingDetails = ref(false)
+
+async function loadDetails(name) {
+  loadingDetails.value = true
+  try {
+    const doc = await call('frappe.client.get', { doctype: 'Event', name })
+    const details = {
+      event_participants: doc.event_participants || [],
+      notifications: doc.notifications || [],
+    }
+    Object.assign(_event.value, JSON.parse(JSON.stringify(details)))
+    Object.assign(oldEvent.value, JSON.parse(JSON.stringify(details)))
+  } catch {
+    error.value = __(
+      'Could not load the reminders and attendees. Close and reopen the event.',
+    )
+    return
+  }
+  loadingDetails.value = false
+}
 
 function updateDate(d) {
   _event.value.fromDate = d

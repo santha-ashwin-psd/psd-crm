@@ -1,7 +1,6 @@
 import { usersStore } from '@/stores/users'
 import { dayjs, createListResource } from 'frappe-ui'
-import { sameArrayContents } from '@/utils'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { allTimeSlots } from '@/components/Calendar/utils'
 
 export const showEventModal = ref(false)
@@ -53,111 +52,78 @@ export function useEvent({
     orderBy: 'creation desc',
   })
 
+  // Attendees and reminders are child rows, read for all listed events at once.
   const eventParticipantsResource = createListResource({
     doctype: 'Event Participants',
     fields: ['*'],
     parent: 'Event',
+    pageLength: 9999,
   })
 
   const eventNotificationsResource = createListResource({
     doctype: 'Event Notifications',
     fields: ['*'],
     parent: 'Event',
+    pageLength: 9999,
+    orderBy: 'idx asc',
   })
+
+  // Re-read them whenever the event list loads, so an edited event shows its
+  // current attendees and reminders. (`update` alone only sets the filters.)
+  watch(
+    () => eventsResource.data,
+    (data) => {
+      const names = (data || []).map((e) => e.name)
+      if (!names.length) return
+      const children = [
+        [participants, eventParticipantsResource, 'event_participants'],
+        [notifications, eventNotificationsResource, 'notifications'],
+      ]
+      for (const [enabled, resource, parentfield] of children) {
+        if (!enabled) continue
+        resource.update({
+          filters: { parenttype: 'Event', parentfield, parent: ['in', names] },
+        })
+        resource.reload()
+      }
+    },
+    { immediate: true },
+  )
 
   const events = computed(() => {
     if (!eventsResource.data) return []
-    const eventNames = eventsResource.data.map((e) => e.name)
 
-    // Who created the event. Resolved here, unconditionally, because it is a
-    // property of the event itself and has nothing to do with its guest list.
-    // It used to be done inside the `else` of the participants branch below —
-    // so an event with NO participants never reached it: that resource stays
-    // empty, the `!data?.length` test stays true, and the owner was left as
-    // the raw user id. `event.owner.label` and `.image` were then both
-    // undefined, which is the nameless row and blank avatar in the timeline.
+    // Who created the event. Resolved for every event, whether or not it has
+    // guests, so the timeline never shows a nameless row or blank avatar.
     eventsResource.data.forEach((event) => {
       if (typeof event.owner !== 'object') {
         event.owner = { ...eventOwner(event.owner, getUser), name: event.owner }
       }
+
+      if (participants) {
+        const rows = (eventParticipantsResource.data || []).filter(
+          (participant) => participant.parent === event.name,
+        )
+        event.event_participants = [...rows]
+        event.participants = [
+          event.owner,
+          ...rows.map((participant) => ({
+            label: getUser(participant.email).full_name || participant.email,
+            image: getUser(participant.email).user_image || '',
+            name: participant.email,
+          })),
+        ]
+      }
+
+      if (notifications) {
+        event.notifications = (eventNotificationsResource.data || []).filter(
+          (notification) => notification.parent === event.name,
+        )
+      }
     })
-
-    // participants
-    if (participants) {
-      if (
-        !eventParticipantsResource.data?.length ||
-        eventsParticipantIsUpdated(eventNames)
-      ) {
-        eventParticipantsResource.update({
-          filters: {
-            parenttype: 'Event',
-            parentfield: 'event_participants',
-            parent: ['in', eventNames],
-          },
-        })
-      } else {
-        eventsResource.data.forEach((event) => {
-          event.event_participants = [
-            ...eventParticipantsResource.data.filter(
-              (participant) => participant.parent === event.name,
-            ),
-          ]
-
-          event.participants = [
-            event.owner,
-            ...eventParticipantsResource.data
-              .filter((participant) => participant.parent === event.name)
-              .map((participant) => ({
-                label:
-                  getUser(participant.email).full_name || participant.email,
-                image: getUser(participant.email).user_image || '',
-                name: participant.email,
-              })),
-          ]
-        })
-      }
-    }
-
-    // notifications
-    if (notifications) {
-      if (!eventNotificationsResource.data?.length) {
-        eventNotificationsResource.update({
-          filters: {
-            parenttype: 'Event',
-            parentfield: 'notifications',
-            parent: ['in', eventNames],
-          },
-        })
-      } else {
-        eventsResource.data.forEach((event) => {
-          event.notifications = [
-            ...eventNotificationsResource.data.filter(
-              (notification) => notification.parent === event.name,
-            ),
-          ]
-        })
-      }
-    }
 
     return eventsResource.data
   })
-
-  function eventsParticipantIsUpdated(eventNames) {
-    const parentFilter = eventParticipantsResource.filters?.parent?.[1]
-
-    if (eventNames.length && !sameArrayContents(parentFilter, eventNames))
-      return true
-
-    let d = eventsResource.setValue.data
-    if (!d) return false
-
-    let newParticipants = d.event_participants.map((p) => p.name)
-    let oldParticipants = eventParticipantsResource.data
-      .filter((p) => p.parent === d.name)
-      .map((p) => p.name)
-
-    return !sameArrayContents(newParticipants, oldParticipants)
-  }
 
   const startEndTime = (
     startTime,

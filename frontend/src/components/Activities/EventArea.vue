@@ -63,6 +63,15 @@
               </div>
               <div>{{ startDate(event.starts_on) }}</div>
             </div>
+            <div
+              v-if="event.notifications?.length"
+              class="flex items-center gap-1.5 text-sm text-ink-gray-5"
+            >
+              <BellIcon class="size-3.5 shrink-0" />
+              <span class="truncate">
+                {{ reminderSummary(event.notifications, event.all_day) }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -81,6 +90,8 @@
 <script setup>
 import EmptyState from '@/components/ListViews/EmptyState.vue'
 import CalendarIcon from '@/components/Icons/CalendarIcon.vue'
+import BellIcon from '@/components/Icons/BellIcon.vue'
+import { reminderSummary } from '@/components/Calendar/utils'
 import MultipleAvatar from '@/components/MultipleAvatar.vue'
 import { useEvent, showEventModal, activeEvent } from '@/composables/event'
 import TimelineTimestamp from '@/components/Activities/TimelineTimestamp.vue'
