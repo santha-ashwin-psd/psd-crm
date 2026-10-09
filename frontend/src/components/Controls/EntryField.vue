@@ -21,7 +21,10 @@
     </label>
     <div
       class="crm-entry-field"
-      :class="{ 'crm-entry-field--multiline': multiline }"
+      :class="{
+        'crm-entry-field--multiline': multiline,
+        'crm-entry-field--accent': accent,
+      }"
     >
       <span
         v-if="icon || $slots.prefix"
@@ -46,5 +49,7 @@ defineProps({
   required: { type: Boolean, default: false },
   hint: { type: String, default: '' },
   multiline: { type: Boolean, default: false },
+  // Tints the icon segment blue — for the fields that define the record.
+  accent: { type: Boolean, default: false },
 })
 </script>
