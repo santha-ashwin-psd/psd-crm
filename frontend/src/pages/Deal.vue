@@ -43,75 +43,73 @@
     <div class="flex shrink-0 flex-col gap-3 px-4 pt-4">
       <!-- HERO -->
       <section
-        class="overflow-hidden rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] shadow-sm"
+        class="flex flex-wrap items-start gap-4 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-5 py-4 shadow-sm"
       >
-        <div
-          class="h-14 border-b border-[var(--crm-border)]"
-          style="
-            background:
-              radial-gradient(
-                120% 180% at 0% 0%,
-                rgba(37, 99, 235, 0.1),
-                transparent 60%
-              ),
-              linear-gradient(180deg, var(--crm-surface-2), var(--crm-surface));
-          "
-        />
-        <div class="-mt-8 flex flex-wrap items-end gap-4 px-6 pb-4">
-          <Tooltip :text="__('Organization Logo')">
-            <Avatar
-              size="3xl"
-              class="!size-[68px] !rounded-2xl ring-4 ring-[var(--crm-surface)]"
-              :label="dealName"
-              :image="doc.organization_logo || organization?.organization_logo"
-            />
-          </Tooltip>
+        <Tooltip :text="__('Organization Logo')">
+          <Avatar
+            size="3xl"
+            class="!size-14 shrink-0 !rounded-2xl"
+            :label="dealName"
+            :image="doc.organization_logo || organization?.organization_logo"
+          />
+        </Tooltip>
 
-          <div class="min-w-0 flex-1 pb-0.5">
-            <!-- The customer is the deal's identity. `title` falls back to the
-                 record name when no organization is set, which is why the page
-                 showed the deal ID as BOTH the heading and the line underneath
-                 it. The ID now appears exactly once, in the meta line, and an
-                 unnamed deal says so plainly instead of echoing its key. -->
-            <Tooltip :text="dealName || __('Set an Organization')">
-              <div
-                class="truncate text-xl font-semibold"
-                :class="dealName ? 'text-ink-gray-9' : 'text-ink-gray-5'"
-              >
-                {{ dealName || __('Untitled deal') }}
-              </div>
-            </Tooltip>
+        <div class="min-w-0 flex-1">
+          <!-- The customer is the deal's identity. `title` falls back to the
+               record name when no organization is set, which is why the page
+               showed the deal ID as BOTH the heading and the line underneath
+               it. The ID now appears exactly once, in the meta line, and an
+               unnamed deal says so plainly instead of echoing its key. -->
+          <Tooltip :text="dealName || __('Set an Organization')">
             <div
-              class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-ink-gray-5"
+              class="truncate text-xl font-semibold"
+              :class="dealName ? 'text-ink-gray-9' : 'text-ink-gray-5'"
             >
-              <span
-                class="inline-flex cursor-copy items-center gap-1 hover:text-ink-gray-7"
-                :title="__('Copy deal ID')"
-                @click="copyToClipboard(dealId)"
-              >
-                {{ dealId }}
-                <span
-                  class="lucide-copy size-3 opacity-50"
-                  aria-hidden="true"
-                />
-              </span>
-              <template v-if="doc.industry">
-                <span class="text-ink-gray-4">·</span>
-                <span>{{ doc.industry }}</span>
-              </template>
-              <template v-if="ownerName">
-                <span class="text-ink-gray-4">·</span>
-                <span
-                  >{{ __('Owner') }}
-                  <span class="font-medium text-ink-gray-7">{{
-                    ownerName
-                  }}</span></span
-                >
-              </template>
+              {{ dealName || __('Untitled deal') }}
             </div>
+          </Tooltip>
+          <div
+            class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-ink-gray-5"
+          >
+            <span
+              class="inline-flex cursor-copy items-center gap-1 hover:text-ink-gray-7"
+              :title="__('Copy deal ID')"
+              @click="copyToClipboard(dealId)"
+            >
+              {{ dealId }}
+              <span class="lucide-copy size-3 opacity-50" aria-hidden="true" />
+            </span>
+            <template v-if="doc.industry">
+              <span class="text-ink-gray-4">·</span>
+              <span>{{ doc.industry }}</span>
+            </template>
+            <template v-if="ownerName">
+              <span class="text-ink-gray-4">·</span>
+              <span
+                >{{ __('Owner') }}
+                <span class="font-medium text-ink-gray-7">{{
+                  ownerName
+                }}</span></span
+              >
+            </template>
           </div>
+          <!-- Stage progression. Built from the site's own CRM Deal Status rows,
+               so the steps are whatever this site configured rather than a
+               hardcoded list; clicking one goes through the same
+               `triggerStatusChange` the dropdown uses, so the lost-reason prompt
+               and any script hooks still fire. -->
+          <StatusPipeline
+            v-if="pipelineStages.length"
+            class="mt-3"
+            :statuses="pipelineStages"
+            :current="doc.status"
+            :statusLabel="statusLabel"
+            @change="triggerStatusChange"
+          />
+        </div>
 
-          <div class="flex shrink-0 flex-col items-end gap-2.5 pb-0.5">
+        <div class="flex shrink-0 flex-col items-end gap-2.5">
+          <div class="flex flex-wrap items-center justify-end gap-2">
             <Dropdown
               v-if="doc && document.statuses"
               :options="statuses"
@@ -147,79 +145,63 @@
               icon-left="lucide-calendar-clock"
               @click="rescheduleFollowUp"
             />
-            <div class="flex items-center gap-1.5">
-              <Button
-                v-if="callEnabled"
-                :tooltip="
-                  isPhoneInCall ? __('Call In Progress') : __('Make a Call')
-                "
-                :icon="PhoneIcon"
-                :class="{
-                  '!bg-emerald-600 hover:!bg-emerald-700 text-white animate-pulse shadow-glow-emerald':
-                    isPhoneInCall,
-                }"
-                @click="triggerCall"
-              />
-              <Button
-                :tooltip="__('Send an Email')"
-                :label="__('Send an Email')"
-                :icon="Email2Icon"
-                @click="
-                  doc.email
-                    ? openEmailBox()
-                    : toast.error(
-                        __('Please set an email address to send emails'),
-                      )
-                "
-              />
-              <Button
-                :tooltip="__('Go to Website')"
-                :label="__('Go to Website')"
-                :icon="LinkIcon"
-                @click="
-                  doc.website
-                    ? openWebsite(doc.website)
-                    : toast.error(__('Please set a website to visit'))
-                "
-              />
-              <Button
-                :tooltip="__('Attach a File')"
-                :label="__('Attach a File')"
-                :icon="AttachmentIcon"
-                @click="showFilesUploader = true"
-              />
-              <AssignTo
-                v-model="assignees.data"
-                doctype="CRM Deal"
-                :docname="dealId"
-              />
-              <Button
-                v-if="canDelete"
-                :tooltip="__('Delete')"
-                :label="__('Delete deal')"
-                variant="subtle"
-                theme="red"
-                icon="lucide-trash-2"
-                @click="deleteDeal"
-              />
-            </div>
           </div>
-        </div>
-        <!-- Stage progression. Built from the site's own CRM Deal Status rows,
-             so the steps are whatever this site configured rather than a
-             hardcoded list; clicking one goes through the same
-             `triggerStatusChange` the dropdown uses, so the lost-reason prompt
-             and any script hooks still fire. -->
-        <div
-          v-if="pipelineStages.length"
-          class="border-t border-[var(--crm-border)] px-6 py-3"
-        >
-          <StatusPipeline
-            :statuses="pipelineStages"
-            :current="doc.status"
-            :statusLabel="statusLabel"
-            @change="triggerStatusChange"
-          />
+          <div class="flex items-center gap-1.5">
+            <Button
+              v-if="callEnabled"
+              :tooltip="
+                isPhoneInCall ? __('Call In Progress') : __('Make a Call')
+              "
+              :icon="PhoneIcon"
+              :class="{
+                '!bg-emerald-600 hover:!bg-emerald-700 text-white animate-pulse shadow-glow-emerald':
+                  isPhoneInCall,
+              }"
+              @click="triggerCall"
+            />
+            <Button
+              :tooltip="__('Send an Email')"
+              :label="__('Send an Email')"
+              :icon="Email2Icon"
+              @click="
+                doc.email
+                  ? openEmailBox()
+                  : toast.error(
+                      __('Please set an email address to send emails'),
+                    )
+              "
+            />
+            <Button
+              :tooltip="__('Go to Website')"
+              :label="__('Go to Website')"
+              :icon="LinkIcon"
+              @click="
+                doc.website
+                  ? openWebsite(doc.website)
+                  : toast.error(__('Please set a website to visit'))
+              "
+            />
+            <Button
+              :tooltip="__('Attach a File')"
+              :label="__('Attach a File')"
+              :icon="AttachmentIcon"
+              @click="showFilesUploader = true"
+            />
+            <AssignTo
+              v-model="assignees.data"
+              doctype="CRM Deal"
+              :docname="dealId"
+            />
+            <Button
+              v-if="canDelete"
+              :tooltip="__('Delete')"
+              :label="__('Delete deal')"
+              variant="subtle"
+              theme="red"
+              icon="lucide-trash-2"
+              @click="deleteDeal"
+            />
+          </div>
         </div>
       </section>
     </div>
