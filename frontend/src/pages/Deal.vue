@@ -44,6 +44,15 @@
       <!-- HERO -->
       <section
         class="flex flex-wrap items-start gap-4 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-5 py-4 shadow-sm"
+        style="
+          background:
+            radial-gradient(
+              120% 160% at 0% 0%,
+              rgba(37, 99, 235, 0.1),
+              transparent 60%
+            ),
+            linear-gradient(180deg, var(--crm-surface-2), var(--crm-surface));
+        "
       >
         <Tooltip :text="__('Organization Logo')">
           <Avatar
