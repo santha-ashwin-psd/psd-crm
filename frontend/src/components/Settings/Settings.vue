@@ -30,7 +30,10 @@
             </p>
           </div>
           <template v-for="(tab, i) in tabs" :key="tab.label">
-            <div v-if="!tab.hideLabel && i != 0" class="hidden md:block mx-1 mb-0.5 mt-[5px]" />
+            <div
+              v-if="!tab.hideLabel && i != 0"
+              class="hidden md:block mx-1 mb-0.5 mt-[5px]"
+            />
             <div
               v-if="!tab.hideLabel"
               class="hidden md:flex h-7.5 px-3 py-[7px] my-[3px] items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--crm-text-4)] bg-[var(--crm-settings-sidebar)] sticky top-0 z-10"
@@ -54,7 +57,9 @@
             </nav>
           </template>
         </div>
-        <div class="relative flex min-w-0 flex-1 flex-col bg-[var(--crm-surface)]">
+        <div
+          class="relative flex min-w-0 flex-1 flex-col bg-[var(--crm-surface)]"
+        >
           <!-- Decorative wash behind the page header: a faint blue tint that
                fades into the white page, plus the topographic lines on top. -->
           <div
@@ -75,12 +80,22 @@
               fill="none"
             >
               <path d="M-40 8 C 240 -62, 470 96, 770 26 S 1160 -50, 1300 42" />
-              <path d="M-40 40 C 240 -30, 470 128, 770 58 S 1160 -18, 1300 74" />
+              <path
+                d="M-40 40 C 240 -30, 470 128, 770 58 S 1160 -18, 1300 74"
+              />
               <path d="M-40 72 C 240 2, 470 160, 770 90 S 1160 14, 1300 106" />
-              <path d="M-40 104 C 240 34, 470 192, 770 122 S 1160 46, 1300 138" />
-              <path d="M-40 136 C 240 66, 470 224, 770 154 S 1160 78, 1300 170" />
-              <path d="M-40 168 C 240 98, 470 256, 770 186 S 1160 110, 1300 202" />
-              <path d="M-40 200 C 240 130, 470 288, 770 218 S 1160 142, 1300 234" />
+              <path
+                d="M-40 104 C 240 34, 470 192, 770 122 S 1160 46, 1300 138"
+              />
+              <path
+                d="M-40 136 C 240 66, 470 224, 770 154 S 1160 78, 1300 170"
+              />
+              <path
+                d="M-40 168 C 240 98, 470 256, 770 186 S 1160 110, 1300 202"
+              />
+              <path
+                d="M-40 200 C 240 130, 470 288, 770 218 S 1160 142, 1300 234"
+              />
             </g>
           </svg>
 
@@ -125,6 +140,7 @@ import WhatsAppSettings from '@/components/Settings/WhatsAppSettings.vue'
 import ERPNextSettings from '@/components/Settings/ERPNextSettings.vue'
 import LeadSyncSourcePage from '@/components/Settings/LeadSyncing/LeadSyncSourcePage.vue'
 import DefaultsSettings from '@/components/Settings/DefaultsSettings.vue'
+import FollowUpSettings from '@/components/Settings/FollowUpSettings.vue'
 import BrandSettings from '@/components/Settings/BrandSettings.vue'
 import CalendarSettings from '@/components/Settings/CalendarSettings.vue'
 import HomeActions from '@/components/Settings/HomeActions.vue'
@@ -202,6 +218,11 @@ const tabs = computed(() => {
           label: __('Calendar'),
           icon: CalendarIcon,
           component: markRaw(CalendarSettings),
+        },
+        {
+          label: __('Follow-ups'),
+          icon: 'clock',
+          component: markRaw(FollowUpSettings),
         },
       ],
       condition: () => isManager(),

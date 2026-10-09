@@ -306,6 +306,33 @@ def get_average_ongoing_deal_value(
 	}
 
 
+def get_overdue_follow_ups(from_date: str | None = None, to_date: str | None = None, user: str | None = None):
+	"""Pipelines in the follow-up stage whose follow-up date has passed.
+
+	As of now, whatever the date range: an overdue follow-up is overdue today.
+	"""
+	from xbr_crm.follow_ups import follow_up_stage
+
+	Deal = DocType("CRM Deal")
+	query = (
+		_scoped(frappe.qb.from_(Deal), Deal)
+		.select(Count(Deal.name).as_("count"))
+		.where(
+			(Deal.status == follow_up_stage())
+			& Deal.next_follow_up.isnotnull()
+			& (Deal.next_follow_up < frappe.utils.now_datetime())
+		)
+	)
+	if user:
+		query = query.where(Deal.deal_owner == user)
+	count = query.run(as_dict=True)[0].count or 0
+	return {
+		"title": _("Overdue follow-ups"),
+		"tooltip": _("Pipelines in the follow-up stage whose follow-up date has passed (as of now)"),
+		"value": count,
+	}
+
+
 def get_won_deals(from_date: str | None = None, to_date: str | None = None, user: str | None = None):
 	"""
 	Get won deal count for the dashboard, and also calculate average deal value for won deals.

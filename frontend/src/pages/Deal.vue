@@ -129,6 +129,24 @@
                 </Button>
               </template>
             </Dropdown>
+            <Button
+              v-if="isFollowUpStage(doc.status) && doc.next_follow_up"
+              size="sm"
+              :variant="followUpOverdue ? 'subtle' : 'ghost'"
+              :theme="followUpOverdue ? 'red' : 'gray'"
+              :tooltip="__('Change the follow-up date')"
+              :label="
+                followUpOverdue
+                  ? __('Follow-up overdue · {0}', [
+                      formatDate(doc.next_follow_up, 'D MMM, h:mm a'),
+                    ])
+                  : __('Follow-up · {0}', [
+                      formatDate(doc.next_follow_up, 'D MMM, h:mm a'),
+                    ])
+              "
+              icon-left="lucide-calendar-clock"
+              @click="rescheduleFollowUp"
+            />
             <div class="flex items-center gap-1.5">
               <Button
                 v-if="callEnabled"
@@ -585,7 +603,13 @@ import {
   setupCustomizations,
   copyToClipboard,
   isTranslatable,
+  formatDate,
 } from '@/utils'
+import {
+  askFollowUp,
+  isFollowUpStage,
+  isFollowUpOverdue,
+} from '@/composables/followUp'
 import { formatError } from '@/utils/formatError'
 import { getSettings } from '@/stores/settings'
 import { globalStore } from '@/stores/global'
@@ -931,10 +955,13 @@ async function removeContact(contact) {
 }
 
 async function setPrimaryContact(contact) {
-  let d = await call('xbr_crm.fcrm.doctype.crm_deal.crm_deal.set_primary_contact', {
-    deal: props.dealId,
-    contact,
-  })
+  let d = await call(
+    'xbr_crm.fcrm.doctype.crm_deal.crm_deal.set_primary_contact',
+    {
+      deal: props.dealId,
+      contact,
+    },
+  )
   if (d) {
     dealContacts.reload()
     toast.success(__('Primary Contact Set'))
@@ -977,9 +1004,33 @@ function triggerCall() {
 }
 
 async function triggerStatusChange(value) {
+  // Moving into the follow-up stage needs a follow-up date (a task with a
+  // reminder is created from it). Cancelling leaves the stage as it was.
+  if (isFollowUpStage(value) && value !== doc.value.status) {
+    const followUp = await askFollowUp({
+      next_follow_up: doc.value.next_follow_up,
+      follow_up_note: doc.value.follow_up_note,
+    })
+    if (!followUp) return
+    Object.assign(doc.value, followUp)
+  }
   await triggerOnChange('status', value)
   setLostReason()
 }
+
+async function rescheduleFollowUp() {
+  const followUp = await askFollowUp({
+    next_follow_up: doc.value.next_follow_up,
+    follow_up_note: doc.value.follow_up_note,
+  })
+  if (!followUp) return
+  Object.assign(doc.value, followUp)
+  document.save.submit(null, { onSuccess: () => (reload.value = true) })
+}
+
+const followUpOverdue = computed(() =>
+  isFollowUpOverdue(doc.value?.status, doc.value?.next_follow_up),
+)
 
 function updateField(name, value) {
   if (name == 'status' && !isOnboardingStepsCompleted.value) {

@@ -387,6 +387,7 @@ import { isMobileView } from '@/composables/settings'
 import Draggable from 'vuedraggable'
 // Only isEqual: importing all of lodash added ~500 KB to every list page.
 import isEqual from 'lodash/isEqual'
+import { askFollowUp, isFollowUpStage } from '@/composables/followUp'
 import ImportIcon from '~icons/lucide/import'
 
 const props = defineProps({
@@ -1103,8 +1104,23 @@ function persistCustomView() {
   })
 }
 
-function updateKanbanSettings(data) {
+async function updateKanbanSettings(data) {
   if (data.item && data.to) {
+    // Dropping a pipeline into the follow-up stage asks for the follow-up date
+    // first; cancelling puts the card back.
+    let values = { [view.value.column_field]: data.to }
+    if (
+      props.doctype === 'CRM Deal' &&
+      view.value.column_field === 'status' &&
+      isFollowUpStage(data.to)
+    ) {
+      const followUp = await askFollowUp()
+      if (!followUp) {
+        reload()
+        return
+      }
+      values = { ...values, ...followUp }
+    }
     // The card moves optimistically as you drag, but nothing re-read the list
     // afterwards, so the status counts in the KPI band above the board went
     // stale — and a rejected write (permissions, a validation hook) left the
@@ -1112,8 +1128,7 @@ function updateKanbanSettings(data) {
     call('frappe.client.set_value', {
       doctype: props.doctype,
       name: data.item,
-      fieldname: view.value.column_field,
-      value: data.to,
+      fieldname: values,
     })
       .then(() => reload())
       .catch((e) => {

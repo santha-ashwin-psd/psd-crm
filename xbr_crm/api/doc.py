@@ -453,6 +453,10 @@ def get_data(
 		if title_field not in rows:
 			rows.append(title_field)
 
+		# Pipeline cards flag an overdue follow-up, which needs the date.
+		if doctype == "CRM Deal" and "next_follow_up" not in rows:
+			rows.append("next_follow_up")
+
 		if not kanban_fields:
 			kanban_fields = ["name"]
 			if hasattr(_list, "default_kanban_settings"):

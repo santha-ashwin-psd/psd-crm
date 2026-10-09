@@ -5,7 +5,9 @@ import frappe
 from frappe import _
 from frappe.desk.form.assign_to import _add as assign
 from frappe.model.document import Document
+from frappe.utils import flt
 
+from xbr_crm import follow_ups
 from xbr_crm.api.exchange_rate import get_exchange_rate
 from xbr_crm.fcrm.doctype.crm_service_level_agreement.utils import get_sla
 from xbr_crm.fcrm.doctype.crm_status_change_log.crm_status_change_log import add_status_change_log
@@ -42,6 +44,8 @@ class CRMDeal(Document):
 		expected_deal_value: DF.Currency
 		first_name: DF.Data | None
 		first_responded_on: DF.Datetime | None
+		follow_up_note: DF.SmallText | None
+		follow_up_task: DF.Link | None
 		first_response_time: DF.Duration | None
 		gender: DF.Link | None
 		industry: DF.Link | None
@@ -56,6 +60,7 @@ class CRMDeal(Document):
 		mobile_no: DF.Data | None
 		naming_series: DF.Literal["PIPE-.YYYY.-"]
 		net_total: DF.Currency
+		next_follow_up: DF.Datetime | None
 		next_step: DF.Data | None
 		no_of_employees: DF.Literal["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"]
 		organization: DF.Link | None
@@ -99,6 +104,7 @@ class CRMDeal(Document):
 				self.closed_date = frappe.utils.nowdate()
 		self.validate_forecasting_fields()
 		self.validate_lost_reason()
+		follow_ups.prepare(self)
 		self.update_exchange_rate()
 		if self.organization and (self.is_new() or self.has_value_changed("organization")):
 			self.copy_enrichment_from_organization()
@@ -113,6 +119,9 @@ class CRMDeal(Document):
 		from xbr_crm.domain_enrichment.tasks import auto_enrich_on_create
 
 		auto_enrich_on_create(self)
+
+	def on_update(self):
+		follow_ups.sync_task(self)
 
 	def before_save(self):
 		self.apply_sla()
@@ -247,11 +256,24 @@ class CRMDeal(Document):
 			self.closed_date = frappe.utils.nowdate()
 
 	def update_default_probability(self):
+		"""The win probability follows the stage, unless someone set their own.
+
+		Empty or 0 takes the stage's probability. On a stage change, a probability
+		still equal to the previous stage's default moves to the new stage's
+		default; one typed by hand (or changed in this same save) is kept.
 		"""
-		Update the default probability based on the status.
-		"""
-		if not self.probability or self.probability == 0:
-			self.probability = frappe.db.get_value("CRM Deal Status", self.status, "probability") or 0
+		stage_probability = frappe.db.get_value("CRM Deal Status", self.status, "probability") or 0
+		if not self.probability:
+			self.probability = stage_probability
+			return
+		if self.is_new() or not self.has_value_changed("status") or self.has_value_changed("probability"):
+			return
+		before = self.get_doc_before_save()
+		previous_default = (
+			frappe.db.get_value("CRM Deal Status", before.status, "probability") if before else None
+		)
+		if previous_default is not None and flt(before.probability) == flt(previous_default):
+			self.probability = stage_probability
 
 	def update_expected_deal_value(self):
 		"""

@@ -321,6 +321,8 @@ scheduler_events = {
 		# Every minute; needs `scheduler_tick_interval: 60` in common_site_config
 		# (Frappe's default tick is 4 minutes).
 		"* * * * *": ["xbr_crm.reminders.service.send_due_reminders"],
+		# Daily at 09:00 (site timezone): pipelines stuck in the follow-up stage.
+		"0 9 * * *": ["xbr_crm.follow_ups.send_stuck_follow_up_alerts"],
 		"*/5 * * * *": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_5_minutes"],
 		"*/10 * * * *": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_10_minutes"],
 		"*/15 * * * *": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_15_minutes"],

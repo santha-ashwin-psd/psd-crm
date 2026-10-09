@@ -37,6 +37,10 @@
   "enable_event_reminder_emails",
   "enable_task_reminder_emails",
   "reminder_emails_enabled_on",
+  "follow_up_tab",
+  "follow_up_stage",
+  "enable_stuck_follow_up_alerts",
+  "stuck_follow_up_days",
   "dropdown_items_tab",
   "dropdown_items",
   "persona_captured",
@@ -284,12 +288,40 @@
    "fieldtype": "Check",
    "hidden": 1,
    "label": "Strict Tenancy Isolation"
+  },
+  {
+   "fieldname": "follow_up_tab",
+   "fieldtype": "Tab Break",
+   "label": "Follow-ups"
+  },
+  {
+   "fieldname": "follow_up_stage",
+   "fieldtype": "Link",
+   "label": "Follow-up Stage",
+   "options": "CRM Deal Status",
+   "default": "Followup",
+   "description": "Moving a pipeline to this stage asks for a follow-up date and creates a task with a reminder."
+  },
+  {
+   "fieldname": "enable_stuck_follow_up_alerts",
+   "fieldtype": "Check",
+   "label": "Email stuck follow-ups",
+   "default": "1",
+   "description": "A daily email to each owner, and their manager, listing pipelines with no activity for the set number of days."
+  },
+  {
+   "fieldname": "stuck_follow_up_days",
+   "fieldtype": "Int",
+   "label": "Stuck after (days)",
+   "default": "10",
+   "non_negative": 1,
+   "depends_on": "enable_stuck_follow_up_alerts"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-08 15:00:00.000000",
+ "modified": "2026-10-09 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "FCRM Settings",

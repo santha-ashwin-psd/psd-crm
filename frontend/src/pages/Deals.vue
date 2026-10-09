@@ -67,6 +67,23 @@
           :fieldName="titleField"
           title
         />
+        <div
+          v-if="followUpFor(itemName)"
+          class="mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium"
+          :class="
+            followUpFor(itemName).overdue
+              ? 'bg-surface-red-2 text-ink-red-4'
+              : 'bg-surface-blue-2 text-ink-blue-3'
+          "
+          :title="__('Next follow-up')"
+        >
+          <span class="lucide-calendar-clock size-3.5" />
+          {{
+            followUpFor(itemName).overdue
+              ? __('Overdue · {0}', [followUpFor(itemName).label])
+              : __('Follow-up · {0}', [followUpFor(itemName).label])
+          }}
+        </div>
       </template>
       <template #fields="{ fieldName, itemName }">
         <KanbanCardField
@@ -199,6 +216,7 @@ import { organizationsStore } from '@/stores/organizations'
 import { statusesStore } from '@/stores/statuses'
 import { callEnabled } from '@/composables/telephony'
 import { formatDate, timeAgo, website, formatTime } from '@/utils'
+import { isFollowUpOverdue, isFollowUpStage } from '@/composables/followUp'
 import { timestampCell } from '@/composables/useTimelinePreferences'
 import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
 import { Dropdown } from 'frappe-ui'
@@ -368,6 +386,23 @@ function getGroupedByRows(listRows, groupByField, columns) {
   })
 
   return groupedRows || listRows
+}
+
+// The next follow-up on a kanban card in the follow-up stage: its date and
+// time, and whether it has passed. The card's stage is its column, and the
+// date is read unformatted from the board data.
+function followUpFor(name) {
+  for (const column of deals.value?.data?.data || []) {
+    const row = column.data?.find((r) => r.name == name)
+    if (!row) continue
+    if (!isFollowUpStage(column.column?.name) || !row.next_follow_up)
+      return null
+    return {
+      label: formatDate(row.next_follow_up, 'D MMM, h:mm a'),
+      overdue: isFollowUpOverdue(column.column?.name, row.next_follow_up),
+    }
+  }
+  return null
 }
 
 function getKanbanRows(data, columns) {

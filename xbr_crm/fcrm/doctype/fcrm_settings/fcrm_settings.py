@@ -37,13 +37,16 @@ class FCRMSettings(Document):
 		enable_event_reminder_emails: DF.Check
 		enable_leads: DF.Check
 		enable_reminder_emails: DF.Check
+		enable_stuck_follow_up_alerts: DF.Check
 		enable_task_reminder_emails: DF.Check
 		event_notifications: DF.Table[EventNotifications]
 		favicon: DF.Attach | None
+		follow_up_stage: DF.Link | None
 		reminder_emails_enabled_on: DF.Datetime | None
 		service_provider: DF.Literal[
 			"frankfurter.app", "fawazahmed-exchange-api", "exchangerate.host", "exchangerate-api"
 		]
+		stuck_follow_up_days: DF.Int
 		update_timestamp_on_new_communication: DF.Check
 	# end: auto-generated types
 

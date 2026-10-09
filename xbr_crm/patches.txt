@@ -36,3 +36,4 @@ xbr_crm.patches.v1_1.create_default_territories
 xbr_crm.patches.v1_1.pipeline_naming_series
 xbr_crm.patches.v1_1.pipeline_stages
 xbr_crm.patches.v1_1.reminder_emails
+xbr_crm.patches.v1_1.follow_ups

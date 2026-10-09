@@ -11,6 +11,9 @@
   "naming_series",
   "organization",
   "next_step",
+  "next_follow_up",
+  "follow_up_note",
+  "follow_up_task",
   "column_break_ijan",
   "status",
   "deal_owner",
@@ -508,12 +511,31 @@
    "fieldtype": "Data",
    "label": "Facebook",
    "no_copy": 1
+  },
+  {
+   "fieldname": "next_follow_up",
+   "fieldtype": "Datetime",
+   "label": "Next Follow-up",
+   "description": "When the owner will follow up. Setting it while in the follow-up stage creates a task with a reminder."
+  },
+  {
+   "fieldname": "follow_up_note",
+   "fieldtype": "Small Text",
+   "label": "Follow-up Note"
+  },
+  {
+   "fieldname": "follow_up_task",
+   "fieldtype": "Link",
+   "label": "Follow-up Task",
+   "options": "CRM Task",
+   "read_only": 1,
+   "no_copy": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-07 18:00:00.000000",
+ "modified": "2026-10-09 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Deal",

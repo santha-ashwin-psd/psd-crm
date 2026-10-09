@@ -388,6 +388,7 @@ import { useDealFacts } from '@/composables/dealFacts'
 import SLASection from '@/components/SLASection.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import { setupCustomizations, isTranslatable, copyToClipboard } from '@/utils'
+import { askFollowUp, isFollowUpStage } from '@/composables/followUp'
 import { getView } from '@/utils/view'
 import { formatError } from '@/utils/formatError'
 import { getSettings } from '@/stores/settings'
@@ -693,10 +694,13 @@ async function removeContact(contact) {
 }
 
 async function setPrimaryContact(contact) {
-  let d = await call('xbr_crm.fcrm.doctype.crm_deal.crm_deal.set_primary_contact', {
-    deal: props.dealId,
-    contact,
-  })
+  let d = await call(
+    'xbr_crm.fcrm.doctype.crm_deal.crm_deal.set_primary_contact',
+    {
+      deal: props.dealId,
+      contact,
+    },
+  )
   if (d) {
     dealContacts.reload()
     toast.success(__('Primary Contact Set'))
@@ -768,6 +772,15 @@ function statusLabel(status) {
 }
 
 async function triggerStatusChange(value) {
+  // Same as the desktop page: the follow-up stage needs a follow-up date.
+  if (isFollowUpStage(value) && value !== doc.value.status) {
+    const followUp = await askFollowUp({
+      next_follow_up: doc.value.next_follow_up,
+      follow_up_note: doc.value.follow_up_note,
+    })
+    if (!followUp) return
+    Object.assign(doc.value, followUp)
+  }
   await triggerOnChange('status', value)
   setLostReason()
 }
