@@ -43,16 +43,16 @@
                 @update:modelValue="() => handleIntervalChange(notification)"
               />
             </div>
-            <FormControl
-              v-if="showType"
-              class="w-full"
-              type="checkbox"
-              :label="__('Also send as email')"
-              :modelValue="notification.type === 'Email'"
-              @update:modelValue="
-                (on) => (notification.type = on ? 'Email' : 'Notification')
-              "
-            />
+            <div v-if="showType" class="w-full">
+              <FormControl
+                type="checkbox"
+                :label="__('Also send as email')"
+                :modelValue="notification.type === 'Email'"
+                @update:modelValue="
+                  (on) => (notification.type = on ? 'Email' : 'Notification')
+                "
+              />
+            </div>
             <Button
               v-if="i == notifications.length - 1"
               class="w-full"
@@ -95,16 +95,16 @@
                 @update:modelValue="() => handleIntervalChange(notification)"
               />
             </div>
-            <FormControl
-              v-if="showType"
-              class="w-full"
-              type="checkbox"
-              :label="__('Also send as email')"
-              :modelValue="notification.type === 'Email'"
-              @update:modelValue="
-                (on) => (notification.type = on ? 'Email' : 'Notification')
-              "
-            />
+            <div v-if="showType" class="w-full">
+              <FormControl
+                type="checkbox"
+                :label="__('Also send as email')"
+                :modelValue="notification.type === 'Email'"
+                @update:modelValue="
+                  (on) => (notification.type = on ? 'Email' : 'Notification')
+                "
+              />
+            </div>
             <Button
               v-if="i == notifications.length - 1"
               class="w-full"
