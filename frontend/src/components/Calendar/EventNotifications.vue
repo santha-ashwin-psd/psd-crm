@@ -13,24 +13,6 @@
         <div v-if="isAllDay" class="flex gap-1">
           <div class="flex flex-col flex-1 items-center gap-2">
             <div class="flex items-center gap-2 w-full">
-              <FormControl
-                v-if="showType"
-                v-model="notification.type"
-                class="flex-1 shrink-0"
-                type="select"
-                :options="[
-                  {
-                    label: __('Notification'),
-                    value: 'Notification',
-                  },
-                  {
-                    label: __('Email'),
-                    value: 'Email',
-                  },
-                ]"
-                variant="outline"
-                :placeholder="__('Select Type')"
-              />
               <div>{{ __('at') }}</div>
               <TimePicker
                 v-if="isAllDay"
@@ -61,6 +43,16 @@
                 @update:modelValue="() => handleIntervalChange(notification)"
               />
             </div>
+            <FormControl
+              v-if="showType"
+              class="w-full"
+              type="checkbox"
+              :label="__('Also send as email')"
+              :modelValue="notification.type === 'Email'"
+              @update:modelValue="
+                (on) => (notification.type = on ? 'Email' : 'Notification')
+              "
+            />
             <Button
               v-if="i == notifications.length - 1"
               class="w-full"
@@ -81,25 +73,6 @@
         </div>
         <div v-else class="flex gap-1">
           <div class="flex flex-col flex-1 items-center gap-2">
-            <div v-if="showType" class="flex items-center gap-2 w-full">
-              <FormControl
-                v-model="notification.type"
-                class="flex-1 shrink-0"
-                type="select"
-                :options="[
-                  {
-                    label: __('Notification'),
-                    value: 'Notification',
-                  },
-                  {
-                    label: __('Email'),
-                    value: 'Email',
-                  },
-                ]"
-                variant="outline"
-                :placeholder="__('Select Type')"
-              />
-            </div>
             <div class="flex items-center gap-2 w-full">
               <FormControl
                 v-model.number="notification.before"
@@ -122,6 +95,16 @@
                 @update:modelValue="() => handleIntervalChange(notification)"
               />
             </div>
+            <FormControl
+              v-if="showType"
+              class="w-full"
+              type="checkbox"
+              :label="__('Also send as email')"
+              :modelValue="notification.type === 'Email'"
+              @update:modelValue="
+                (on) => (notification.type = on ? 'Email' : 'Notification')
+              "
+            />
             <Button
               v-if="i == notifications.length - 1"
               class="w-full"
@@ -162,7 +145,7 @@ import { computed, ref } from 'vue'
 
 const props = defineProps({
   isAllDay: { type: Boolean, default: false },
-  // Tasks always remind by email and in-app, so they hide the type picker.
+  // Tasks always remind by email and in-app, so they hide the email checkbox.
   showType: { type: Boolean, default: true },
 })
 
@@ -214,14 +197,14 @@ function addNotification() {
   notifications.value ??= []
   if (props.isAllDay) {
     notifications.value.push({
-      type: 'Notification',
+      type: 'Email',
       before: 1,
       interval: 'days',
       time: '08:00',
     })
   } else {
     notifications.value.push({
-      type: 'Notification',
+      type: 'Email',
       before: 10,
       interval: 'minutes',
     })

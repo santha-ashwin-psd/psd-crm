@@ -83,13 +83,6 @@
                 class="flex flex-wrap items-center gap-2"
               >
                 <FormControl
-                  v-model="notification.type"
-                  class="w-36 shrink-0"
-                  type="select"
-                  :options="channelOptions"
-                  :placeholder="__('Notification')"
-                />
-                <FormControl
                   v-model.number="notification.before"
                   class="w-20 shrink-0"
                   type="number"
@@ -106,6 +99,14 @@
                   :options="intervalOptions(notification)"
                   :placeholder="__('minutes')"
                   @update:modelValue="() => handleIntervalChange(notification)"
+                />
+                <FormControl
+                  type="checkbox"
+                  :label="__('Email')"
+                  :modelValue="notification.type === 'Email'"
+                  @update:modelValue="
+                    (on) => (notification.type = on ? 'Email' : 'Notification')
+                  "
                 />
                 <Button
                   icon="lucide-x"
@@ -124,7 +125,7 @@
               iconLeft="plus"
               @click="
                 notifications.push({
-                  type: 'Notification',
+                  type: 'Email',
                   before: 10,
                   interval: 'minutes',
                 })
@@ -162,13 +163,6 @@
                 class="flex flex-wrap items-center gap-2"
               >
                 <FormControl
-                  v-model="notification.type"
-                  class="w-36 shrink-0"
-                  type="select"
-                  :options="channelOptions"
-                  :placeholder="__('Notification')"
-                />
-                <FormControl
                   v-model.number="notification.before"
                   class="w-20 shrink-0"
                   type="number"
@@ -193,6 +187,14 @@
                   class="w-32 shrink-0"
                   :placeholder="__('08:00 pm')"
                 />
+                <FormControl
+                  type="checkbox"
+                  :label="__('Email')"
+                  :modelValue="notification.type === 'Email'"
+                  @update:modelValue="
+                    (on) => (notification.type = on ? 'Email' : 'Notification')
+                  "
+                />
                 <Button
                   icon="lucide-x"
                   variant="ghost"
@@ -213,7 +215,7 @@
               iconLeft="plus"
               @click="
                 allDayNotifications.push({
-                  type: 'Notification',
+                  type: 'Email',
                   before: 1,
                   interval: 'days',
                   time: '08:00',
@@ -268,11 +270,6 @@ const viewOptions = [
   { label: __('Daily'), value: 'Daily' },
   { label: __('Weekly'), value: 'Weekly' },
   { label: __('Monthly'), value: 'Monthly' },
-]
-
-const channelOptions = [
-  { label: __('Notification'), value: 'Notification' },
-  { label: __('Email'), value: 'Email' },
 ]
 
 // Labels are singular at 1, so they depend on the row's own value.

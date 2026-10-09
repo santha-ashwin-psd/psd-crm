@@ -7,6 +7,7 @@ Reminders come from the event's own `notifications` table or, when it has none,
 from the global defaults in FCRM Settings (Calendar tab) — one list for timed
 events, one for all-day events. Repeating events are reminded for every
 occurrence. Only Open events remind; Completed, Closed and Cancelled ones don't.
+A row of type "Email" is also emailed; "Notification" rows are in-app only.
 """
 
 from datetime import date, datetime, time, timedelta
@@ -185,6 +186,7 @@ def _build(event, key, row, occurrence: datetime, trigger: datetime) -> DueRemin
 		recipients=_recipients(event, company),
 		related_doctype=event.reference_doctype or None,
 		related_name=event.reference_docname or None,
+		email=row.type == "Email",
 		context={
 			"category": event.event_category or "Event",
 			"all_day": bool(event.all_day),

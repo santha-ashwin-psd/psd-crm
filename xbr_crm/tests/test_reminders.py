@@ -324,7 +324,7 @@ class TestTaskReminders(ReminderTestCase):
 
 
 class TestEventReminders(ReminderTestCase):
-	def event(self, starts_on, reminders=None, participants=(), **values):
+	def event(self, starts_on, reminders=None, participants=(), email=True, **values):
 		doc = frappe.get_doc(
 			{
 				"doctype": "Event",
@@ -335,7 +335,12 @@ class TestEventReminders(ReminderTestCase):
 				"status": values.pop("status", "Open"),
 				"location": "Board room",
 				"notifications": [
-					{"type": "Notification", "before": b, "interval": i, **({"time": t} if t else {})}
+					{
+						"type": "Email" if email else "Notification",
+						"before": b,
+						"interval": i,
+						**({"time": t} if t else {}),
+					}
 					for b, i, t in (reminders or [])
 				],
 				**values,
@@ -376,10 +381,23 @@ class TestEventReminders(ReminderTestCase):
 		)
 		self.assertEqual(sorted(bell), sorted([USER_A, USER_B]))
 
+	def test_email_unchecked_reminds_in_app_only(self):
+		event = self.event(
+			NOW + timedelta(minutes=10), [(10, "minutes", None)], participants=[EXTERNAL], email=False
+		)
+		self.run_at(NOW)
+		logs = {log.recipient: log for log in self.logs(event.name)}
+		self.assertEqual(set(logs), {USER_A, EXTERNAL})
+		self.assertFalse(any(log.email_queue for log in logs.values()))
+		self.assertEqual(logs[EXTERNAL].status, "Skipped")
+		self.assertTrue(
+			frappe.db.exists("CRM Notification", {"notification_type_doc": event.name, "to_user": USER_A})
+		)
+
 	def test_global_defaults_apply_when_event_has_none(self):
 		settings = frappe.get_single("FCRM Settings")
 		saved = [(r.type, r.before, r.interval) for r in settings.event_notifications]
-		settings.set("event_notifications", [{"type": "Notification", "before": 15, "interval": "minutes"}])
+		settings.set("event_notifications", [{"type": "Email", "before": 15, "interval": "minutes"}])
 		settings.save(ignore_permissions=True)
 		frappe.db.commit()
 		try:

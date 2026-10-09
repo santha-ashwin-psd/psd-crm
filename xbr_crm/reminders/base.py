@@ -45,6 +45,8 @@ class DueReminder:
 	# The CRM record this item belongs to (e.g. a deal), if any.
 	related_doctype: str | None = None
 	related_name: str | None = None
+	# False when the reminder row asks for an in-app notification only.
+	email: bool = True
 
 
 def offset(before, interval) -> timedelta | None:

@@ -190,7 +190,11 @@
               :isAllDay="_event.isFullDay"
             />
             <div class="mt-1.5 text-sm text-ink-gray-5">
-              {{ __('Each reminder is emailed to the owner and attendees.') }}
+              {{
+                __(
+                  'Reminders show in the CRM. With email on, they are also emailed to the owner and attendees.',
+                )
+              }}
             </div>
           </div>
         </div>
