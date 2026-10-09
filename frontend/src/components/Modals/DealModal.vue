@@ -1,10 +1,10 @@
 <template>
   <CrmDialog
     v-model:open="show"
-    size="xl"
+    size="5xl"
     icon="zap"
     :title="__('Create Pipeline')"
-    :subtitle="__('Contact, organisation and pipeline details in one go')"
+    :subtitle="__('Add contact, organisation and pipeline details in one go')"
     body-class="crm-doc-modal"
     footer-align="between"
   >
@@ -18,7 +18,7 @@
       />
     </template>
 
-    <div class="flex flex-col gap-6" @keydown="onKeydown">
+    <div class="flex flex-col gap-4" @keydown="onKeydown">
       <!-- Draft from an earlier, unfinished entry -->
       <div
         v-if="draft"
@@ -42,355 +42,479 @@
         </div>
       </div>
 
-      <!-- CONTACT -->
-      <section class="flex flex-col gap-3">
-        <h3 class="text-sm font-semibold text-ink-gray-9">
-          {{ __('Contact') }}
-        </h3>
-
-        <div
-          v-if="selectedContact"
-          class="flex items-center gap-3 rounded-lg border border-outline-gray-2 px-3 py-2"
-        >
-          <Avatar :label="selectedContact.full_name" size="lg" />
-          <div class="min-w-0 flex-1">
-            <div class="truncate text-base font-medium text-ink-gray-9">
-              {{ selectedContact.full_name || selectedContact.name }}
+      <div
+        class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]"
+      >
+        <!-- LEFT: the record itself -->
+        <div class="flex min-w-0 flex-col gap-4">
+          <!-- CONTACT -->
+          <section class="crm-entry-card">
+            <div class="crm-entry-card__head">
+              <span class="crm-entry-card__chip"
+                ><span class="lucide-user size-[18px]"
+              /></span>
+              <div class="min-w-0">
+                <h3 class="crm-entry-card__title">
+                  {{ __('Contact Details') }}
+                </h3>
+                <p class="crm-entry-card__sub">
+                  {{ __('Add the primary contact for this pipeline') }}
+                </p>
+              </div>
             </div>
-            <div class="truncate text-sm text-ink-gray-5">
-              {{ contactLine(selectedContact) }}
-            </div>
-          </div>
-          <Button variant="ghost" :label="__('Change')" @click="clearContact" />
-        </div>
 
-        <template v-else>
-          <Autocomplete
-            :options="contactOptions"
-            :filterable="false"
-            variant="outline"
-            :placeholder="
-              __('Search existing contacts by name, email or mobile')
-            "
-            model-value=""
-            @update:model-value="(o) => o && useContact(o.contact)"
-            @update:query="searchContacts"
-          >
-            <template #prefix>
-              <span class="lucide-search mr-2 size-4 text-ink-gray-5" />
-            </template>
-            <template #item-label="{ option }">
-              <div class="flex min-w-0 flex-col">
-                <span class="truncate font-medium text-ink-gray-8">
-                  {{ option.label }}
-                </span>
-                <span class="truncate text-sm text-ink-gray-5">
-                  {{ option.description }}
+            <div
+              v-if="selectedContact"
+              class="flex items-center gap-3 rounded-lg border border-[var(--crm-border)] px-3 py-2"
+            >
+              <Avatar :label="selectedContact.full_name" size="lg" />
+              <div class="min-w-0 flex-1">
+                <div class="truncate text-base font-medium text-ink-gray-9">
+                  {{ selectedContact.full_name || selectedContact.name }}
+                </div>
+                <div class="truncate text-sm text-ink-gray-5">
+                  {{ contactLine(selectedContact) }}
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                :label="__('Change')"
+                @click="clearContact"
+              />
+            </div>
+
+            <template v-else>
+              <EntryField icon="lucide-search">
+                <Autocomplete
+                  :options="contactOptions"
+                  :filterable="false"
+                  variant="outline"
+                  :placeholder="
+                    __('Search existing contacts by name, email or mobile')
+                  "
+                  model-value=""
+                  @update:model-value="(o) => o && useContact(o.contact)"
+                  @update:query="searchContacts"
+                >
+                  <template #item-label="{ option }">
+                    <div class="flex min-w-0 flex-col">
+                      <span class="truncate font-medium text-ink-gray-8">
+                        {{ option.label }}
+                      </span>
+                      <span class="truncate text-sm text-ink-gray-5">
+                        {{ option.description }}
+                      </span>
+                    </div>
+                  </template>
+                  <template #footer="{ value, close }">
+                    <Button
+                      variant="ghost"
+                      class="w-full !justify-start"
+                      iconLeft="plus"
+                      :label="
+                        value
+                          ? __('Create new contact “{0}”', [value])
+                          : __('Create new contact')
+                      "
+                      @click="startNewContact(value, close)"
+                    />
+                  </template>
+                </Autocomplete>
+              </EntryField>
+
+              <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+                <EntryField
+                  ref="firstNameInput"
+                  :label="__('First name')"
+                  icon="lucide-user"
+                >
+                  <FormControl
+                    v-model="deal.doc.first_name"
+                    :placeholder="__('First name')"
+                    autocomplete="off"
+                  />
+                  <template #error>
+                    <FieldError :message="errors.first_name" />
+                  </template>
+                </EntryField>
+                <EntryField :label="__('Last name')" icon="lucide-user">
+                  <FormControl
+                    v-model="deal.doc.last_name"
+                    :placeholder="__('Last name')"
+                    autocomplete="off"
+                  />
+                </EntryField>
+                <EntryField :label="__('Mobile')" icon="lucide-phone">
+                  <FormControl
+                    v-model="deal.doc.mobile_no"
+                    type="tel"
+                    inputmode="tel"
+                    :placeholder="__('+91 98765 43210')"
+                    autocomplete="off"
+                    @blur="tidyMobile"
+                  />
+                  <template #error>
+                    <FieldError :message="errors.mobile_no" />
+                  </template>
+                </EntryField>
+                <EntryField :label="__('Email')" icon="lucide-mail">
+                  <FormControl
+                    v-model="deal.doc.email"
+                    type="email"
+                    inputmode="email"
+                    :placeholder="__('name@company.com')"
+                    autocomplete="off"
+                  />
+                  <template #error>
+                    <FieldError :message="errors.email" />
+                  </template>
+                </EntryField>
+              </div>
+
+              <div
+                v-if="duplicates.length"
+                class="flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                role="status"
+              >
+                <div
+                  v-for="dup in duplicates"
+                  :key="dup.name"
+                  class="flex flex-wrap items-center justify-between gap-2"
+                >
+                  <span class="min-w-0">
+                    <span
+                      class="lucide-triangle-alert mr-1 inline-block size-3.5 align-[-2px]"
+                    />
+                    {{
+                      dup.matched_on === 'mobile'
+                        ? __('{0} already has this mobile number.', [
+                            dup.full_name,
+                          ])
+                        : __('{0} already has this email.', [dup.full_name])
+                    }}
+                  </span>
+                  <Button
+                    size="sm"
+                    :label="__('Use this contact')"
+                    @click="useContact(dup)"
+                  />
+                </div>
+                <label class="flex items-center gap-2">
+                  <input
+                    v-model="createNewContactAnyway"
+                    type="checkbox"
+                    class="rounded"
+                  />
+                  {{ __('Create a new contact anyway') }}
+                </label>
+                <span v-if="!createNewContactAnyway" class="text-xs opacity-80">
+                  {{
+                    __(
+                      'Otherwise the pipeline is linked to the existing contact.',
+                    )
+                  }}
                 </span>
               </div>
             </template>
-            <template #footer="{ value, close }">
-              <Button
-                variant="ghost"
-                class="w-full !justify-start"
-                iconLeft="plus"
-                :label="
-                  value
-                    ? __('Create new contact “{0}”', [value])
-                    : __('Create new contact')
-                "
-                @click="startNewContact(value, close)"
-              />
-            </template>
-          </Autocomplete>
+          </section>
 
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <FormControl
-              ref="firstNameInput"
-              v-model="deal.doc.first_name"
-              :label="__('First name')"
-              autocomplete="off"
-            />
-            <FormControl
-              v-model="deal.doc.last_name"
-              :label="__('Last name')"
-              autocomplete="off"
-            />
-            <div>
-              <FormControl
-                v-model="deal.doc.mobile_no"
-                type="tel"
-                inputmode="tel"
-                :label="__('Mobile')"
-                :placeholder="__('+91 98765 43210')"
-                autocomplete="off"
-                @blur="tidyMobile"
-              />
-              <FieldError :message="errors.mobile_no" />
+          <!-- PIPELINE -->
+          <section class="crm-entry-card">
+            <div class="crm-entry-card__head">
+              <span class="crm-entry-card__chip"
+                ><span class="lucide-target size-[18px]"
+              /></span>
+              <div class="min-w-0">
+                <h3 class="crm-entry-card__title">
+                  {{ __('Pipeline Information') }}
+                </h3>
+                <p class="crm-entry-card__sub">
+                  {{ __('Set the stage, ownership and expected details') }}
+                </p>
+              </div>
             </div>
-            <div>
-              <FormControl
-                v-model="deal.doc.email"
-                type="email"
-                inputmode="email"
-                :label="__('Email')"
-                autocomplete="off"
-              />
-              <FieldError :message="errors.email" />
-            </div>
-          </div>
-          <FieldError :message="errors.first_name" />
-
-          <div
-            v-if="duplicates.length"
-            class="flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
-            role="status"
-          >
-            <div
-              v-for="dup in duplicates"
-              :key="dup.name"
-              class="flex flex-wrap items-center justify-between gap-2"
-            >
-              <span class="min-w-0">
-                <span
-                  class="lucide-triangle-alert mr-1 inline-block size-3.5 align-[-2px]"
+            <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-3">
+              <EntryField :label="__('Stage')" icon="lucide-flag" required>
+                <FormControl
+                  v-model="deal.doc.status"
+                  type="select"
+                  :options="stageOptions"
                 />
-                {{
-                  dup.matched_on === 'mobile'
-                    ? __('{0} already has this mobile number.', [dup.full_name])
-                    : __('{0} already has this email.', [dup.full_name])
-                }}
-              </span>
-              <Button
-                size="sm"
-                :label="__('Use this contact')"
-                @click="useContact(dup)"
-              />
+                <template #error>
+                  <FieldError :message="errors.status" />
+                </template>
+              </EntryField>
+              <EntryField :label="__('Owner')" icon="lucide-user" required>
+                <Link
+                  class="form-control"
+                  doctype="User"
+                  variant="outline"
+                  :value="
+                    deal.doc.deal_owner &&
+                    getUser(deal.doc.deal_owner).full_name
+                  "
+                  :hideMe="true"
+                  @change="(v) => (deal.doc.deal_owner = v)"
+                >
+                  <template #prefix>
+                    <UserAvatar
+                      v-if="deal.doc.deal_owner"
+                      class="mr-2"
+                      :user="deal.doc.deal_owner"
+                      size="sm"
+                    />
+                  </template>
+                  <template #item-prefix="{ option }">
+                    <UserAvatar class="mr-2" :user="option.value" size="sm" />
+                  </template>
+                  <template #item-label="{ option }">
+                    {{ getUser(option.value).full_name }}
+                  </template>
+                </Link>
+              </EntryField>
+              <EntryField :label="__('Source')" icon="lucide-link">
+                <Link
+                  class="form-control"
+                  doctype="CRM Lead Source"
+                  variant="outline"
+                  :value="deal.doc.source"
+                  :placeholder="__('Select source')"
+                  @change="(v) => (deal.doc.source = v)"
+                />
+              </EntryField>
+              <EntryField :label="__('Value')">
+                <template #prefix>
+                  <span class="text-sm">{{ currencySymbol }}</span>
+                </template>
+                <FormControl
+                  v-model="deal.doc.deal_value"
+                  type="text"
+                  inputmode="decimal"
+                  :placeholder="'0'"
+                  autocomplete="off"
+                />
+                <template #error>
+                  <FieldError :message="errors.deal_value" />
+                </template>
+              </EntryField>
+              <EntryField :label="__('Expected close')" icon="lucide-calendar">
+                <DatePicker
+                  :value="deal.doc.expected_closure_date"
+                  :placeholder="__('Pick a date')"
+                  @change="(v) => (deal.doc.expected_closure_date = v)"
+                />
+              </EntryField>
+              <EntryField :label="__('Probability (%)')" icon="lucide-percent">
+                <FormControl
+                  v-model="deal.doc.probability"
+                  type="number"
+                  inputmode="numeric"
+                  min="0"
+                  max="100"
+                  :placeholder="'0'"
+                />
+                <template #error>
+                  <FieldError :message="errors.probability" />
+                </template>
+              </EntryField>
             </div>
-            <label class="flex items-center gap-2">
-              <input
-                v-model="createNewContactAnyway"
-                type="checkbox"
-                class="rounded"
+            <EntryField :label="__('Next step')" icon="lucide-list">
+              <FormControl
+                v-model="deal.doc.next_step"
+                :placeholder="__('e.g. Send the quotation by Friday')"
+                autocomplete="off"
               />
-              {{ __('Create a new contact anyway') }}
-            </label>
-            <span v-if="!createNewContactAnyway" class="text-xs opacity-80">
-              {{
-                __('Otherwise the pipeline is linked to the existing contact.')
-              }}
-            </span>
-          </div>
-        </template>
-      </section>
+            </EntryField>
+          </section>
 
-      <!-- ORGANISATION -->
-      <section class="flex flex-col gap-3">
-        <h3 class="text-sm font-semibold text-ink-gray-9">
-          {{ __('Organisation') }}
-        </h3>
-        <template v-if="!creatingOrganization">
-          <Link
-            class="form-control"
-            doctype="CRM Organization"
-            variant="outline"
-            :value="deal.doc.organization"
-            :placeholder="__('Search organisations, or create a new one')"
-            :onCreate="startNewOrganization"
-            @change="(v) => (deal.doc.organization = v)"
-          />
-          <button
-            v-if="!deal.doc.organization"
-            type="button"
-            class="self-start text-sm text-ink-blue-3 hover:underline"
-            @click="startNewOrganization('')"
-          >
-            + {{ __('New organisation') }}
-          </button>
-        </template>
-        <template v-else>
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <FormControl
-              ref="organizationInput"
-              v-model="deal.doc.organization_name"
-              :label="__('Organisation name')"
-              autocomplete="off"
-            />
-            <FormControl
-              v-model="deal.doc.website"
-              type="url"
-              inputmode="url"
-              :label="__('Website')"
-              :placeholder="__('example.com')"
-              autocomplete="off"
-            />
-            <Link
-              class="form-control"
-              doctype="CRM Industry"
-              variant="outline"
-              :label="__('Industry')"
-              :value="deal.doc.industry"
-              @change="(v) => (deal.doc.industry = v)"
-            />
-            <Link
-              class="form-control"
-              doctype="CRM Territory"
-              variant="outline"
-              :label="__('Territory')"
-              :value="deal.doc.territory"
-              @change="(v) => (deal.doc.territory = v)"
-            />
-            <FormControl
-              v-model="deal.doc.no_of_employees"
-              type="select"
-              :label="__('Employees')"
-              :options="EMPLOYEE_OPTIONS"
-            />
-          </div>
-          <button
-            type="button"
-            class="self-start text-sm text-ink-blue-3 hover:underline"
-            @click="cancelNewOrganization"
-          >
-            {{ __('Pick an existing organisation instead') }}
-          </button>
-        </template>
-      </section>
-
-      <!-- PIPELINE -->
-      <section class="flex flex-col gap-3">
-        <h3 class="text-sm font-semibold text-ink-gray-9">
-          {{ __('Pipeline') }}
-        </h3>
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div>
-            <FormControl
-              v-model="deal.doc.status"
-              type="select"
-              :label="__('Stage')"
-              :options="stageOptions"
-            />
-            <FieldError :message="errors.status" />
-          </div>
-          <Link
-            class="form-control"
-            doctype="User"
-            variant="outline"
-            :label="__('Owner')"
-            :value="
-              deal.doc.deal_owner && getUser(deal.doc.deal_owner).full_name
-            "
-            :hideMe="true"
-            @change="(v) => (deal.doc.deal_owner = v)"
-          >
-            <template #prefix>
-              <UserAvatar
-                v-if="deal.doc.deal_owner"
-                class="mr-2"
-                :user="deal.doc.deal_owner"
-                size="sm"
-              />
-            </template>
-            <template #item-prefix="{ option }">
-              <UserAvatar class="mr-2" :user="option.value" size="sm" />
-            </template>
-            <template #item-label="{ option }">
-              {{ getUser(option.value).full_name }}
-            </template>
-          </Link>
-          <Link
-            class="form-control"
-            doctype="CRM Lead Source"
-            variant="outline"
-            :label="__('Source')"
-            :value="deal.doc.source"
-            @change="(v) => (deal.doc.source = v)"
-          />
-          <div>
-            <FormControl
-              v-model="deal.doc.deal_value"
-              type="text"
-              inputmode="decimal"
-              :label="__('Value')"
-              :placeholder="'0'"
-              autocomplete="off"
+          <!-- MORE DETAILS: fields the admin added to the layout + first note -->
+          <section class="crm-entry-card">
+            <button
+              type="button"
+              class="crm-entry-card__head w-full text-left"
+              :aria-expanded="showMore"
+              @click="showMore = !showMore"
             >
-              <template #prefix>
-                <span class="text-sm text-ink-gray-5">{{
-                  currencySymbol
-                }}</span>
-              </template>
-            </FormControl>
-            <FieldError :message="errors.deal_value" />
-          </div>
-          <div class="flex flex-col gap-1.5">
-            <span class="text-xs text-ink-gray-5">{{
-              __('Expected close')
-            }}</span>
-            <DatePicker
-              :value="deal.doc.expected_closure_date"
-              :placeholder="__('Pick a date')"
-              @change="(v) => (deal.doc.expected_closure_date = v)"
-            />
-          </div>
-          <div>
-            <FormControl
-              v-model="deal.doc.probability"
-              type="number"
-              inputmode="numeric"
-              min="0"
-              max="100"
-              :label="__('Probability (%)')"
-              :placeholder="'0'"
-            />
-            <FieldError :message="errors.probability" />
-          </div>
+              <span class="crm-entry-card__chip"
+                ><span class="lucide-file-text size-[18px]"
+              /></span>
+              <div class="min-w-0 flex-1">
+                <h3 class="crm-entry-card__title">
+                  {{ __('More Details') }}
+                  <span class="font-normal text-[var(--crm-text-4)]">{{
+                    __('(Optional)')
+                  }}</span>
+                </h3>
+                <p class="crm-entry-card__sub">
+                  {{ __('Add additional information about the pipeline') }}
+                </p>
+              </div>
+              <span
+                class="size-4 shrink-0 text-ink-gray-5"
+                :class="showMore ? 'lucide-chevron-up' : 'lucide-chevron-down'"
+              />
+            </button>
+            <template v-if="showMore">
+              <FieldLayout
+                v-if="moreTabs.length"
+                :tabs="moreTabs"
+                :data="deal.doc"
+                doctype="CRM Deal"
+              />
+              <EntryField
+                :label="__('Note')"
+                :hint="__('(Optional)')"
+                icon="lucide-sticky-note"
+                multiline
+              >
+                <FormControl
+                  v-model="note"
+                  type="textarea"
+                  :rows="3"
+                  :placeholder="__('Saved as the first note on the pipeline')"
+                />
+              </EntryField>
+            </template>
+          </section>
         </div>
-        <FormControl
-          v-model="deal.doc.next_step"
-          :label="__('Next step')"
-          :placeholder="__('e.g. Send the quotation by Friday')"
-          autocomplete="off"
-        />
-      </section>
 
-      <!-- NOTE -->
-      <section class="flex flex-col gap-2">
-        <h3 class="text-sm font-semibold text-ink-gray-9">
-          {{ __('Note') }}
-          <span class="font-normal text-ink-gray-5">{{
-            __('(optional)')
-          }}</span>
-        </h3>
-        <FormControl
-          v-model="note"
-          type="textarea"
-          :rows="3"
-          :placeholder="__('Saved as the first note on the pipeline')"
-        />
-      </section>
+        <!-- RIGHT: organisation + progress guide -->
+        <div class="flex min-w-0 flex-col gap-4">
+          <section class="crm-entry-card">
+            <div class="crm-entry-card__head">
+              <span class="crm-entry-card__chip"
+                ><span class="lucide-building-2 size-[18px]"
+              /></span>
+              <div class="min-w-0">
+                <h3 class="crm-entry-card__title">
+                  {{ __('Organization') }}
+                </h3>
+                <p class="crm-entry-card__sub">
+                  {{
+                    __('Link to an existing organization or create a new one')
+                  }}
+                </p>
+              </div>
+            </div>
+            <template v-if="!creatingOrganization">
+              <EntryField icon="lucide-search">
+                <Link
+                  class="form-control"
+                  doctype="CRM Organization"
+                  variant="outline"
+                  :value="deal.doc.organization"
+                  :placeholder="__('Search organizations, or create a new one')"
+                  :onCreate="startNewOrganization"
+                  @change="(v) => (deal.doc.organization = v)"
+                />
+              </EntryField>
+              <button
+                v-if="!deal.doc.organization"
+                type="button"
+                class="flex h-10 items-center gap-2 rounded-lg bg-[var(--crm-accent-soft)] px-3 text-sm font-medium text-[var(--crm-accent-text)] transition-colors hover:brightness-95"
+                @click="startNewOrganization('')"
+              >
+                <span class="lucide-plus size-4" />
+                {{ __('Create new organization') }}
+              </button>
+            </template>
+            <template v-else>
+              <div class="flex flex-col gap-3">
+                <EntryField
+                  ref="organizationInput"
+                  :label="__('Organization name')"
+                  icon="lucide-building-2"
+                >
+                  <FormControl
+                    v-model="deal.doc.organization_name"
+                    autocomplete="off"
+                  />
+                </EntryField>
+                <EntryField :label="__('Website')" icon="lucide-globe">
+                  <FormControl
+                    v-model="deal.doc.website"
+                    type="url"
+                    inputmode="url"
+                    :placeholder="__('example.com')"
+                    autocomplete="off"
+                  />
+                </EntryField>
+                <EntryField :label="__('Industry')" icon="lucide-layers">
+                  <Link
+                    class="form-control"
+                    doctype="CRM Industry"
+                    variant="outline"
+                    :value="deal.doc.industry"
+                    @change="(v) => (deal.doc.industry = v)"
+                  />
+                </EntryField>
+                <EntryField :label="__('Territory')" icon="lucide-map-pin">
+                  <Link
+                    class="form-control"
+                    doctype="CRM Territory"
+                    variant="outline"
+                    :value="deal.doc.territory"
+                    @change="(v) => (deal.doc.territory = v)"
+                  />
+                </EntryField>
+                <EntryField :label="__('Employees')" icon="lucide-users">
+                  <FormControl
+                    v-model="deal.doc.no_of_employees"
+                    type="select"
+                    :options="EMPLOYEE_OPTIONS"
+                  />
+                </EntryField>
+              </div>
+              <button
+                type="button"
+                class="self-start text-sm text-[var(--crm-accent-text)] hover:underline"
+                @click="cancelNewOrganization"
+              >
+                {{ __('Pick an existing organization instead') }}
+              </button>
+            </template>
+          </section>
 
-      <!-- Fields the admin added to the layout -->
-      <section v-if="moreTabs.length" class="flex flex-col gap-2">
-        <button
-          type="button"
-          class="flex items-center gap-1 self-start text-sm font-semibold text-ink-gray-9"
-          :aria-expanded="showMore"
-          @click="showMore = !showMore"
-        >
-          <span
-            class="size-4"
-            :class="showMore ? 'lucide-chevron-down' : 'lucide-chevron-right'"
-          />
-          {{ __('More details') }}
-        </button>
-        <FieldLayout
-          v-if="showMore"
-          :tabs="moreTabs"
-          :data="deal.doc"
-          doctype="CRM Deal"
-        />
-      </section>
+          <!-- Progress guide: each step ticks off as the form fills in. -->
+          <aside class="crm-entry-guide hidden lg:flex">
+            <span class="crm-entry-guide__badge"
+              ><span class="lucide-box size-6"
+            /></span>
+            <h3 class="text-lg font-semibold text-[var(--crm-text)]">
+              {{ __('Create Pipeline') }}
+            </h3>
+            <p class="text-sm text-[var(--crm-text-3)]">
+              {{
+                __('Track and manage your opportunities by adding key details.')
+              }}
+            </p>
+            <ul class="mt-5 flex w-full flex-col gap-4 text-left">
+              <li
+                v-for="step in guideSteps"
+                :key="step.title"
+                class="flex items-start gap-3"
+              >
+                <span
+                  class="crm-entry-guide__step"
+                  :class="{ 'crm-entry-guide__step--done': step.done }"
+                >
+                  <span
+                    :class="[step.done ? 'lucide-check' : step.icon, 'size-4']"
+                  />
+                </span>
+                <div class="min-w-0">
+                  <div class="text-sm font-semibold text-[var(--crm-text)]">
+                    {{ step.title }}
+                  </div>
+                  <div class="text-[13px] text-[var(--crm-text-3)]">
+                    {{ step.sub }}
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </aside>
+        </div>
+      </div>
 
       <ErrorMessage v-if="error" :message="error" />
     </div>
@@ -430,6 +554,7 @@ import CrmDialog from '@/components/Modals/CrmDialog.vue'
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
 import Link from '@/components/Controls/Link.vue'
+import EntryField from '@/components/Controls/EntryField.vue'
 import Autocomplete from '@/components/frappe-ui/Autocomplete.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { usersStore } from '@/stores/users'
@@ -495,7 +620,8 @@ const error = ref(null)
 const errors = ref({})
 const creating = ref(false)
 const createAndNew = ref(false)
-const showMore = ref(false)
+// Open by default: it holds the first note, which used to sit in plain view.
+const showMore = ref(true)
 const draft = ref(null)
 const firstNameInput = ref(null)
 const organizationInput = ref(null)
@@ -555,6 +681,41 @@ const layout = createResource({
   auto: true,
 })
 const moreTabs = computed(() => extraTabs(layout.data))
+
+// The side guide ticks each step off as the form fills in.
+const guideSteps = computed(() => {
+  const d = deal.doc
+  return [
+    {
+      icon: 'lucide-user',
+      title: __('Add contact details'),
+      sub: __('Link the primary contact'),
+      done: Boolean(
+        selectedContact.value || d.first_name || d.email || d.mobile_no,
+      ),
+    },
+    {
+      icon: 'lucide-building-2',
+      title: __('Select or create organization'),
+      sub: __('Associate with an organization'),
+      done: Boolean(
+        d.organization || (creatingOrganization.value && d.organization_name),
+      ),
+    },
+    {
+      icon: 'lucide-target',
+      title: __('Set pipeline information'),
+      sub: __('Stage, owner, value and more'),
+      done: Boolean(d.status && d.deal_owner),
+    },
+    {
+      icon: 'lucide-file-text',
+      title: __('Add additional details'),
+      sub: __('Revenue, description, etc.'),
+      done: Boolean(note.value),
+    },
+  ]
+})
 
 // --- Contact --------------------------------------------------------------
 
