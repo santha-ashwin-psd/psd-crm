@@ -222,82 +222,6 @@
           />
         </div>
       </section>
-
-      <!-- KEY FACTS — the DEAL's own numbers.
-           These tiles used to carry the organization's contact details (email,
-           phone, website, industry, company size, territory), which left the
-           page unable to answer "what is this deal worth, how likely is it,
-           and when does it close?" without opening the side panel. Those
-           company attributes are all still editable in the Organization
-           Details section on the right; the band above the fold now shows the
-           deal. Missing values render as a neutral em dash, never as a
-           placeholder implying data exists. -->
-      <section class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-        <div class="fact-tile">
-          <span class="fact-k">
-            <FeatherIcon name="dollar-sign" class="size-3.5" />{{
-              __('Deal value')
-            }}
-          </span>
-          <span class="fact-v" :class="{ 'fact-empty': !doc.deal_value }">
-            {{ dealValue }}
-          </span>
-        </div>
-        <div class="fact-tile">
-          <span class="fact-k">
-            <FeatherIcon name="target" class="size-3.5" />{{
-              __('Expected value')
-            }}
-          </span>
-          <span
-            class="fact-v"
-            :class="{ 'fact-empty': !doc.expected_deal_value }"
-          >
-            {{ expectedValue }}
-          </span>
-        </div>
-        <div class="fact-tile">
-          <span class="fact-k">
-            <FeatherIcon name="percent" class="size-3.5" />{{
-              __('Probability')
-            }}
-          </span>
-          <span class="fact-v" :class="{ 'fact-empty': !doc.probability }">
-            {{ probabilityLabel }}
-          </span>
-        </div>
-        <div class="fact-tile">
-          <span class="fact-k">
-            <FeatherIcon name="calendar" class="size-3.5" />{{
-              __('Expected close')
-            }}
-          </span>
-          <span
-            class="fact-v"
-            :class="{ 'fact-empty': !doc.expected_closure_date }"
-          >
-            {{ expectedCloseLabel }}
-          </span>
-        </div>
-        <div class="fact-tile">
-          <span class="fact-k">
-            <FeatherIcon name="briefcase" class="size-3.5" />{{
-              __('Organization')
-            }}
-          </span>
-          <span class="fact-v" :class="{ 'fact-empty': !doc.organization }">
-            {{ doc.organization || '—' }}
-          </span>
-        </div>
-        <div class="fact-tile">
-          <span class="fact-k">
-            <FeatherIcon name="user" class="size-3.5" />{{ __('Owner') }}
-          </span>
-          <span class="fact-v" :class="{ 'fact-empty': !ownerName }">
-            {{ ownerName || '—' }}
-          </span>
-        </div>
-      </section>
     </div>
 
     <!-- WORKING AREA: timeline (left) + contextual panel (right) -->
@@ -740,18 +664,9 @@ watch(
 
 const organization = computed(() => organizationDocument.value?.doc || {})
 
-// Header facts (name, value, probability, close date, owner, stages) come from
-// the shared composable so the mobile detail page shows exactly the same
-// figures — see composables/dealFacts.js.
-const {
-  dealName,
-  dealValue,
-  expectedValue,
-  probabilityLabel,
-  expectedCloseLabel,
-  ownerName,
-  pipelineStages,
-} = useDealFacts(doc, organization)
+// Header facts (name, owner, stages) come from the shared composable so the
+// mobile detail page shows exactly the same figures — see composables/dealFacts.js.
+const { dealName, ownerName, pipelineStages } = useDealFacts(doc, organization)
 // NB: declared AFTER `doc` and `organization`. The composable receives the
 // bindings themselves, so calling it earlier hits the temporal dead zone and
 // the whole page fails to set up.
