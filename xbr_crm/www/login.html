@@ -216,6 +216,9 @@ input,button{font-family:var(--font)}
   justify-content:center;font-weight:700;color:#fff;font-size:16px;flex-shrink:0}
 
 *:focus-visible{outline:2px solid var(--accentL);outline-offset:2px}
+/* Text fields draw their own border + halo on focus, and browsers match
+   :focus-visible on a mouse click into them, so the outline stacked a second ring. */
+.fi:focus-visible,.otp-digit:focus-visible{outline:none}
 
 @media(max-width:900px){
   .brand-panel{display:none}
