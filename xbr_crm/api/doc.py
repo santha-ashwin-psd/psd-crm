@@ -213,6 +213,14 @@ def get_quick_filters(doctype: str, cached: bool = True):
 
 
 @frappe.whitelist()
+def get_default_quick_filters(doctype: str) -> list[str]:
+	"""The fieldnames a list page's quick filters start with, in order."""
+	from xbr_crm.install import DEFAULT_QUICK_FILTERS
+
+	return DEFAULT_QUICK_FILTERS.get(doctype, [])
+
+
+@frappe.whitelist()
 def update_quick_filters(quick_filters: str, old_filters: str, doctype: str):
 	quick_filters = json.loads(quick_filters)
 	old_filters = json.loads(old_filters)

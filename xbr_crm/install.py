@@ -513,15 +513,20 @@ def add_default_lost_reasons():
 		doc.insert()
 
 
+# The quick filters each list page starts with. Also what "Reset to default" in
+# Customize Quick Filters restores (xbr_crm.api.doc.get_default_quick_filters).
+DEFAULT_QUICK_FILTERS = {
+	"CRM Lead": ["lead_name", "email", "organization", "status", "source"],
+	"CRM Deal": ["organization", "status", "probability", "email"],
+	"Contact": ["status", "email_id", "phone"],
+	"CRM Organization": ["organization_name", "no_of_employees", "territory", "industry"],
+	"CRM Task": ["title", "priority", "assigned_to", "status", "due_date"],
+	"CRM Call Log": ["telephony_medium", "type", "status", "from", "to"],
+}
+
+
 def add_default_quick_filters():
-	quick_filters = {
-		"CRM Lead": ["lead_name", "email", "organization", "status", "source"],
-		"CRM Deal": ["organization", "status", "probability", "email"],
-		"Contact": ["status", "email_id", "phone"],
-		"CRM Organization": ["organization_name", "no_of_employees", "territory", "industry"],
-		"CRM Task": ["title", "priority", "assigned_to", "status", "due_date"],
-		"CRM Call Log": ["telephony_medium", "type", "status", "from", "to"],
-	}
+	quick_filters = DEFAULT_QUICK_FILTERS
 
 	for quick_filter in quick_filters:
 		if frappe.db.exists("CRM Global Settings", {"dt": quick_filter}):

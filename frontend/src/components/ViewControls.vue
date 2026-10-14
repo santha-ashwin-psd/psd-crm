@@ -123,6 +123,13 @@
     <div class="-ml-2 h-[70%] border-l" />
     <div class="flex gap-1">
       <Button
+        variant="ghost"
+        :label="__('Reset to default')"
+        :tooltip="__('Put back the standard filters for this page. Save to apply.')"
+        :loading="defaultQuickFilters.loading"
+        @click="resetQuickFilters"
+      />
+      <Button
         :label="__('Save')"
         :loading="updateQuickFilters.loading"
         @click="saveQuickFilters"
@@ -896,6 +903,29 @@ const updateQuickFilters = createResource({
     toast.success(__('Quick filters updated successfully'))
   },
 })
+
+// Loads the page's standard filters into the editor; nothing changes until Save.
+const defaultQuickFilters = createResource({
+  url: 'xbr_crm.api.doc.get_default_quick_filters',
+  params: { doctype: props.doctype },
+  onSuccess(fieldnames) {
+    const fields = getFields() || []
+    newQuickFilters.value = (fieldnames || [])
+      .map((fieldname) => {
+        if (fieldname === 'name')
+          return { label: __('Name'), fieldname, fieldtype: 'Data' }
+        const field = fields.find((f) => f.fieldname === fieldname)
+        return field
+          ? { label: field.label, fieldname, fieldtype: field.fieldtype }
+          : null
+      })
+      .filter(Boolean)
+  },
+})
+
+function resetQuickFilters() {
+  defaultQuickFilters.fetch()
+}
 
 function saveQuickFilters() {
   let new_filters =
