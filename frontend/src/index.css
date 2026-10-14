@@ -1989,6 +1989,12 @@ button.crm-settings-action svg {
    never add a replacement, which leaves keyboard users with no idea where
    they are. `:focus-visible` only matches keyboard navigation, so this
    restores the indicator without adding a ring on mouse clicks.
+
+   Text-entry controls (text inputs, textareas, rich-text editors) are left
+   out: browsers match `:focus-visible` on a plain mouse click into them, and
+   they already draw their own focus border + halo, so the outline stacked a
+   second ring around every field. Fields inside a frame that owns the ring
+   (.crm-entry-field, .crm-multiselect-box, …) are handled below.
    ===================================================== */
 #app
   :is(
@@ -1997,15 +2003,41 @@ button.crm-settings-action svg {
     [role='button'],
     [role='option'],
     [role='tab'],
-    [tabindex]:not([tabindex='-1']),
-    input:not([type='hidden']),
+    [tabindex]:not([tabindex='-1']):not([contenteditable='true']),
+    input:is(
+      [type='checkbox'],
+      [type='radio'],
+      [type='range'],
+      [type='file'],
+      [type='color']
+    ),
     select,
-    textarea,
-    [data-slot='trigger'],
-    [contenteditable='true']
+    [data-slot='trigger']
   ):focus-visible {
   outline: 2px solid var(--crm-accent-primary) !important;
   outline-offset: 2px !important;
+}
+
+/* Frames that draw the focus ring themselves (:focus-within): the control
+   inside must not add its own outline as well, or the field shows two rings.
+   `#app` / `[role='dialog']` so these outrank the two outline rules. */
+:is(#app, [role='dialog'])
+  :is(
+    .crm-entry-field,
+    .crm-multiselect-box,
+    .crm-composite-field,
+    .crm-composer
+  )
+  :is(
+    input,
+    textarea,
+    select,
+    button,
+    [data-slot='trigger'],
+    [contenteditable='true'],
+    [tabindex]
+  ):is(:focus, :focus-visible) {
+  outline: none !important;
 }
 
 /* =====================================================
@@ -3280,12 +3312,16 @@ button.crm-settings-action svg {
     [role='button'],
     [role='option'],
     [role='tab'],
-    [tabindex]:not([tabindex='-1']),
-    input:not([type='hidden']),
+    [tabindex]:not([tabindex='-1']):not([contenteditable='true']),
+    input:is(
+      [type='checkbox'],
+      [type='radio'],
+      [type='range'],
+      [type='file'],
+      [type='color']
+    ),
     select,
-    textarea,
-    [data-slot='trigger'],
-    [contenteditable='true']
+    [data-slot='trigger']
   ):focus-visible {
   outline: 2px solid var(--crm-accent-primary) !important;
   outline-offset: 2px !important;
