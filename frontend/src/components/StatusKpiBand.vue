@@ -261,6 +261,10 @@ const statusCards = computed(() => {
 .crm-stat-band {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  /* The pages stack the band in a full-height flex column above the table.
+     Without this the column shrinks it to make room for the table, and
+     `overflow: hidden` then clips the figures and trend line at the bottom. */
+  flex-shrink: 0;
   background: var(--crm-surface);
   overflow: hidden;
 }
