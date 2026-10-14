@@ -205,17 +205,36 @@ const options = computed(() => {
   // "use what you typed" entry straight into the resource's own data, so it
   // survived into the next search — and before the first response `data` is
   // null, so the push threw and the picker went blank.
-  const searched = (props.fetchContacts ? filterOptions.data : null) || []
-  if (!searched.length && query.value) {
-    return [{ name: 'new', label: query.value, value: query.value }]
+  // People already on the event are left out, so the list only offers
+  // someone new.
+  const searched = (
+    (props.fetchContacts ? filterOptions.data : null) || []
+  ).filter((o) => !chosenEmails.value.has(String(o.value).toLowerCase()))
+  const typed = (query.value || '').trim()
+  if (!searched.length && typed && !alreadyAdded.value) {
+    return [{ name: 'new', label: typed, value: typed }]
   }
   return searched
 })
 
+const chosenEmails = computed(
+  () =>
+    new Set(
+      (values.value || [])
+        .map((a) => String(a?.email || '').toLowerCase())
+        .filter(Boolean),
+    ),
+)
+const alreadyAdded = computed(() =>
+  chosenEmails.value.has((query.value || '').trim().toLowerCase()),
+)
+
 const emptyStateText = computed(() =>
-  props.fetchContacts
-    ? __('No results found')
-    : __('Type an email address to add attendee'),
+  alreadyAdded.value
+    ? __('{0} is already added', [(query.value || '').trim()])
+    : props.fetchContacts
+      ? __('No results found')
+      : __('Type an email address to add attendee'),
 )
 
 function reload(val) {
