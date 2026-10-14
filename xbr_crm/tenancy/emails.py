@@ -20,7 +20,7 @@ def _shell(heading: str, intro: str, body: str, footer: str = "") -> str:
               border-radius:16px;overflow:hidden">
     <div style="padding:28px 32px 8px">
       <div style="font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
-                  color:{_ACCENT}">Frappe CRM</div>
+                  color:{_ACCENT}">PS Digitise CRM</div>
       <h1 style="margin:12px 0 8px;font-size:22px;line-height:1.3;color:{_INK}">{heading}</h1>
       <p style="margin:0;font-size:14px;line-height:1.6;color:{_MUTED}">{intro}</p>
     </div>
@@ -51,24 +51,24 @@ def send_signup_otp(email: str, first_name: str, otp: str, minutes: int) -> bool
 	)
 	return send_system_email(
 		email,
-		"Your Frappe CRM verification code",
+		"Your PS Digitise CRM verification code",
 		html,
-		f"Your Frappe CRM verification code is {otp}. It expires in {minutes} minutes.",
+		f"Your PS Digitise CRM verification code is {otp}. It expires in {minutes} minutes.",
 	)
 
 
 def send_login_otp(email: str, otp: str, minutes: int) -> bool:
 	html = _shell(
 		"Your sign-in code",
-		"Use this code to sign in to Frappe CRM.",
+		"Use this code to sign in to PS Digitise CRM.",
 		_otp_block(otp)
 		+ f'<p style="margin:18px 0 0;font-size:13px;color:{_MUTED};text-align:center">'
 		f"This code expires in {minutes} minutes.</p>",
 		"If you didn't try to sign in, change your password — someone may know it.",
 	)
 	return send_system_email(
-		email, "Your Frappe CRM sign-in code", html,
-		f"Your Frappe CRM sign-in code is {otp}. It expires in {minutes} minutes.",
+		email, "Your PS Digitise CRM sign-in code", html,
+		f"Your PS Digitise CRM sign-in code is {otp}. It expires in {minutes} minutes.",
 	)
 
 
@@ -81,8 +81,8 @@ def send_reset_otp(email: str, otp: str, minutes: int) -> bool:
 		f"This code expires in {minutes} minutes.</p>",
 	)
 	return send_system_email(
-		email, "Your Frappe CRM password reset code", html,
-		f"Your Frappe CRM password reset code is {otp}. It expires in {minutes} minutes.",
+		email, "Your PS Digitise CRM password reset code", html,
+		f"Your PS Digitise CRM password reset code is {otp}. It expires in {minutes} minutes.",
 	)
 
 
@@ -102,14 +102,14 @@ def send_invite(email: str, first_name: str, company: str, password: str, role: 
 </div>"""
 	html = _shell(
 		f"You've been invited to {company}",
-		f"Hi {first_name or 'there'}, you now have {role} access to {company} on Frappe CRM.",
+		f"Hi {first_name or 'there'}, you now have {role} access to {company} on PS Digitise CRM.",
 		body,
 		"Please change this temporary password after your first sign-in.",
 	)
 	return send_system_email(
 		email,
-		f"You've been invited to {company} on Frappe CRM",
+		f"You've been invited to {company} on PS Digitise CRM",
 		html,
-		f"You've been invited to {company} on Frappe CRM.\n"
+		f"You've been invited to {company} on PS Digitise CRM.\n"
 		f"Email: {email}\nTemporary password: {password}\nSign in: {url}",
 	)

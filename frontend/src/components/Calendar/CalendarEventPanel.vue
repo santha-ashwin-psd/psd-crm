@@ -351,11 +351,20 @@
       </div>
       <div class="flex justify-between gap-3 px-4.5 py-[7px] text-ink-gray-7">
         <BellIcon class="size-4 mt-1.5" />
-        <EventNotifications
-          v-model="notifications"
-          class="w-full"
-          :isAllDay="_event.isFullDay"
-        />
+        <div class="flex w-full flex-col gap-1">
+          <EventNotifications
+            v-model="notifications"
+            class="w-full"
+            :isAllDay="_event.isFullDay"
+          />
+          <span
+            v-if="duplicateReminders(notifications, _event.isFullDay).size"
+            class="text-sm text-[var(--crm-danger)]"
+            role="alert"
+          >
+            {{ __('Two reminders are set for the same time. Remove one.') }}
+          </span>
+        </div>
       </div>
       <div class="flex justify-between gap-3 px-4.5 py-[7px] text-ink-gray-7">
         <LeadsIcon class="h-4 mt-1.5" />
@@ -489,7 +498,7 @@
         <Button
           variant="solid"
           class="w-full"
-          :disabled="!dirty"
+          :disabled="!canSave"
           :loading="
             mode === 'edit' ? events.setValue.loading : events.insert.loading
           "
@@ -549,6 +558,7 @@ import EditIcon from '@/components/Icons/EditIcon.vue'
 import DescriptionIcon from '@/components/Icons/DescriptionIcon.vue'
 import Attendee from '@/components/Calendar/Attendee.vue'
 import EventNotifications from '@/components/Calendar/EventNotifications.vue'
+import { duplicateReminders } from '@/components/Calendar/utils'
 import ShortcutTooltip from '@/components/ShortcutTooltip.vue'
 import { globalStore } from '@/stores/global'
 import { sessionStore } from '@/stores/session'
@@ -718,6 +728,15 @@ const dirty = computed(() => {
   return JSON.stringify(oldEvent.value) !== JSON.stringify(_event.value)
 })
 
+// Same rule as EventModal: typing a title and deleting it, or flipping All day,
+// changes the form but still leaves nothing to save.
+const canSave = computed(() => {
+  const e = _event.value
+  if (!dirty.value || !e.title?.trim() || !e.fromDate) return false
+  if (duplicateReminders(e.notifications, e.isFullDay).size) return false
+  return e.isFullDay || Boolean(e.fromTime && e.toTime)
+})
+
 const displayedPeoples = computed(() => {
   if (showAllParticipants.value) return peoples.value
   return peoples.value.slice(0, 2)
@@ -829,7 +848,7 @@ function saveEvent() {
   if (!dirty.value) return
 
   error.value = null
-  if (!_event.value.title) {
+  if (!_event.value.title?.trim()) {
     error.value = __('Title is required')
     // `?.`, as in focusOnTitle: the title input only exists in the editing
     // modes, and this runs from a keyboard shortcut that does not check.

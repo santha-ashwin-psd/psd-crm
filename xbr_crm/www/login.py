@@ -22,7 +22,7 @@ def get_context(context):
 	context.no_header = 1
 	context.no_footer = 1
 	context.no_sidebar = 1
-	context.title = "Sign In — Frappe CRM"
+	context.title = "Sign In — PS Digitise CRM"
 	context.redirect_to = redirect_to
 
 	# Guest sessions get a CSRF token too; every POST from this page sends it.

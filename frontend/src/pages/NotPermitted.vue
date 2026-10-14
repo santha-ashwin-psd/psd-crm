@@ -12,7 +12,7 @@
         <p class="text-sm text-[var(--crm-text-3)] leading-relaxed">
           {{
             __(
-              'You do not have permission to access Frappe CRM. Please contact your administrator if you believe this is an error.',
+              'You do not have permission to access PS Digitise CRM. Please contact your administrator if you believe this is an error.',
             )
           }}
         </p>

@@ -17,7 +17,8 @@ fell due in the last few minutes and, per recipient:
 Missed reminders: a reminder is only sent while it is at most GRACE_MINUTES old.
 If the scheduler was down for longer, the reminder is skipped, never sent late.
 Reminders due before reminder emails were switched on are never emailed, and a
-reminder whose row has email turned off is only shown in-app.
+reminder whose row has email turned off is only shown in-app. Pipeline follow-up
+tasks are the exception: they are always emailed, whatever the email switches say.
 """
 
 import hashlib
@@ -127,10 +128,11 @@ def deliver(reminder: DueReminder, recipient: Recipient, emails_on: bool, emails
 	if recipient.user:
 		notify_in_app(reminder, recipient)
 
-	send_email = (
-		reminder.email
-		and emails_on
-		and (not emails_since or reminder.trigger_at >= frappe.utils.get_datetime(emails_since))
+	send_email = reminder.email and (
+		reminder.always_email
+		or (
+			emails_on and (not emails_since or reminder.trigger_at >= frappe.utils.get_datetime(emails_since))
+		)
 	)
 	if send_email:
 		try:

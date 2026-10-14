@@ -45,6 +45,28 @@ export function handleIntervalChange(notification) {
   }
 }
 
+const MINUTES_PER = { minutes: 1, hours: 60, days: 1440, weeks: 10080 }
+
+// When a reminder fires, as one comparable key. "1 hour" and "60 minutes" fire
+// at the same moment, so they are the same reminder. All-day reminders also
+// carry their time of day: "1 day before at 8am" and "at 5pm" are different.
+export function reminderKey(row, isAllDay = false) {
+  const minutes = Number(row.before || 0) * (MINUTES_PER[row.interval] || 0)
+  return isAllDay ? `${minutes}@${row.time || '08:00'}` : String(minutes)
+}
+
+// Indexes of rows that fire at the same moment as an earlier row.
+export function duplicateReminders(rows, isAllDay = false) {
+  const seen = new Set()
+  const dupes = new Set()
+  ;(rows || []).forEach((row, i) => {
+    const key = reminderKey(row, isAllDay)
+    if (seen.has(key)) dupes.add(i)
+    seen.add(key)
+  })
+  return dupes
+}
+
 const REMINDER_UNITS = {
   minutes: ['minute', 'minutes'],
   hours: ['hour', 'hours'],

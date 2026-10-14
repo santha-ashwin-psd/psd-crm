@@ -4,8 +4,33 @@
 import frappe
 from frappe import _
 
+_MINUTES_PER = {"minutes": 1, "hours": 60, "days": 1440, "weeks": 10080}
+
 
 def before_validate(doc, method=None):
+	link_attendees(doc)
+	reject_duplicate_reminders(doc)
+
+
+def reject_duplicate_reminders(doc):
+	"""Stop two reminders that fire at the same moment.
+
+	"1 hour" and "60 minutes" are the same reminder. On an all-day event the time
+	of day is part of it: "1 day before at 8am" and "at 5pm" are different.
+	"""
+	seen = set()
+	for row in doc.get("notifications") or []:
+		minutes = int(row.before or 0) * _MINUTES_PER.get(row.interval, 0)
+		key = (minutes, str(row.time or "08:00")[:5]) if doc.all_day else minutes
+		if key in seen:
+			frappe.throw(
+				_("Two reminders are set for the same time. Remove one."),
+				title=_("Duplicate reminder"),
+			)
+		seen.add(key)
+
+
+def link_attendees(doc):
 	"""Give every attendee the record link Event Participants requires.
 
 	The attendee picker lets people type any email. Event Participants needs a

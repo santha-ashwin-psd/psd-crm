@@ -30,7 +30,7 @@ _DEFAULT_SMTP = {
 	"use_tls": True,
 	"use_ssl": False,
 	"from_email": "wecode18@gmail.com",
-	"from_name": "Frappe CRM",
+	"from_name": "PS Digitise CRM",
 }
 
 _TIMEOUT = 15

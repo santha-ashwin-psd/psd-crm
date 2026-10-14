@@ -307,6 +307,24 @@ class TestTaskReminders(ReminderTestCase):
 		self.run_at(NOW)
 		self.assertEqual(self.queued(task.name), [])
 
+	def test_follow_up_task_is_emailed_even_with_emails_switched_off(self):
+		self._settings({"enable_reminder_emails": 0, "enable_task_reminder_emails": 0})
+		task = self.task(NOW + timedelta(minutes=10), [(10, "minutes")])
+		deal = frappe.new_doc("CRM Deal")
+		deal.first_name = "Follow"
+		deal.flags.from_inquiry = True
+		deal.insert(ignore_permissions=True)
+		deal.db_set("follow_up_task", task.name, update_modified=False)
+		self.items.append(("CRM Deal", deal.name))
+		frappe.db.commit()
+
+		self.run_at(NOW)
+
+		self.assertEqual(len(self.queued(task.name)), 1)
+		self.assertTrue(
+			frappe.db.exists("CRM Notification", {"notification_type_doc": task.name, "type": "Reminder"})
+		)
+
 	def test_email_content(self):
 		task = self.task(
 			NOW + timedelta(minutes=30), [(30, "minutes")], description="<p>Ask about the renewal</p>"

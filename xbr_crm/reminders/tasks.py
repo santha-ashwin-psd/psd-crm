@@ -58,6 +58,15 @@ def due_reminders(window_start: datetime, window_end: datetime) -> list[DueRemin
 	for row in rows:
 		by_task.setdefault(row.parent, []).append(row)
 
+	# Tasks created for a pipeline's follow-up stage (see follow_ups.py).
+	follow_ups = set(
+		frappe.get_all(
+			"CRM Deal",
+			filters={"follow_up_task": ("in", [t.name for t in tasks])},
+			pluck="follow_up_task",
+		)
+	)
+
 	due = []
 	for task in tasks:
 		due_at = frappe.utils.get_datetime(task.due_date)
@@ -67,7 +76,9 @@ def due_reminders(window_start: datetime, window_end: datetime) -> list[DueRemin
 				continue
 			trigger = due_at - lead
 			if window_start <= trigger <= window_end:
-				due.append(_build(task, row, due_at, trigger))
+				reminder = _build(task, row, due_at, trigger)
+				reminder.always_email = task.name in follow_ups
+				due.append(reminder)
 	return due
 
 

@@ -345,7 +345,7 @@
                 ? __('Duplicate Event')
                 : __('Create Event')
           "
-          :disabled="!dirty || loadingDetails"
+          :disabled="!canSave"
           :loading="
             mode === 'edit'
               ? eventsResource.setValue.loading
@@ -359,6 +359,7 @@
 </template>
 <script setup>
 import CrmDialog from '@/components/Modals/CrmDialog.vue'
+import { duplicateReminders } from '@/components/Calendar/utils'
 import EventReminders from '@/components/Calendar/EventReminders.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import Attendee from '@/components/Calendar/Attendee.vue'
@@ -431,6 +432,19 @@ const _event = ref({
 const dirty = computed(() => {
   return JSON.stringify(_event.value) !== JSON.stringify(oldEvent.value)
 })
+
+// The required fields, not just "something changed": typing a title and deleting
+// it, or flipping All day, changes the form but still leaves nothing to save.
+const hasRequired = computed(() => {
+  const e = _event.value
+  if (!e.title?.trim() || !e.fromDate) return false
+  if (duplicateReminders(e.notifications, e.isFullDay).size) return false
+  return e.isFullDay || Boolean(e.fromTime && e.toTime)
+})
+
+const canSave = computed(
+  () => hasRequired.value && dirty.value && !loadingDetails.value,
+)
 
 const peoples = computed({
   get() {
@@ -534,7 +548,7 @@ function updateTime(t, fromTime = false) {
 
 function update() {
   error.value = null
-  if (!_event.value.title) {
+  if (!_event.value.title?.trim()) {
     error.value = __('Title is required')
     // Guarded like the other two focus calls in this file — the message
     // matters more than the focus, and a null ref must not swallow it.

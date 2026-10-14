@@ -56,7 +56,7 @@
       </span>
       <span
         class="text-[10px] text-[var(--crm-text-4)] font-medium tracking-wide uppercase"
-        >{{ __('Frappe CRM') }}</span
+        >{{ __('PS Digitise CRM') }}</span
       >
     </template>
   </CrmDialog>

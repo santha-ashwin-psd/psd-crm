@@ -18,7 +18,7 @@
         class="crm-reminder-row__select"
         type="select"
         :aria-label="__('Reminder {0}', [i + 1])"
-        :options="presetOptions"
+        :options="optionsFor(row)"
         :modelValue="presetKey(row)"
         @update:modelValue="(key) => applyPreset(row, key)"
       />
@@ -53,6 +53,13 @@
           <TimePicker v-model="row.time" :placeholder="__('08:00 am')" />
         </div>
       </div>
+      <span
+        v-if="duplicates.has(i)"
+        class="text-sm text-[var(--crm-danger)]"
+        role="alert"
+      >
+        {{ __('Same time as another reminder') }}
+      </span>
       <Button
         class="ml-auto"
         variant="ghost"
@@ -80,7 +87,7 @@
       </button>
     </div>
     <Button
-      v-else-if="rows.length < MAX_REMINDERS"
+      v-else-if="rows.length < MAX_REMINDERS && nextUnused"
       class="self-start"
       variant="ghost"
       icon-left="plus"
@@ -91,7 +98,13 @@
 </template>
 
 <script setup>
-import { min, max, handleIntervalChange } from '@/components/Calendar/utils'
+import {
+  min,
+  max,
+  handleIntervalChange,
+  reminderKey,
+  duplicateReminders,
+} from '@/components/Calendar/utils'
 import { TimePicker } from 'frappe-ui'
 import { computed, reactive, watch } from 'vue'
 
@@ -139,13 +152,35 @@ const presets = computed(() =>
   props.isAllDay ? ALL_DAY_PRESETS : TIMED_PRESETS,
 )
 
-const presetOptions = computed(() => [
-  ...presets.value.map(([b, i]) => ({
-    label: describe(b, i),
-    value: `${b}-${i}`,
-  })),
-  { label: __('Custom…'), value: CUSTOM },
-])
+// Two reminders at the same moment would just notify twice, so a row is only
+// offered the presets no other row already uses.
+const duplicates = computed(() =>
+  duplicateReminders(rows.value, props.isAllDay),
+)
+
+function keyOf(before, interval, time) {
+  return reminderKey({ before, interval, time }, props.isAllDay)
+}
+
+function usedBy(others) {
+  return new Set(others.map((r) => reminderKey(r, props.isAllDay)))
+}
+
+function optionsFor(row) {
+  const used = usedBy((rows.value || []).filter((r) => r !== row))
+  return [
+    ...presets.value
+      .filter(([b, i]) => !used.has(keyOf(b, i, row.time)))
+      .map(([b, i]) => ({ label: describe(b, i), value: `${b}-${i}` })),
+    { label: __('Custom…'), value: CUSTOM },
+  ]
+}
+
+// The first suggestion no row uses yet; none left means nothing to add.
+const nextUnused = computed(() => {
+  const used = usedBy(rows.value || [])
+  return presets.value.find(([b, i]) => !used.has(keyOf(b, i, '08:00')))
+})
 
 const quickAdds = computed(() =>
   (props.isAllDay
@@ -196,10 +231,10 @@ function add(preset) {
   rows.value ??= []
   // A new row takes the first suggestion not already used, so "Add reminder"
   // never stacks two identical reminders.
-  const used = new Set(rows.value.map((r) => `${r.before}-${r.interval}`))
-  const next =
-    presets.value.find(([b, i]) => !used.has(`${b}-${i}`)) || presets.value[0]
-  const [before, interval] = preset ? [preset.before, preset.interval] : next
+  const [before, interval] = preset
+    ? [preset.before, preset.interval]
+    : nextUnused.value || []
+  if (!before) return
   rows.value.push({
     type: 'Email',
     before,
@@ -225,6 +260,9 @@ watch(
       }
       if (!row.time) row.time = '08:00'
     }
+    // Converting minutes/hours to "1 day" can make rows identical; keep one.
+    const dupes = duplicateReminders(rows.value, true)
+    if (dupes.size) rows.value = rows.value.filter((_, i) => !dupes.has(i))
   },
   { immediate: true },
 )

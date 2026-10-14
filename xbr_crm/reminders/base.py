@@ -47,6 +47,9 @@ class DueReminder:
 	related_name: str | None = None
 	# False when the reminder row asks for an in-app notification only.
 	email: bool = True
+	# Email even when reminder emails are switched off in CRM Settings. Set for
+	# pipeline follow-ups, which must always reach the owner's inbox.
+	always_email: bool = False
 
 
 def offset(before, interval) -> timedelta | None:
