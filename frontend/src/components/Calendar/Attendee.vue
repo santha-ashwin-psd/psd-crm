@@ -70,7 +70,7 @@
 
     <!-- Selected Attendees -->
     <div
-      v-if="values?.length"
+      v-if="showSelected && values?.length"
       ref="optionsRef"
       class="flex flex-col gap-2 mt-2 max-h-[165px] overflow-y-auto"
     >
@@ -94,8 +94,8 @@
           />
         </template>
       </Button>
-      <ErrorMessage v-if="error" class="mt-2 pl-2" :message="error" />
     </div>
+    <ErrorMessage v-if="error" class="mt-2 pl-2" :message="error" />
   </div>
 </template>
 
@@ -127,6 +127,8 @@ const props = defineProps({
   },
   fetchContacts: { type: Boolean, default: true },
   existingEmails: { type: Array, default: () => [] },
+  // Off when the host draws the chosen attendees itself (EventModal).
+  showSelected: { type: Boolean, default: true },
 })
 
 const values = defineModel({ type: Array, default: () => [] })

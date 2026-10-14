@@ -136,15 +136,15 @@
             </label>
           </div>
 
+          <!-- Single-line fields side by side; the two that grow (attendees,
+               description) get the full width so they never push a
+               neighbour out of line. -->
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <EntryField :label="__('Attendees')" icon="lucide-users">
-              <Attendee
-                v-model="peoples"
-                input-class="!h-10 !border-0 !bg-transparent !shadow-none !ring-0 !text-[15px]"
-                :validate="validateEmail"
-                :error-message="
-                  (value) => __('{0} is an invalid email address', [value])
-                "
+            <EntryField :label="__('Location')" icon="lucide-map-pin">
+              <TextInput
+                v-model="_event.location"
+                class="w-full"
+                :placeholder="__('Add Location')"
               />
             </EntryField>
             <EntryField :label="__('Visibility')" icon="lucide-eye" accent>
@@ -160,30 +160,69 @@
             </EntryField>
           </div>
 
-          <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-            <EntryField :label="__('Location')" icon="lucide-map-pin">
-              <TextInput
-                v-model="_event.location"
-                class="w-full"
-                :placeholder="__('Add Location')"
+          <div class="flex flex-col gap-2.5">
+            <EntryField :label="__('Attendees')" icon="lucide-users">
+              <Attendee
+                v-model="peoples"
+                :show-selected="false"
+                input-class="!h-10 !border-0 !bg-transparent !shadow-none !ring-0 !text-[15px]"
+                :placeholder="__('Search people or type an email')"
+                :validate="validateEmail"
+                :error-message="
+                  (value) => __('{0} is an invalid email address', [value])
+                "
               />
             </EntryField>
-            <EntryField
-              :label="__('Description')"
-              icon="lucide-file-text"
-              multiline
-            >
-              <TextEditor
-                editor-class="!prose-sm min-h-[64px] max-h-40 overflow-auto px-3 py-2.5 text-[15px] text-ink-gray-8 focus:outline-none"
-                :bubbleMenu="true"
-                :content="_event.description"
-                :placeholder="__('Add event description...')"
-                @change="(val) => (_event.description = val)"
-              />
-            </EntryField>
+            <!-- Chosen attendees: compact wrapping pills; long emails truncate
+                 with a tooltip, and a long list folds into "+N more". -->
+            <div v-if="peoples.length" class="crm-attendee-list">
+              <span
+                v-for="p in visibleAttendees"
+                :key="p.email"
+                class="crm-attendee-pill"
+                :title="p.email"
+              >
+                <UserAvatar :user="p.email" size="xs" class="shrink-0" />
+                <span class="truncate">{{ p.email }}</span>
+                <button
+                  type="button"
+                  class="crm-attendee-pill__remove"
+                  :aria-label="__('Remove {0}', [p.email])"
+                  @click="removeAttendee(p.email)"
+                >
+                  <span class="lucide-x size-3" aria-hidden="true" />
+                </button>
+              </span>
+              <button
+                v-if="peoples.length > ATTENDEE_FOLD"
+                type="button"
+                class="crm-attendee-more"
+                @click="showAllAttendees = !showAllAttendees"
+              >
+                {{
+                  showAllAttendees
+                    ? __('Show less')
+                    : __('+{0} more', [peoples.length - ATTENDEE_FOLD])
+                }}
+              </button>
+            </div>
           </div>
 
-          <!-- NOTIFICATIONS -->
+          <EntryField
+            :label="__('Description')"
+            icon="lucide-file-text"
+            multiline
+          >
+            <TextEditor
+              editor-class="!prose-sm min-h-[88px] max-h-48 overflow-y-auto overflow-x-hidden break-words [overflow-wrap:anywhere] px-3 py-2.5 text-[15px] text-ink-gray-8 focus:outline-none"
+              :bubbleMenu="true"
+              :content="_event.description"
+              :placeholder="__('Add agenda, notes or a meeting link…')"
+              @change="(val) => (_event.description = val)"
+            />
+          </EntryField>
+
+          <!-- REMINDERS -->
           <section class="crm-entry-panel">
             <button
               type="button"
@@ -191,15 +230,15 @@
               :aria-expanded="showReminders"
               @click="showReminders = !showReminders"
             >
-              <span
-                class="lucide-bell size-5 shrink-0 text-[var(--crm-accent-primary)]"
-              />
+              <span class="crm-entry-card__chip !size-9 !rounded-[10px]"
+                ><span class="lucide-bell size-[18px]"
+              /></span>
               <div class="min-w-0 flex-1">
                 <div class="text-base font-semibold text-[var(--crm-text)]">
-                  {{ __('Notifications') }}
+                  {{ __('Reminders') }}
                 </div>
-                <div class="text-[13px] text-[var(--crm-text-3)]">
-                  {{ __('Get reminded before the event') }}
+                <div class="truncate text-[13px] text-[var(--crm-text-3)]">
+                  {{ reminderSummaryText }}
                 </div>
               </div>
               <span
@@ -209,28 +248,36 @@
                 "
               />
             </button>
-            <div v-if="showReminders" class="mt-4 flex flex-col gap-3">
-              <FormControl
-                type="checkbox"
-                :label="__('Send email notification')"
-                :modelValue="emailReminders"
-                @update:modelValue="setEmailReminders"
+            <div v-if="showReminders" class="mt-4 flex flex-col gap-4">
+              <EventReminders
+                v-model="_event.notifications"
+                :isAllDay="_event.isFullDay"
               />
-              <div class="flex items-start gap-4">
-                <span
-                  class="mt-1.5 w-24 shrink-0 text-[15px] text-[var(--crm-text-2)]"
-                >
-                  {{ __('Remind me') }}
+              <label class="crm-reminder-email">
+                <span class="lucide-mail size-4 shrink-0" aria-hidden="true" />
+                <span class="min-w-0 flex-1">
+                  <span
+                    class="block text-sm font-medium text-[var(--crm-text)]"
+                  >
+                    {{ __('Also send by email') }}
+                  </span>
+                  <span class="block text-[13px] text-[var(--crm-text-3)]">
+                    {{
+                      emailReminders
+                        ? __(
+                            'Each reminder is emailed to you and every attendee, and shows in the CRM.',
+                          )
+                        : __(
+                            'Reminders only show in the CRM. No emails are sent.',
+                          )
+                    }}
+                  </span>
                 </span>
-                <EventNotifications
-                  v-model="_event.notifications"
-                  class="min-w-0 flex-1"
-                  :isAllDay="_event.isFullDay"
-                  :showType="false"
-                  chevron
-                  trigger-class="!h-10 min-w-[220px] max-w-[320px] justify-between gap-3 !rounded-[10px] !border-[var(--crm-border-strong)] !px-3.5 !text-[15px]"
+                <Switch
+                  :modelValue="emailReminders"
+                  @update:modelValue="setEmailReminders"
                 />
-              </div>
+              </label>
             </div>
           </section>
         </div>
@@ -312,7 +359,8 @@
 </template>
 <script setup>
 import CrmDialog from '@/components/Modals/CrmDialog.vue'
-import EventNotifications from '@/components/Calendar/EventNotifications.vue'
+import EventReminders from '@/components/Calendar/EventReminders.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 import Attendee from '@/components/Calendar/Attendee.vue'
 import EntryField from '@/components/Controls/EntryField.vue'
 import {
@@ -641,6 +689,27 @@ watch(
   },
 )
 
+// --- Attendees ---------------------------------------------------------------
+const ATTENDEE_FOLD = 6
+const showAllAttendees = ref(false)
+const visibleAttendees = computed(() =>
+  showAllAttendees.value
+    ? peoples.value
+    : peoples.value.slice(0, ATTENDEE_FOLD),
+)
+function removeAttendee(email) {
+  peoples.value = peoples.value.filter((p) => p.email !== email)
+}
+
+const reminderSummaryText = computed(() => {
+  const n = (_event.value.notifications || []).length
+  if (!n) return __('No reminders set')
+  const count = n === 1 ? __('1 reminder') : __('{0} reminders', [n])
+  return emailReminders.value
+    ? __('{0} · in the CRM and by email', [count])
+    : __('{0} · in the CRM only', [count])
+})
+
 // --- Summary ----------------------------------------------------------------
 const summary = computed(() => {
   const e = _event.value
@@ -660,14 +729,14 @@ const summary = computed(() => {
     {
       icon: 'lucide-users',
       label: __('Attendees'),
-      value: people.length
-        ? people.length > 2
-          ? __('{0} and {1} more', [
-              people.slice(0, 2).join(', '),
-              people.length - 2,
-            ])
-          : people.join(', ')
-        : '',
+      // A count once there are several: a column of wrapped emails told the
+      // reader less than the number does.
+      value:
+        people.length === 1
+          ? people[0]
+          : people.length
+            ? __('{0} attendees', [people.length])
+            : '',
     },
     { icon: 'lucide-map-pin', label: __('Location'), value: e.location },
     {

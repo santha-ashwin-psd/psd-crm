@@ -261,6 +261,7 @@ doc_events = {
 		"validate": ["xbr_crm.api.contact.validate"],
 		"before_insert": ["xbr_crm.permissions.tenancy.stamp_company"],
 	},
+	"Event": {"before_validate": ["xbr_crm.api.event.before_validate"]},
 	"ToDo": {
 		"after_insert": ["xbr_crm.api.todo.after_insert"],
 		"on_update": ["xbr_crm.api.todo.on_update"],
