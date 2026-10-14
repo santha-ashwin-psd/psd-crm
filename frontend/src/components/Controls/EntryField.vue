@@ -29,7 +29,7 @@
       <span
         v-if="icon || $slots.prefix"
         class="crm-entry-field__icon"
-        aria-hidden="true"
+        :aria-hidden="$slots.prefix ? undefined : 'true'"
       >
         <slot name="prefix"><span :class="[icon, 'size-4']" /></slot>
       </span>

@@ -1394,6 +1394,71 @@ body,
   --crm-entry-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cpath d='M22 21v-2a4 4 0 0 0-3-3.87'/%3E%3Cpath d='M16 3.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E");
 }
 
+/* Event modal: a narrower panel, a plain section heading, the soft
+   Notifications panel and the summary list in the side panel. */
+:has(> .crm-dialog--entry-md) {
+  max-width: min(1100px, calc(100vw - 2rem)) !important;
+}
+.crm-entry-section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--crm-text);
+}
+.crm-entry-panel {
+  padding: 16px 18px;
+  border: 1px solid var(--crm-border);
+  border-radius: 14px;
+  background: color-mix(
+    in srgb,
+    var(--crm-accent-primary) 4%,
+    var(--crm-surface)
+  );
+}
+.crm-entry-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  margin-top: 22px;
+  padding: 22px 4px 0;
+  border-top: 1px solid var(--crm-border);
+  text-align: left;
+}
+.crm-entry-summary > div {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.crm-entry-summary dt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--crm-text-2);
+}
+.crm-entry-summary dt > [class*='lucide-'] {
+  color: var(--crm-accent-primary);
+}
+.crm-entry-summary dd {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--crm-text);
+  overflow-wrap: anywhere;
+}
+.crm-entry-summary .crm-entry-summary__empty {
+  font-weight: 400;
+  color: var(--crm-text-3);
+}
+/* A rich-text editor inside a frame: it supplies its own padding. */
+.crm-entry-field__control .ProseMirror {
+  outline: none;
+}
+
 /* Progress guide ---------------------------------------------------------- */
 .crm-entry-guide {
   position: relative;

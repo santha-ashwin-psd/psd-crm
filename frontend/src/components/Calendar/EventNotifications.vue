@@ -2,11 +2,18 @@
   <div class="flex flex-col gap-2 truncate">
     <div
       class="inline-flex items-center cursor-pointer transition-colors focus:outline-none shrink-0 text-ink-gray-8 bg-surface-base border border-outline-gray-2 hover:border-outline-gray-3 active:border-outline-gray-3 active:bg-surface-gray-4 focus-visible:ring focus-visible:ring-outline-gray-3 h-7 text-base px-2 rounded"
+      :class="triggerClass"
       @click="addShowNotifications"
     >
       <div class="truncate">
         {{ notificationSummary }}
       </div>
+      <span
+        v-if="chevron"
+        class="size-4 shrink-0 text-ink-gray-5"
+        :class="show ? 'lucide-chevron-up' : 'lucide-chevron-down'"
+        aria-hidden="true"
+      />
     </div>
     <div v-if="notifications?.length && show" class="flex flex-col gap-2">
       <div v-for="(notification, i) in notifications" :key="notification.name">
@@ -147,6 +154,9 @@ const props = defineProps({
   isAllDay: { type: Boolean, default: false },
   // Tasks always remind by email and in-app, so they hide the email checkbox.
   showType: { type: Boolean, default: true },
+  // Styling hooks for hosts that frame the summary button as a select.
+  triggerClass: { type: [String, Array, Object], default: '' },
+  chevron: { type: Boolean, default: false },
 })
 
 const notifications = defineModel({ type: Array, default: () => [] })
