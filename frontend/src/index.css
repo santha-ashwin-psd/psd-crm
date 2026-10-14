@@ -2401,6 +2401,60 @@ button.crm-settings-action svg {
   background: color-mix(in srgb, currentColor 13%, var(--crm-surface));
   border-radius: 13px 13px 0 0;
 }
+/* Dot, name and count always fit on the first line; the total and the inline
+   + follow and wrap onto a second line that is clipped away when there is no
+   room, so a long stage name drops them instead of becoming "Qualif…".
+   The 3px padding/negative margin keeps focus rings inside the clip. */
+.kb-col-main {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: flex-start;
+  column-gap: var(--space-2);
+  row-gap: 12px;
+  min-width: 0;
+  height: 30px;
+  margin: -3px;
+  padding: 3px;
+  overflow: hidden;
+}
+.kb-col-main .kb-col-title {
+  flex: 0 1 auto;
+  /* Room for the dot and the count beside it. */
+  max-width: calc(100% - 72px);
+}
+.kb-add-inline {
+  margin-left: auto;
+}
+/* Collapse, options and + — shown over the right end on hover or keyboard
+   focus, so they take no width from the name the rest of the time. */
+.kb-col-actions {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 20px;
+  transform: translateY(-50%);
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, currentColor 13%, var(--crm-surface)) 18px
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s var(--crm-ease);
+}
+.kb-col-head:hover .kb-col-actions,
+.kb-col-head:focus-within .kb-col-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.kb-col-head:is(:hover, :focus-within) .kb-add-inline {
+  visibility: hidden;
+}
 .kb-col-title {
   /* A rung up from body: this is the lane's heading, and at --text-body it sat
      at the same size as the card text under it, so the board had no level

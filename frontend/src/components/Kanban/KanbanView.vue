@@ -36,8 +36,12 @@
 
         <!-- Expanded column -->
         <template v-else-if="!column.column.delete">
-          <div class="kb-col-head group">
-            <div class="flex min-w-0 items-center gap-2">
+          <div class="kb-col-head">
+            <!-- The name gets the room first. The total and the + wrap onto a
+                 clipped second line when they don't fit, so they drop out
+                 instead of truncating the stage name; every action is still
+                 reachable from the hover/focus bar on the right. -->
+            <div class="kb-col-main">
               <Popover>
                 <template #target="{ togglePopover }">
                   <button
@@ -80,12 +84,21 @@
               <span v-if="sumField" class="kb-col-sum">
                 {{ getFormattedSum(column) }}
               </span>
-            </div>
-
-            <div class="flex shrink-0 items-center gap-0.5">
               <button
                 type="button"
-                class="kb-icon-btn opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                class="kb-icon-btn kb-add-btn kb-add-inline"
+                tabindex="-1"
+                aria-hidden="true"
+                @click="options.onNewClick(column)"
+              >
+                <FeatherIcon name="plus" class="size-3.5" />
+              </button>
+            </div>
+
+            <div class="kb-col-actions">
+              <button
+                type="button"
+                class="kb-icon-btn"
                 :title="__('Collapse column')"
                 :aria-label="__('Collapse {0}', [column.column.name])"
                 @click="toggleCollapse(column.column.name)"
@@ -96,7 +109,7 @@
                 <template #default>
                   <button
                     type="button"
-                    class="kb-icon-btn opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                    class="kb-icon-btn"
                     :title="__('Column options')"
                   >
                     <FeatherIcon name="more-horizontal" class="size-3.5" />
@@ -104,8 +117,8 @@
                   </button>
                 </template>
               </Dropdown>
-              <!-- Always visible, and painted in the lane's own colour: it is
-                   the one action in the header that is not a view control. -->
+              <!-- Painted in the lane's own colour: it is the one action in
+                   the header that is not a view control. -->
               <button
                 type="button"
                 class="kb-icon-btn kb-add-btn"
