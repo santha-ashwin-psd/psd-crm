@@ -191,61 +191,6 @@ def _get_communication_status(doc: Communication) -> str | None:
 	return None
 
 
-def create_lead_from_incoming_email(doc: Communication, method: str | None = None):
-	if doc.doctype != "Communication":
-		return
-
-	if doc.sent_or_received != "Received" and doc.communication_type != "Communication":
-		return
-
-	if doc.reference_doctype and doc.reference_name:
-		return
-
-	if not doc.email_account:
-		return
-
-	create_lead_enabled = frappe.db.get_value(
-		"Email Account", doc.email_account, "create_lead_from_incoming_email"
-	)
-	if not create_lead_enabled:
-		return
-
-	from xbr_crm.utils.leads import leads_enabled
-
-	# While Leads are switched off nobody could see the new lead, so don't create it.
-	if not leads_enabled():
-		return
-
-	if frappe.db.exists("CRM Lead", {"email": doc.sender}):
-		return
-
-	lead = frappe.new_doc("CRM Lead")
-	lead.email = doc.sender
-
-	if doc.sender_full_name:
-		lead.first_name = doc.sender_full_name.split(" ")[0]
-		lead.last_name = (
-			doc.sender_full_name.split(" ")[-1] if len(doc.sender_full_name.split(" ")) > 1 else ""
-		)
-	else:
-		lead.first_name = doc.sender.split("@")[0]
-
-	if frappe.db.exists("CRM Lead Source", "Email"):
-		lead.source = "Email"
-
-	# System record of the mechanism, separate from the editable `source` above.
-	from xbr_crm.api.lead_origin import EMAIL, ORIGIN_FIELD
-
-	if lead.meta.has_field(ORIGIN_FIELD):
-		lead.set(ORIGIN_FIELD, EMAIL)
-
-	lead.insert(ignore_permissions=True)
-
-	doc.reference_doctype = "CRM Lead"
-	doc.reference_name = lead.name
-	doc.save(ignore_permissions=True)
-
-
 def on_comment_insert(doc: Comment, method: str | None = None):
 	if not (doc.reference_doctype and doc.reference_name):
 		return
@@ -265,7 +210,9 @@ def update_modified_background(doctype: str, docname: str):
 
 
 def on_communication_insert(doc: Communication, method: str | None = None):
-	create_lead_from_incoming_email(doc)
+	from xbr_crm.api.email_inquiry import create_pipeline_from_incoming_email
+
+	create_pipeline_from_incoming_email(doc)
 
 
 def on_communication_update(doc: Communication, method: str | None = None):

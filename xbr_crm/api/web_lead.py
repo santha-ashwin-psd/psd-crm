@@ -35,6 +35,11 @@ from xbr_crm.fcrm.doctype.crm_web_lead_log.crm_web_lead_log import write_log
 
 SOURCE = "Website"
 
+# Where a website pipeline starts. The visitor filled a qualifying form, so it
+# skips Needs Analysis (where unreviewed email inquiries start). Falls back to the
+# board's first open stage when a site has renamed or removed this one.
+STAGE = "Qualification"
+
 # Website field -> CRM Deal field. Only these are written, so a payload cannot set
 # arbitrary fields (`status`, `deal_owner`, `crm_company`...). Email and mobile
 # are not here: they belong to the Contact, and the deal copies them from it.
@@ -407,10 +412,10 @@ def _create_deal(key, data: dict, contact: str):
 	if deal.meta.has_field(ORIGIN_FIELD):
 		deal.set(ORIGIN_FIELD, WEBSITE)
 	deal.crm_company = key.crm_company
-	# `status` is left to CRM Deal's own default (the first open stage).
+	deal.status = STAGE if frappe.db.exists("CRM Deal Status", STAGE) else None
 	# A website inquiry has no value or close date yet, so forecasting's
 	# mandatory fields are skipped for it.
-	deal.flags.from_web_inquiry = True
+	deal.flags.from_inquiry = True
 	# The session is Guest, which has no create permission by design; the caller
 	# was authenticated by API key and the tenant comes from that key.
 	deal.insert(ignore_permissions=True)

@@ -290,9 +290,9 @@ class CRMDeal(Document):
 		self.update_closed_date()
 		self.update_default_probability()
 		self.update_expected_deal_value()
-		# A website inquiry has no value or close date yet; the sales team adds them
-		# once they qualify it. Rejecting the record would lose the inquiry.
-		if self.flags.get("from_web_inquiry"):
+		# A website or email inquiry has no value or close date yet; the sales team
+		# adds them once they qualify it. Rejecting the record would lose the inquiry.
+		if self.flags.get("from_inquiry"):
 			return
 		if frappe.db.get_single_value("FCRM Settings", "enable_forecasting"):
 			if not self.expected_deal_value or self.expected_deal_value == 0:

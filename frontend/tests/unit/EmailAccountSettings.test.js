@@ -150,8 +150,8 @@ describe('the shared field definitions', () => {
     ])
   })
 
-  it('shows lead creation only once incoming is on', () => {
-    // Creating leads from mail is meaningless without a mailbox being read.
+  it('shows pipeline creation only once incoming is on', () => {
+    // Creating pipelines from mail is meaningless without a mailbox being read.
     const f = incomingOutgoingFields.find(
       (x) => x.name === 'create_lead_from_incoming_email',
     )

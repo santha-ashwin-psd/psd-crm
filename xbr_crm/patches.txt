@@ -38,3 +38,4 @@ xbr_crm.patches.v1_1.pipeline_stages
 xbr_crm.patches.v1_1.reminder_emails
 xbr_crm.patches.v1_1.follow_ups
 xbr_crm.patches.v1_1.event_reminder_email_checkbox
+xbr_crm.patches.v1_1.email_creates_pipeline

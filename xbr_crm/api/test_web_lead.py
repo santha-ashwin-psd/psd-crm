@@ -23,6 +23,14 @@ from xbr_crm.api import web_lead
 from xbr_crm.api.web_lead import capture_inquiry, normalize_mobile
 from xbr_crm.fcrm.doctype.crm_deal.crm_deal import default_deal_status
 
+
+def expected_stage():
+	"""Website pipelines start in Qualification, or the default stage without it."""
+	if frappe.db.exists("CRM Deal Status", web_lead.STAGE):
+		return web_lead.STAGE
+	return default_deal_status()
+
+
 TEST_COMPANY = "_Test Web Lead Co"
 OTHER_COMPANY = "_Test Other Co"
 COMPANIES = (TEST_COMPANY, OTHER_COMPANY)
@@ -325,8 +333,8 @@ class TestWebLead(FrappeTestCase):
 		self.assertEqual(deal.custom_page_url, "https://ieagents.co.in/")
 		self.assertEqual(deal.source, "Website")
 		self.assertEqual(deal.custom_created_via, "Website")
-		# Not set by us — the controller's own default must still win.
-		self.assertEqual(deal.status, default_deal_status())
+		# A qualifying form: skips Needs Analysis, where email inquiries start.
+		self.assertEqual(deal.status, expected_stage())
 
 		# The person is a Contact, linked as the pipeline's primary contact, and
 		# the pipeline mirrors its email and mobile.
@@ -812,7 +820,7 @@ class TestWebLead(FrappeTestCase):
 		)
 		self.assertEqual(status, 200)
 		deal = frappe.get_doc("CRM Deal", result["pipeline"])
-		self.assertEqual(deal.status, default_deal_status())
+		self.assertEqual(deal.status, expected_stage())
 		self.assertEqual(deal.crm_company, TEST_COMPANY)
 		self.assertEqual(deal.deal_owner, OWNER_USER)
 		self.assertNotEqual(deal.probability, 99)

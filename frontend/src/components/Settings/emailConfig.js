@@ -7,7 +7,6 @@ import LogoSparkpost from '@/images/sparkpost.webp'
 import LogoYahoo from '@/images/yahoo.png'
 import LogoYandex from '@/images/yandex.png'
 import LogoFrappeMail from '@/images/frappe-mail.svg'
-import { isLeadsEnabled } from '@/utils/leads'
 
 const fixedFields = [
   {
@@ -56,14 +55,14 @@ export const incomingOutgoingFields = [
     ),
   },
   {
-    label: __('Create Lead from Incoming Emails'),
+    label: __('Create Pipeline from Incoming Emails'),
+    // Fieldname predates pipelines; the backend keeps it so saved accounts work.
     name: 'create_lead_from_incoming_email',
     type: 'checkbox',
     description: __(
-      'If enabled, a lead will be automatically created when an incoming email is received from an unknown contact.',
+      'If enabled, a pipeline will be created in Needs Analysis when an email arrives from a new sender.',
     ),
-    // Leads switched off: nothing would ever see the lead, so don't offer it.
-    condition: (state) => state.enable_incoming && isLeadsEnabled(),
+    condition: (state) => state.enable_incoming,
   },
 ]
 

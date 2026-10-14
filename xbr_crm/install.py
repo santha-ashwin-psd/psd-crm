@@ -289,25 +289,30 @@ def add_email_template_custom_fields():
 
 
 def add_email_account_custom_field():
-	if not frappe.get_meta("Email Account").has_field("create_lead_from_incoming_email"):
-		click.secho("* Installing Custom Fields in Email Account")
+	"""The per-mailbox switch for xbr_crm/api/email_inquiry.py.
 
-		create_custom_fields(
-			{
-				"Email Account": [
-					{
-						"default": "0",
-						"fieldname": "create_lead_from_incoming_email",
-						"fieldtype": "Check",
-						"label": "Create Lead from Incoming Emails",
-						"description": "Automatically create a lead when an incoming email is received from an unknown contact",
-						"insert_after": "create_contact",
-					}
-				]
-			}
-		)
+	The fieldname still says "lead" from when this created leads; it now creates
+	pipelines. Renaming the column would break saved Email Accounts, so only the
+	label changed. `create_custom_fields` updates an existing field in place.
+	"""
+	click.secho("* Installing Custom Fields in Email Account")
 
-		frappe.clear_cache(doctype="Email Account")
+	create_custom_fields(
+		{
+			"Email Account": [
+				{
+					"default": "0",
+					"fieldname": "create_lead_from_incoming_email",
+					"fieldtype": "Check",
+					"label": "Create Pipeline from Incoming Emails",
+					"description": "Automatically create a pipeline in Needs Analysis when an incoming email is received from a new sender",
+					"insert_after": "create_contact",
+				}
+			]
+		}
+	)
+
+	frappe.clear_cache(doctype="Email Account")
 
 
 def add_web_form_custom_fields():
@@ -804,13 +809,18 @@ def add_lead_origin_field():
 
 
 def add_lead_origin_to_side_panel():
-	"""Show Created Via in the lead's Details section.
+	"""Show Created Via on the lead and pipeline side panels.
 
-	Appended to the first column of the first section rather than given a section
-	of its own: it is one read-only word, and a whole collapsible panel for it
-	would be louder than the fact deserves.
+	Placed in the first section that lists fields rather than given a section of
+	its own: it is one read-only word, and a whole collapsible panel for it would
+	be louder than the fact deserves. On a pipeline it sits under the owner, since
+	that is where someone triaging an Email vs Website inquiry looks.
 	"""
-	name = "CRM Lead-Side Panel"
+	for name, after in (("CRM Lead-Side Panel", None), ("CRM Deal-Side Panel", "deal_owner")):
+		_add_origin_to_layout(name, after)
+
+
+def _add_origin_to_layout(name: str, after: str | None):
 	if not frappe.db.exists("CRM Fields Layout", name):
 		return
 
@@ -829,11 +839,22 @@ def add_lead_origin_to_side_panel():
 			if "custom_created_via" in (column.get("fields") or []):
 				return
 
-	columns = layout[0].get("columns") or []
-	if not columns:
+	# The pipeline panel opens with Contacts, a custom-rendered section with no
+	# field list, so take the first column that actually lists fields.
+	fields = next(
+		(
+			column["fields"]
+			for section in layout
+			for column in section.get("columns") or []
+			if column.get("fields")
+		),
+		None,
+	)
+	if fields is None:
 		return
 
-	click.secho("* Adding Created Via to the CRM Lead side panel")
-	columns[0].setdefault("fields", []).append("custom_created_via")
+	click.secho(f"* Adding Created Via to {name}")
+	position = fields.index(after) + 1 if after in fields else len(fields)
+	fields.insert(position, "custom_created_via")
 	doc.layout = json.dumps(layout)
 	doc.save(ignore_permissions=True)
