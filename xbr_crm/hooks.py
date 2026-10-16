@@ -322,6 +322,10 @@ scheduler_events = {
 		# Every minute; needs `scheduler_tick_interval: 60` in common_site_config
 		# (Frappe's default tick is 4 minutes).
 		"* * * * *": ["xbr_crm.reminders.service.send_due_reminders"],
+		# Check incoming mailboxes every 2 minutes (Frappe's own pull is every 10),
+		# so an email enquiry becomes a pipeline quickly. Frappe skips a mailbox
+		# whose previous pull is still queued, so the two schedules never overlap.
+		"*/2 * * * *": ["frappe.email.doctype.email_account.email_account.pull"],
 		# Daily at 09:00 (site timezone): pipelines stuck in the follow-up stage.
 		"0 9 * * *": ["xbr_crm.follow_ups.send_stuck_follow_up_alerts"],
 		"*/5 * * * *": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_5_minutes"],
