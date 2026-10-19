@@ -37,7 +37,7 @@
           >
             {{ field.label || field.fieldname }}
           </span>
-          <span v-if="field.reqd" class="shrink-0 text-ink-red-5">*</span>
+          <span v-if="field.reqd" class="shrink-0 text-[var(--crm-danger-text)]">*</span>
           <LucideLock
             v-if="locked"
             class="h-3 w-3 shrink-0 text-ink-gray-4"

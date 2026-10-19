@@ -47,7 +47,7 @@
                   class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-xs"
                   :class="
                     isOverdue(task.due_date, task.status)
-                      ? 'bg-red-50 text-red-800 border-red-200'
+                      ? 'crm-tone-danger bg-[var(--tone-soft)] text-[var(--tone-text)] border-[color-mix(in_srgb,var(--crm-danger)_25%,transparent)]'
                       : 'bg-[var(--crm-surface-2)] text-[var(--crm-text-2)] border-[var(--crm-border)]'
                   "
                 >
@@ -61,7 +61,7 @@
             <div
               class="px-2.5 py-0.5 rounded-full text-xs font-semibold border"
               :class="{
-                'bg-red-50 text-red-800 border-red-200':
+                'crm-tone-danger bg-[var(--tone-soft)] text-[var(--tone-text)] border-[color-mix(in_srgb,var(--crm-danger)_25%,transparent)]':
                   task.priority === 'High',
                 'bg-amber-50 text-amber-800 border-amber-200':
                   task.priority === 'Medium',

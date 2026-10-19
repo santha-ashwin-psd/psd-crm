@@ -35,6 +35,10 @@
     --crm-success-soft: #f0fdf4;
     --crm-danger: #dc2626;
     --crm-danger-soft: #fef2f2;
+    /* Readable text on the soft wash (and on white): the saturated hue alone
+       is too light for small text on its own tint. */
+    --crm-danger-text: #b91c1c;
+    --crm-success-text: #15803d;
     --crm-warning: #d97706;
     --crm-warning-soft: #fffbeb;
     --crm-info: #2563eb;
@@ -110,6 +114,8 @@
     --crm-success-soft: rgba(22, 163, 74, 0.16);
     --crm-danger: #ef4444;
     --crm-danger-soft: rgba(220, 38, 38, 0.18);
+    --crm-danger-text: #fca5a5;
+    --crm-success-text: #86efac;
     --crm-warning: #f59e0b;
     --crm-warning-soft: rgba(217, 119, 6, 0.18);
     --crm-info: #3b82f6;

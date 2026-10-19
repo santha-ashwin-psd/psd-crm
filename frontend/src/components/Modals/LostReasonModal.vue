@@ -18,7 +18,7 @@
         <div>
           <div class="crm-field-label">
             {{ __('Lost Reason') }}
-            <span class="text-ink-red-5">*</span>
+            <span class="text-[var(--crm-danger-text)]">*</span>
           </div>
           <Link
             ref="linkRef"
@@ -32,7 +32,7 @@
         <div>
           <div class="crm-field-label">
             {{ __('Lost Notes') }}
-            <span v-if="lostReason == 'Other'" class="text-ink-red-5">*</span>
+            <span v-if="lostReason == 'Other'" class="text-[var(--crm-danger-text)]">*</span>
           </div>
           <FormControl
             class="form-control flex-1 truncate"

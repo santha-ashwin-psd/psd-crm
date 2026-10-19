@@ -178,12 +178,12 @@
 .crm-tone-success {
   --tone: var(--crm-success);
   --tone-soft: var(--crm-success-soft);
-  --tone-text: var(--crm-success);
+  --tone-text: var(--crm-success-text);
 }
 .crm-tone-danger {
   --tone: var(--crm-danger);
   --tone-soft: var(--crm-danger-soft);
-  --tone-text: var(--crm-danger);
+  --tone-text: var(--crm-danger-text);
 }
 .crm-tone-warning {
   --tone: var(--crm-warning);

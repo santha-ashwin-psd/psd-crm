@@ -516,7 +516,7 @@
             class="flex flex-col items-center gap-3 py-10 text-center"
           >
             <div
-              class="flex h-12 w-12 items-center justify-center rounded-full bg-surface-green-2 text-ink-green-3"
+              class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--crm-success-soft)] text-[var(--crm-success-text)]"
             >
               <LucideCheck class="h-6 w-6" />
             </div>
@@ -562,7 +562,7 @@
                         class="mb-1.5 text-sm text-ink-gray-5"
                       >
                         {{ f.label
-                        }}<span v-if="f.reqd" class="text-ink-red-5">*</span>
+                        }}<span v-if="f.reqd" class="text-[var(--crm-danger-text)]">*</span>
                       </div>
                       <FormControl
                         v-if="TEXTAREA_TYPES.includes(f.fieldtype)"
@@ -587,7 +587,7 @@
                         />
                         <span class="text-sm text-ink-gray-5"
                           >{{ f.label
-                          }}<span v-if="f.reqd" class="text-ink-red-5"
+                          }}<span v-if="f.reqd" class="text-[var(--crm-danger-text)]"
                             >*</span
                           ></span
                         >

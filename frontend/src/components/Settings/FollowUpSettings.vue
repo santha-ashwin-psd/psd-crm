@@ -92,7 +92,7 @@
             </div>
             <p
               v-if="daysError"
-              class="mt-1 text-xs text-ink-red-4"
+              class="mt-1 text-xs text-[var(--crm-danger-text)]"
               role="alert"
             >
               {{ daysError }}

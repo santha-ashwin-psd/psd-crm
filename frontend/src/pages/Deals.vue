@@ -69,11 +69,9 @@
         />
         <div
           v-if="followUpFor(itemName)"
-          class="mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium"
+          class="mt-1 inline-flex items-center gap-1 rounded bg-[var(--tone-soft)] px-1.5 py-0.5 text-xs font-medium text-[var(--tone-text)]"
           :class="
-            followUpFor(itemName).overdue
-              ? 'bg-surface-red-2 text-ink-red-4'
-              : 'bg-surface-blue-2 text-ink-blue-3'
+            followUpFor(itemName).overdue ? 'crm-tone-danger' : 'crm-tone-info'
           "
           :title="__('Next follow-up')"
         >

@@ -49,7 +49,7 @@
         class="text-xs"
         :class="
           confirmPasswordMessage === __('Passwords match')
-            ? 'text-ink-green-6'
+            ? 'text-[var(--crm-success-text)]'
             : 'text-ink-red-6'
         "
       >

@@ -27,7 +27,7 @@
             @click="when = choice.value()"
           />
         </div>
-        <p v-if="error" class="text-xs text-ink-red-4" role="alert">
+        <p v-if="error" class="text-xs text-[var(--crm-danger-text)]" role="alert">
           {{ error }}
         </p>
       </div>

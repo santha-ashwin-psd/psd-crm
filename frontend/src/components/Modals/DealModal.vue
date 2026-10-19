@@ -656,7 +656,7 @@ const EMPLOYEE_OPTIONS = [
 
 const FieldError = (p) =>
   p.message
-    ? h('p', { class: 'mt-1 text-xs text-ink-red-4', role: 'alert' }, p.message)
+    ? h('p', { class: 'mt-1 text-xs text-[var(--crm-danger-text)]', role: 'alert' }, p.message)
     : null
 FieldError.props = ['message']
 
