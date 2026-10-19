@@ -33,7 +33,7 @@ html,body{height:100%;font-family:var(--font);font-size:14px;-webkit-font-smooth
   font-feature-settings:normal;letter-spacing:-.005em}
 input,button{font-family:var(--font)}
 
-.shell{display:flex;height:100vh;overflow:hidden}
+.shell{display:flex;height:100vh;height:100dvh;overflow:hidden}
 
 /* ── Left brand panel ── */
 .brand-panel{
@@ -103,11 +103,14 @@ input,button{font-family:var(--font)}
 
 /* ── Right auth panel ── */
 /* Three bands: the form centres in the space the footer leaves, rather than
-   floating in an unanchored white field. min-height:0 keeps .auth-main from
-   refusing to shrink when a tall step (signup) overflows. */
+   floating in an unanchored white field. .auth-main grows to fill that space
+   but never shrinks below its content: with `min-height:0` a tall step
+   (sign-up) on a short screen overflowed onto the footer instead of pushing it
+   down, and the footer lines printed on top of the form's own links. Now the
+   panel simply scrolls. */
 .auth-panel{flex:1;background:var(--surface);display:flex;flex-direction:column;
   align-items:center;padding:40px 48px;overflow-y:auto}
-.auth-main{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+.auth-main{flex:1 0 auto;width:100%;display:flex;align-items:center;justify-content:center}
 .auth-box{width:100%;max-width:416px}
 
 /* The only branding lives in .brand-panel, which is hidden under 900px — without
