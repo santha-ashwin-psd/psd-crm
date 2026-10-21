@@ -123,6 +123,13 @@ class CRMDeal(Document):
 	def on_update(self):
 		follow_ups.sync_task(self)
 
+	def on_trash(self):
+		# Remember the contacts before the child rows go with the pipeline.
+		self.flags.contacts_to_check = [row.contact for row in self.contacts if row.contact]
+
+	def after_delete(self):
+		delete_orphan_contacts(self.flags.get("contacts_to_check") or [])
+
 	def before_save(self):
 		self.apply_sla()
 
@@ -479,6 +486,26 @@ def create_organization(doc):
 	)
 	organization.insert(ignore_permissions=True)
 	return organization.name
+
+
+def delete_orphan_contacts(contacts):
+	"""Delete a deleted pipeline's contacts that nothing else uses.
+
+	Otherwise the leftover contact keeps matching the same email/mobile and the
+	Create Pipeline form warns "already has this email" for a pipeline that no
+	longer exists. A contact still on another pipeline, or linked from any other
+	record (Frappe's link check raises LinkExistsError), is kept.
+	"""
+	for name in dict.fromkeys(contacts):
+		if not frappe.db.exists("Contact", name):
+			continue
+		if frappe.db.exists("CRM Contacts", {"contact": name, "parenttype": "CRM Deal"}):
+			continue
+		frappe.db.savepoint("delete_orphan_contact")
+		try:
+			frappe.delete_doc("Contact", name, ignore_permissions=True)
+		except frappe.LinkExistsError:
+			frappe.db.rollback(save_point="delete_orphan_contact")
 
 
 def contact_exists(doc):
