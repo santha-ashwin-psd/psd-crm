@@ -812,6 +812,7 @@ async function continueToPassword(){
 
       if (res === "taken") signinEmailKnown = true;        // registered
       else if (res === true) signinEmailKnown = false;     // no such account
+      else if (res === "removed") signinEmailKnown = "removed"; // removed by their admin
       // Anything else means the probe could not tell (offline, rate-limited).
       // Let them through rather than lock them out — the password step does the
       // real authentication. This is the one place we diverge from Books, which
@@ -821,6 +822,12 @@ async function continueToPassword(){
     if (signinEmailKnown === false) {
       setFiErr("email-input", true);
       setSigninHint("bad", "No account found for this email.", true);
+      input.focus();
+      return;
+    }
+    if (signinEmailKnown === "removed") {
+      setFiErr("email-input", true);
+      setSigninHint("bad", "Your access to this workspace was removed. Ask your workspace admin to invite you again.", false);
       input.focus();
       return;
     }
@@ -1027,6 +1034,7 @@ const checkSigninEmail = debounce(async () => {
 
   if (res === "taken") { signinEmailKnown = true; setSigninHint("ok", "Account found.", false) }
   else if (res === true) { signinEmailKnown = false; setSigninHint("bad", "No account found for this email.", true) }
+  else if (res === "removed") { signinEmailKnown = "removed"; setSigninHint("bad", "Your access to this workspace was removed. Ask your workspace admin to invite you again.", false) }
   else setSigninHint(null);   // invalid or unreachable — say nothing
 }, 350);
 
@@ -1041,6 +1049,7 @@ const checkSignupEmail = debounce(async () => {
   const res = await probe("email", v);
   if (res === true) { signup.available.email = true; setHint("su-email-hint","ok","This email is available") }
   else if (res === "taken") { signup.available.email = false; setHint("su-email-hint","bad","An account with this email already exists") }
+  else if (res === "removed") { signup.available.email = false; setHint("su-email-hint","bad","This email was removed from a workspace. Ask that workspace's admin to invite you again.") }
   else if (res === null) { clearHint("su-email-hint") }
   else { signup.available.email = false; setHint("su-email-hint","bad","Please enter a valid email address") }
 }, 350);
@@ -1076,6 +1085,7 @@ async function signupNext(){
     const r = await probe("email", email);
     signup.available.email = r === true;
     if (r === "taken") setHint("su-email-hint","bad","An account with this email already exists");
+    if (r === "removed") setHint("su-email-hint","bad","This email was removed from a workspace. Ask that workspace's admin to invite you again.");
   }
   if (signup.available.company === null) {
     const r = await probe("company", company);

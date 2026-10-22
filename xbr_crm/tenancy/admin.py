@@ -12,6 +12,7 @@ from frappe import _
 
 from xbr_crm.permissions.tenancy import default_company, get_user_company, is_bypass
 from xbr_crm.tenancy import emails
+from xbr_crm.tenancy.accounts import is_removed_member
 from xbr_crm.tenancy.auth import signin_url
 
 # "Company Admin" deliberately does not map to System Manager — that role bypasses
@@ -54,7 +55,12 @@ def invite_user(
 	last_name: str = "",
 	role: str = "Sales User",
 ) -> dict:
-	"""Create a user in the caller's company and email them a temporary password."""
+	"""Create a user in the caller's company and email them a temporary password.
+
+	A user an admin removed earlier (disabled, in no company) is brought back
+	instead: the same account is re-enabled and joined to this company, so their
+	name on old records stays theirs and the email address is usable again.
+	"""
 	company = _require_company_admin()
 	email = (email or "").strip().lower()
 
@@ -63,18 +69,33 @@ def invite_user(
 	frappe.utils.validate_email_address(email, throw=True)
 	if role not in ASSIGNABLE_ROLES:
 		frappe.throw(_("Invalid role: {0}").format(role))
+
+	reactivate = False
 	if frappe.db.exists("User", email):
-		frappe.throw(_("A user with email {0} already exists.").format(email))
+		if not is_removed_member(email):
+			if frappe.db.exists("CRM Company Member", {"user": email, "company": company}):
+				frappe.throw(_("{0} is already in your team.").format(email))
+			frappe.throw(_("A user with email {0} already exists.").format(email))
+		reactivate = True
 
 	temp_password = _gen_temp_password()
-	first_name = (first_name or "").strip() or email.split("@")[0].title()
 
-	user = frappe.new_doc("User")
-	user.email = email
-	user.first_name = first_name
-	user.last_name = (last_name or "").strip()
-	user.user_type = "System User"
-	user.enabled = 1
+	if reactivate:
+		user = frappe.get_doc("User", email)
+		if (first_name or "").strip():
+			user.first_name = first_name.strip()
+		if (last_name or "").strip():
+			user.last_name = last_name.strip()
+		user.enabled = 1
+		first_name = user.first_name or email.split("@")[0].title()
+	else:
+		first_name = (first_name or "").strip() or email.split("@")[0].title()
+		user = frappe.new_doc("User")
+		user.email = email
+		user.first_name = first_name
+		user.last_name = (last_name or "").strip()
+		user.user_type = "System User"
+		user.enabled = 1
 	user.send_welcome_email = 0  # we send our own, via the system SMTP
 	user.flags.ignore_password_policy = True
 
@@ -83,7 +104,10 @@ def invite_user(
 	muted = frappe.flags.mute_messages
 	frappe.flags.mute_messages = True
 	try:
-		user.insert(ignore_permissions=True)
+		if reactivate:
+			user.save(ignore_permissions=True)
+		else:
+			user.insert(ignore_permissions=True)
 	finally:
 		frappe.flags.mute_messages = muted
 
@@ -101,7 +125,14 @@ def invite_user(
 	frappe.db.commit()
 
 	sent = emails.send_invite(email, first_name, company, temp_password, role, signin_url())
-	return {"success": True, "user": email, "company": company, "role": role, "email_sent": sent}
+	return {
+		"success": True,
+		"user": email,
+		"company": company,
+		"role": role,
+		"email_sent": sent,
+		"reactivated": reactivate,
+	}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -119,23 +150,27 @@ def invite_users(emails: str, role: str = "Sales User") -> dict:
 	if not candidates:
 		return {"invited": [], "skipped": [], "failed": []}
 
-	invited, skipped, failed = [], [], []
+	invited, reactivated, skipped, failed = [], [], [], []
 	seen = set()
 	for email in candidates:
 		if email in seen:
 			continue
 		seen.add(email)
-		if frappe.db.exists("User", email):
+		# A removed member is re-invited (their account comes back); any other
+		# existing account is left alone.
+		if frappe.db.exists("User", email) and not is_removed_member(email):
 			skipped.append(email)
 			continue
 		try:
-			invite_user(email=email, role=role)
+			result = invite_user(email=email, role=role)
 			invited.append(email)
+			if result.get("reactivated"):
+				reactivated.append(email)
 		except Exception as exc:
 			frappe.log_error(frappe.get_traceback(), f"CRM invite failed: {email}")
 			failed.append({"email": email, "reason": str(exc)})
 
-	return {"invited": invited, "skipped": skipped, "failed": failed}
+	return {"invited": invited, "reactivated": reactivated, "skipped": skipped, "failed": failed}
 
 
 @frappe.whitelist()

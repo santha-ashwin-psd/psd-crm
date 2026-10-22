@@ -22,6 +22,7 @@ from frappe.utils.password import update_password
 
 from xbr_crm.fcrm.doctype.crm_company.crm_company import normalize_company_name
 from xbr_crm.tenancy import emails
+from xbr_crm.tenancy.accounts import is_removed_member
 
 SIGNUP_TTL_SEC = 600  # 10 min — the cache holds a plaintext password, keep it short
 RESET_TTL_SEC = 900
@@ -66,9 +67,7 @@ def _check_otp(key: str, otp: str, expired_msg: str):
 		data["attempts"] = attempts
 		# Preserve the original expiry rather than extending it on every guess.
 		frappe.cache.set_value(key, data, expires_in_sec=data.get("ttl", SIGNUP_TTL_SEC))
-		frappe.throw(
-			_("Invalid code. {0} attempt(s) remaining.").format(MAX_OTP_ATTEMPTS - attempts)
-		)
+		frappe.throw(_("Invalid code. {0} attempt(s) remaining.").format(MAX_OTP_ATTEMPTS - attempts))
 
 	return data
 
@@ -85,6 +84,9 @@ def check_email(email: str | None = None) -> dict:
 	if not _valid_email(email):
 		return {"available": False, "reason": "invalid", "email": email}
 	taken = bool(frappe.db.exists("User", {"name": email}))
+	if taken and is_removed_member(email):
+		# Their workspace admin removed them; the way back is a fresh invite.
+		return {"available": False, "reason": "removed", "email": email}
 	return {"available": not taken, "reason": "taken" if taken else "ok", "email": email}
 
 
@@ -129,6 +131,12 @@ def signup_user(
 	if len(password) < MIN_PASSWORD_LEN:
 		frappe.throw(_("Password must be at least {0} characters.").format(MIN_PASSWORD_LEN))
 	if frappe.db.exists("User", email):
+		if is_removed_member(email):
+			frappe.throw(
+				_(
+					"This email belongs to a user who was removed from their workspace. Ask your workspace admin to invite you again."
+				)
+			)
 		frappe.throw(_("An account with this email already exists. Please sign in instead."))
 	if frappe.db.exists("CRM Company", company_name):
 		frappe.throw(_("This company name is already registered. Please choose a different name."))
@@ -183,6 +191,12 @@ def verify_signup_otp(email: str, otp: str) -> dict:
 	if frappe.db.exists("CRM Company", company_name):
 		frappe.throw(_("This company name was just registered. Please choose a different name."))
 	if frappe.db.exists("User", email):
+		if is_removed_member(email):
+			frappe.throw(
+				_(
+					"This email belongs to a user who was removed from their workspace. Ask your workspace admin to invite you again."
+				)
+			)
 		frappe.throw(_("An account with this email already exists. Please sign in instead."))
 
 	company_created = False
@@ -240,9 +254,7 @@ def verify_signup_otp(email: str, otp: str) -> dict:
 		if company_created:
 			try:
 				if frappe.db.exists("CRM Company", company_name):
-					frappe.delete_doc(
-						"CRM Company", company_name, ignore_permissions=True, force=True
-					)
+					frappe.delete_doc("CRM Company", company_name, ignore_permissions=True, force=True)
 					frappe.db.commit()
 			except Exception:
 				pass

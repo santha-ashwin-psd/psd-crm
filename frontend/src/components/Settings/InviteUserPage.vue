@@ -270,6 +270,13 @@ const inviteByEmail = createResource({
       updateOnboardingStep('invite_your_team')
       capture('user_invited')
     }
+    // People an admin removed earlier get their old account back.
+    const reactivated = result?.reactivated || []
+    if (reactivated.length) {
+      toast.info(
+        __('Re-added previously removed user: {0}', [reactivated.join(', ')]),
+      )
+    }
     // Surfaced rather than swallowed: a silent no-op looks like success.
     if (skipped.length) {
       toast.info(__('Already a user: {0}', [skipped.join(', ')]))
