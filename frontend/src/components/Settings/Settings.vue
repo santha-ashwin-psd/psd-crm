@@ -137,6 +137,7 @@ import InviteUserPage from '@/components/Settings/InviteUserPage.vue'
 import ProfilePage from '@/components/Settings/Profile/ProfilePage.vue'
 import PreferencesSettings from '@/components/Settings/PreferencesSettings.vue'
 import WhatsAppSettings from '@/components/Settings/WhatsAppSettings.vue'
+import WhatsAppAutomationSettings from '@/components/Settings/WhatsAppAutomationSettings.vue'
 import ERPNextSettings from '@/components/Settings/ERPNextSettings.vue'
 import LeadSyncSourcePage from '@/components/Settings/LeadSyncing/LeadSyncSourcePage.vue'
 import DefaultsSettings from '@/components/Settings/DefaultsSettings.vue'
@@ -311,6 +312,12 @@ const tabs = computed(() => {
           label: __('WhatsApp'),
           icon: WhatsAppIcon,
           component: markRaw(WhatsAppSettings),
+          condition: () => isWhatsappInstalled.value && isManager(),
+        },
+        {
+          label: __('WhatsApp Automation'),
+          icon: WhatsAppIcon,
+          component: markRaw(WhatsAppAutomationSettings),
           condition: () => isWhatsappInstalled.value && isManager(),
         },
         {

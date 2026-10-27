@@ -791,7 +791,7 @@ LEAD_ORIGIN_FIELD = {
 	"label": "Created Via",
 	# Blank first: leads that predate this field have no honest answer, and
 	# guessing one retroactively would be worse than leaving it empty.
-	"options": "\nManual\nWebsite\nEmail\nAPI\nImport",
+	"options": "\nManual\nWebsite\nEmail\nWhatsApp\nAPI\nImport",
 	"insert_after": "source",
 	"read_only": 1,
 	"in_standard_filter": 1,
@@ -800,7 +800,17 @@ LEAD_ORIGIN_FIELD = {
 
 
 def add_lead_origin_field():
-	"""Install `custom_created_via` on CRM Lead and CRM Deal."""
+	"""Install `custom_created_via` on CRM Lead and CRM Deal.
+
+	Runs after every migrate, so a site that already has the field also picks up
+	any choice added since (WhatsApp).
+	"""
+	for dt in ("CRM Lead", "CRM Deal"):
+		name = frappe.db.get_value("Custom Field", {"dt": dt, "fieldname": "custom_created_via"})
+		if name and frappe.db.get_value("Custom Field", name, "options") != LEAD_ORIGIN_FIELD["options"]:
+			frappe.db.set_value("Custom Field", name, "options", LEAD_ORIGIN_FIELD["options"])
+			frappe.clear_cache(doctype=dt)
+
 	targets = [
 		dt for dt in ("CRM Lead", "CRM Deal") if not frappe.get_meta(dt).has_field("custom_created_via")
 	]

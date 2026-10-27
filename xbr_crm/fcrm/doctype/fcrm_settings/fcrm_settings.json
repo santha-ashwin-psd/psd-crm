@@ -41,6 +41,12 @@
   "follow_up_stage",
   "enable_stuck_follow_up_alerts",
   "stuck_follow_up_days",
+  "whatsapp_automation_tab",
+  "whatsapp_reminders",
+  "whatsapp_reminder_template",
+  "whatsapp_follow_ups",
+  "whatsapp_follow_up_template",
+  "whatsapp_creates_pipeline",
   "dropdown_items_tab",
   "dropdown_items",
   "persona_captured",
@@ -316,12 +322,52 @@
    "default": "10",
    "non_negative": 1,
    "depends_on": "enable_stuck_follow_up_alerts"
+  },
+  {
+   "fieldname": "whatsapp_automation_tab",
+   "fieldtype": "Tab Break",
+   "label": "WhatsApp Automation"
+  },
+  {
+   "default": "0",
+   "fieldname": "whatsapp_reminders",
+   "fieldtype": "Check",
+   "label": "WhatsApp reminders to the team",
+   "description": "When an event or task reminder fires, also send it on WhatsApp to each CRM user it goes to, at the mobile number on their user profile. Needs the WhatsApp app and an approved template."
+  },
+  {
+   "depends_on": "whatsapp_reminders",
+   "fieldname": "whatsapp_reminder_template",
+   "fieldtype": "Data",
+   "label": "Reminder template",
+   "description": "Name of an approved WhatsApp template. Parameters in order: recipient name, item title, when."
+  },
+  {
+   "default": "0",
+   "fieldname": "whatsapp_follow_ups",
+   "fieldtype": "Check",
+   "label": "WhatsApp follow-ups to customers",
+   "description": "When a pipeline in the follow-up stage reaches its follow-up date, send its contact a WhatsApp message. Sent once per follow-up date, never late."
+  },
+  {
+   "depends_on": "whatsapp_follow_ups",
+   "fieldname": "whatsapp_follow_up_template",
+   "fieldtype": "Data",
+   "label": "Follow-up template",
+   "description": "Name of an approved WhatsApp template. Parameters in order: contact first name, owner name, organisation."
+  },
+  {
+   "default": "0",
+   "fieldname": "whatsapp_creates_pipeline",
+   "fieldtype": "Check",
+   "label": "Create pipelines from WhatsApp",
+   "description": "A message from a number the CRM does not know creates a contact and a pipeline in the first stage, like an inquiry email."
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-09 12:00:00.000000",
+ "modified": "2026-10-26 22:49:50.007649",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "FCRM Settings",

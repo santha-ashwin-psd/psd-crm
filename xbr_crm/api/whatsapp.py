@@ -42,6 +42,13 @@ def validate(doc, method):
 			if doctype and name is not None:
 				doc.reference_doctype = doctype
 				doc.reference_name = name
+			elif not doc.reference_name:
+				# Unknown number: a new pipeline, if that is switched on.
+				from xbr_crm.whatsapp_automation import create_pipeline_for_unknown_number
+
+				created = create_pipeline_for_unknown_number(doc)
+				if created:
+					doc.reference_doctype, doc.reference_name = created
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "CRM WhatsApp: failed to resolve contact from number")
 

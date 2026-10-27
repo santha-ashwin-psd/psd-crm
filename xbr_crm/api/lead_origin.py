@@ -19,6 +19,7 @@ ORIGIN_FIELD = "custom_created_via"
 
 WEBSITE = "Website"
 EMAIL = "Email"
+WHATSAPP = "WhatsApp"
 MANUAL = "Manual"
 API = "API"
 IMPORT = "Import"

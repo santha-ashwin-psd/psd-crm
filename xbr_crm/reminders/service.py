@@ -28,6 +28,7 @@ import frappe
 from frappe import _
 from frappe.utils import get_url, now_datetime
 
+from xbr_crm import whatsapp_automation
 from xbr_crm.reminders.base import (
 	DueReminder,
 	Recipient,
@@ -127,6 +128,16 @@ def deliver(reminder: DueReminder, recipient: Recipient, emails_on: bool, emails
 	notes = []
 	if recipient.user:
 		notify_in_app(reminder, recipient)
+		# Off unless WhatsApp reminders are switched on (FCRM Settings); never raises.
+		whatsapp_note = whatsapp_automation.send_reminder(
+			reminder,
+			recipient,
+			format_when(
+				reminder.occurrence_start, user_timezone(recipient.user), reminder.context.get("all_day")
+			),
+		)
+		if whatsapp_note:
+			notes.append(whatsapp_note)
 
 	send_email = reminder.email and (
 		reminder.always_email

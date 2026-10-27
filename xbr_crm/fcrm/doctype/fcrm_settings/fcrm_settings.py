@@ -48,6 +48,11 @@ class FCRMSettings(Document):
 		]
 		stuck_follow_up_days: DF.Int
 		update_timestamp_on_new_communication: DF.Check
+		whatsapp_creates_pipeline: DF.Check
+		whatsapp_follow_up_template: DF.Data | None
+		whatsapp_follow_ups: DF.Check
+		whatsapp_reminder_template: DF.Data | None
+		whatsapp_reminders: DF.Check
 	# end: auto-generated types
 
 	@frappe.whitelist()

@@ -321,7 +321,11 @@ scheduler_events = {
 	"cron": {
 		# Every minute; needs `scheduler_tick_interval: 60` in common_site_config
 		# (Frappe's default tick is 4 minutes).
-		"* * * * *": ["xbr_crm.reminders.service.send_due_reminders"],
+		"* * * * *": [
+			"xbr_crm.reminders.service.send_due_reminders",
+			# Off unless WhatsApp follow-ups are switched on (FCRM Settings).
+			"xbr_crm.whatsapp_automation.send_due_follow_ups",
+		],
 		# Check incoming mailboxes every 2 minutes (Frappe's own pull is every 10),
 		# so an email enquiry becomes a pipeline quickly. Frappe skips a mailbox
 		# whose previous pull is still queued, so the two schedules never overlap.
