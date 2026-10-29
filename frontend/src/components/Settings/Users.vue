@@ -189,7 +189,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ConfirmDelete } from '../../utils'
 import { formatError } from '../../utils/formatError'
 
-const { users, isAdmin, isManager } = usersStore()
+const { users, isAdmin, isManager, canManageRoles } = usersStore()
 
 const showAddExistingModal = ref(false)
 const searchRef = ref(null)
@@ -257,7 +257,7 @@ function getDropdownOptions(user) {
           selected: (user.crm_role || user.role) === 'Company Admin',
         }),
       onClick: () => updateRole(user, 'Company Admin'),
-      condition: () => isAdmin(),
+      condition: () => canManageRoles(),
     },
     {
       label: __('Manager'),
@@ -268,7 +268,7 @@ function getDropdownOptions(user) {
           selected: (user.crm_role || user.role) === 'Sales Manager',
         }),
       onClick: () => updateRole(user, 'Sales Manager'),
-      condition: () => isAdmin(),
+      condition: () => canManageRoles(),
     },
     {
       label: __('Sales User'),
@@ -329,4 +329,3 @@ onMounted(() => {
   }
 })
 </script>
-

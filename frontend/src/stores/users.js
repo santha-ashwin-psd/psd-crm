@@ -137,6 +137,18 @@ export const usersStore = defineStore('crm-users', () => {
     return getUser(email).role === 'System Manager'
   }
 
+  // Tenant admin. Their Frappe `role` is the derived "Sales Manager", so
+  // isAdmin() (System Manager only) is false for them; the tenancy role lives
+  // in `crm_role` (see xbr_crm/api/session.py).
+  function isCompanyAdmin(email) {
+    return getUser(email).crm_role === 'Company Admin'
+  }
+
+  // Can assign Manager / Company Admin roles (platform admin or company admin).
+  function canManageRoles(email) {
+    return isAdmin(email) || isCompanyAdmin(email)
+  }
+
   function isManager(email) {
     return getUser(email).role === 'Sales Manager' || isAdmin(email)
   }
@@ -173,6 +185,8 @@ export const usersStore = defineStore('crm-users', () => {
     crmUsers: computed(() => users.data?.crmUsers),
     getUser,
     isAdmin,
+    isCompanyAdmin,
+    canManageRoles,
     isManager,
     isSalesUser,
     isTelephonyAgent,

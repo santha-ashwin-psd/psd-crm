@@ -174,7 +174,7 @@ import { ref, computed } from 'vue'
 import { isLeadsEnabled } from '@/utils/leads'
 
 const { updateOnboardingStep } = useOnboarding('frappecrm')
-const { users, isAdmin } = usersStore()
+const { users, canManageRoles } = usersStore()
 const { capture } = useTelemetry()
 
 const invitees = ref([])
@@ -230,8 +230,8 @@ const description = computed(() => {
 const roleOptions = computed(() => {
   return [
     { value: 'Sales User', label: __('Sales User') },
-    ...(isAdmin() ? [{ value: 'Sales Manager', label: __('Manager') }] : []),
-    ...(isAdmin() ? [{ value: 'Company Admin', label: __('Company Admin') }] : []),
+    ...(canManageRoles() ? [{ value: 'Sales Manager', label: __('Manager') }] : []),
+    ...(canManageRoles() ? [{ value: 'Company Admin', label: __('Company Admin') }] : []),
   ]
 })
 

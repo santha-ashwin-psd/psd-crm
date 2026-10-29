@@ -286,8 +286,8 @@ const ROLE_LABEL = {
   'Sales User': __('Sales User'),
 }
 
-const { users: usersResource, getUserRole, isAdmin } = usersStore()
-const canEdit = computed(() => isAdmin())
+const { users: usersResource, getUserRole, canManageRoles } = usersStore()
+const canEdit = computed(() => canManageRoles())
 const { $dialog } = globalStore()
 const { capture } = useTelemetry()
 

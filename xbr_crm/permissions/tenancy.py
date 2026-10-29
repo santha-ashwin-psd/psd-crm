@@ -111,10 +111,29 @@ def get_permission_query_conditions(user=None, doctype=None) -> str:
 	return f"({col} = {esc} OR {col} IS NULL OR {col} = '')"
 
 
+def is_company_admin(user: str | None = None) -> bool:
+	user = user or frappe.session.user
+	if not user or user in ("Administrator", "Guest"):
+		return False
+	return bool(frappe.db.get_value("CRM Company Member", {"user": user}, "is_company_admin"))
+
+
+# Doctypes only a company admin (or the platform operator) may change. The role
+# grant in the doctype JSON is Sales Manager, because that is what "Company Admin"
+# maps to; this hook narrows it so plain managers stay read-only.
+_COMPANY_ADMIN_WRITE = {"CRM Sales Hierarchy"}
+
+
 def has_permission(doc, ptype=None, user=None, **kwargs) -> bool:
 	user = user or frappe.session.user
 	if is_bypass(user):
 		return True
+	if (
+		getattr(doc, "doctype", None) in _COMPANY_ADMIN_WRITE
+		and ptype in ("write", "create", "delete")
+		and not is_company_admin(user)
+	):
+		return False
 	# Creates are stamped in before_insert; there is nothing to check yet.
 	if ptype == "create" or not getattr(doc, "name", None):
 		return True
