@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import { toneClass } from '@/utils/statusTheme'
+import { toneClass, toneForStatus } from '@/utils/statusTheme'
 import { call, FeatherIcon, Tooltip } from 'frappe-ui'
 import { ref, computed, watch } from 'vue'
 
@@ -120,6 +120,7 @@ const props = defineProps({
 defineEmits(['filter'])
 
 const counts = ref({})
+const totalCount = ref(0)
 const trends = ref({}) // { __total__: {pct, up}, [status]: {pct, up} }
 const countsLoaded = ref(false)
 
@@ -150,21 +151,24 @@ function computeTrend(a, b) {
 // Accurate, permission-scoped counts: one get_count per status (the whitelisted
 // get_list rejects aggregate fields for non-admins). get_count applies the same
 // permission query conditions the list does.
+// The total is counted on its own rather than summed from the statuses, so
+// records with no status (or one not shown as a card) are still included.
 async function refreshCounts() {
   const statuses = props.statuses || []
-  if (!statuses.length) return
   try {
-    const results = await Promise.all(
-      statuses.map((s) =>
+    const [all, ...results] = await Promise.all([
+      call('frappe.client.get_count', { doctype: props.doctype }),
+      ...statuses.map((s) =>
         call('frappe.client.get_count', {
           doctype: props.doctype,
           filters: { status: s.name },
         }).then((c) => [s.name, c || 0]),
       ),
-    )
+    ])
     const map = {}
     for (const [name, c] of results) map[name] = c
     counts.value = map
+    totalCount.value = all || 0
   } catch (e) {
     console.error('Failed to load status counts for ' + props.doctype, e)
   } finally {
@@ -209,33 +213,27 @@ async function refreshTrends() {
   }
 }
 
+// Colour says whether the change is good news, not which way it went: more
+// Lost or Missed is bad, so a rise there is red. No change stays neutral.
 function trendClass(key) {
   const t = trends.value[key]
-  if (!t) return 'crm-stat-trend--muted'
-  return t.up ? 'crm-stat-trend--up' : 'crm-stat-trend--down'
+  if (!t || !t.pct) return 'crm-stat-trend--muted'
+  const good = toneForStatus(key) === 'danger' ? !t.up : t.up
+  return good ? 'crm-stat-trend--good' : 'crm-stat-trend--bad'
 }
 function trendText(key) {
   const t = trends.value[key]
   if (!t) return '— vs last month'
+  if (!t.pct) return __('No change vs last month')
   return `${t.up ? '↑' : '↓'} ${t.pct}% vs last month`
 }
 
-watch(
-  () => props.statuses?.length,
-  (len) => {
-    if (len) refreshCounts()
-  },
-  { immediate: true },
-)
+watch(() => props.statuses?.length, refreshCounts, { immediate: true })
 watch(
   () => props.refreshToken,
   (next, prev) => {
     if (prev !== undefined && next !== prev) refreshCounts()
   },
-)
-
-const totalCount = computed(() =>
-  Object.values(counts.value).reduce((a, b) => a + b, 0),
 )
 const statusCards = computed(() => {
   let list = (props.statuses || []).map((s) => ({
@@ -361,10 +359,10 @@ const statusCards = computed(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.crm-stat-trend--up {
+.crm-stat-trend--good {
   color: var(--crm-success);
 }
-.crm-stat-trend--down {
+.crm-stat-trend--bad {
   color: var(--crm-danger);
 }
 .crm-stat-trend--muted {

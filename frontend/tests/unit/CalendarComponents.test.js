@@ -339,11 +339,11 @@ describe('EventNotifications', () => {
     })
 
   describe('adding one', () => {
-    it('defaults to ten minutes before a timed event', () => {
+    it('defaults to an email ten minutes before a timed event', () => {
       const list = []
       mount(list).vm.addNotification()
       expect(list).toEqual([
-        { type: 'Notification', before: 10, interval: 'minutes' },
+        { type: 'Email', before: 10, interval: 'minutes' },
       ])
     })
 
@@ -352,7 +352,7 @@ describe('EventNotifications', () => {
       const list = []
       mount(list, { isAllDay: true }).vm.addNotification()
       expect(list).toEqual([
-        { type: 'Notification', before: 1, interval: 'days', time: '08:00' },
+        { type: 'Email', before: 1, interval: 'days', time: '08:00' },
       ])
     })
 

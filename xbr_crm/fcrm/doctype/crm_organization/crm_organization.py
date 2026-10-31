@@ -75,12 +75,6 @@ class CRMOrganization(Document):
 				"width": "14rem",
 			},
 			{
-				"label": "Status",
-				"type": "Select",
-				"key": "status",
-				"width": "9rem",
-			},
-			{
 				"label": "Last Modified",
 				"type": "Datetime",
 				"key": "modified",
@@ -95,7 +89,10 @@ class CRMOrganization(Document):
 			"industry",
 			"currency",
 			"annual_revenue",
-			"status",
 			"modified",
 		]
+		# Status is not a standard field; show it only where a site has added it.
+		if frappe.get_meta("CRM Organization").has_field("status"):
+			columns.insert(-1, {"label": "Status", "type": "Select", "key": "status", "width": "9rem"})
+			rows.insert(-1, "status")
 		return {"columns": columns, "rows": rows}

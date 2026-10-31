@@ -79,7 +79,7 @@
           <span
             v-if="rawDue(itemName)"
             class="crm-badge"
-            :class="dueToneClass(rawDue(itemName))"
+            :class="dueClass(itemName)"
             :title="getRow(itemName, 'due_date').label"
           >
             <FeatherIcon name="calendar" class="size-3" />
@@ -220,7 +220,12 @@ import CustomActions from '@/components/CustomActions.vue'
 import ArrowUpRightIcon from '@/components/Icons/ArrowUpRightIcon.vue'
 import TaskStatusIcon from '@/components/Icons/TaskStatusIcon.vue'
 import TaskPriorityIcon from '@/components/Icons/TaskPriorityIcon.vue'
-import { priorityToneClass, dueToneClass, dueState } from '@/utils/taskMeta'
+import {
+  priorityToneClass,
+  dueToneClass,
+  dueState,
+  isClosedTask,
+} from '@/utils/taskMeta'
 import Email2Icon from '@/components/Icons/Email2Icon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import ViewControls from '@/components/ViewControls.vue'
@@ -329,9 +334,20 @@ function rawDue(name) {
 
 // Short, human due label. States come from utils/taskMeta so "overdue" means
 // the same thing here as anywhere else it is shown.
+// A Done or Canceled task is never overdue: its date is shown plainly.
+function cardDueState(name) {
+  if (isClosedTask(getRow(name, 'status').label)) return 'none'
+  return dueState(rawDue(name))
+}
+
+function dueClass(name) {
+  if (cardDueState(name) === 'none') return 'crm-tone-neutral'
+  return dueToneClass(rawDue(name))
+}
+
 function dueText(name) {
   const raw = rawDue(name)
-  const state = dueState(raw)
+  const state = cardDueState(name)
   if (state === 'overdue') return __('Overdue')
   if (state === 'today') return __('Due today')
   return formatDate(raw, '', true)

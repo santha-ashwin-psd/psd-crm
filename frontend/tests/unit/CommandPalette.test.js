@@ -17,20 +17,53 @@ vi.mock('vue-router', async (importOriginal) => {
   return { ...actual, useRouter: () => nav }
 })
 
-const LEADS = [{ name: 'LEAD-1', lead_name: 'Ada Lovelace', email: 'ada@example.com', status: 'New' }]
-const DEALS = [{ name: 'DEAL-1', deal_name: 'Acme deal', stage: 'Demo', status: 'Open' }]
-const CONTACTS = [{ name: 'CONTACT-1', first_name: 'Bob', last_name: 'Brown', email_id: 'bob@example.com' }]
-const ORGS = [{ name: 'ORG-1', organization_name: 'Acme Ltd', industry: 'Software' }]
+const LEADS = [
+  {
+    name: 'LEAD-1',
+    lead_name: 'Ada Lovelace',
+    email: 'ada@example.com',
+    status: 'New',
+  },
+]
+const DEALS = [
+  {
+    name: 'DEAL-1',
+    organization: 'Acme Ltd',
+    lead_name: 'Bob Brown',
+    status: 'Demo',
+  },
+]
+const CONTACTS = [
+  {
+    name: 'CONTACT-1',
+    first_name: 'Bob',
+    last_name: 'Brown',
+    email_id: 'bob@example.com',
+  },
+]
+const ORGS = [
+  { name: 'ORG-1', organization_name: 'Acme Ltd', industry: 'Software' },
+]
 
 /** Resolves the four parallel get_list calls in the order the component makes them. */
-const respondWith = ({ leads = [], deals = [], contacts = [], orgs = [] } = {}) => {
+const respondWith = ({
+  leads = [],
+  deals = [],
+  contacts = [],
+  orgs = [],
+} = {}) => {
   api.call.mockImplementation(async (_method, args) => {
     switch (args.doctype) {
-      case 'CRM Lead': return leads
-      case 'CRM Deal': return deals
-      case 'Contact': return contacts
-      case 'CRM Organization': return orgs
-      default: return []
+      case 'CRM Lead':
+        return leads
+      case 'CRM Deal':
+        return deals
+      case 'Contact':
+        return contacts
+      case 'CRM Organization':
+        return orgs
+      default:
+        return []
     }
   })
 }
@@ -64,14 +97,21 @@ describe('CommandPalette', () => {
       await search(wrapper, 'acme')
       const doctypes = api.call.mock.calls.map((c) => c[1].doctype)
       expect(doctypes).toEqual(
-        expect.arrayContaining(['CRM Lead', 'CRM Deal', 'Contact', 'CRM Organization']),
+        expect.arrayContaining([
+          'CRM Lead',
+          'CRM Deal',
+          'Contact',
+          'CRM Organization',
+        ]),
       )
     })
 
     it('wraps the term in wildcards', async () => {
       const wrapper = mountPalette()
       await search(wrapper, 'acme')
-      const leadCall = api.call.mock.calls.find((c) => c[1].doctype === 'CRM Lead')
+      const leadCall = api.call.mock.calls.find(
+        (c) => c[1].doctype === 'CRM Lead',
+      )
       expect(leadCall[1].or_filters.lead_name).toEqual(['like', '%acme%'])
     })
 
@@ -156,11 +196,41 @@ describe('CommandPalette', () => {
       expect(wrapper.vm.results.Contacts[0].title).toBe('Cher')
     })
 
-    it('prefers a deal’s stage over its status', async () => {
+    it('titles a deal by its organization, with the person and stage under it', async () => {
       respondWith({ deals: DEALS })
       const wrapper = mountPalette()
       await search(wrapper, 'acme')
-      expect(wrapper.vm.results.Deals[0].subtitle).toBe('Demo')
+      expect(wrapper.vm.results.Deals[0]).toMatchObject({
+        title: 'Acme Ltd',
+        subtitle: 'Bob Brown · Demo',
+      })
+    })
+
+    it('only asks for fields that exist on each doctype', async () => {
+      // A field the doctype lacks fails the whole query server side.
+      respondWith({ deals: DEALS })
+      const wrapper = mountPalette()
+      await search(wrapper, 'acme')
+      const fieldsFor = (dt) =>
+        api.call.mock.calls.find(([, a]) => a.doctype === dt)[1].fields
+      expect(fieldsFor('CRM Deal')).not.toContain('deal_name')
+      expect(fieldsFor('CRM Deal')).not.toContain('stage')
+      expect(fieldsFor('CRM Organization')).toContain('organization_logo')
+      expect(fieldsFor('CRM Organization')).not.toContain('image')
+    })
+
+    it('keeps the other results when one doctype fails', async () => {
+      respondWith({ deals: DEALS })
+      const ok = api.call.getMockImplementation()
+      api.call.mockImplementation(async (m, args) =>
+        args.doctype === 'CRM Organization'
+          ? Promise.reject(new Error('Field not permitted in query'))
+          : ok(m, args),
+      )
+      const wrapper = mountPalette()
+      await search(wrapper, 'acme')
+      expect(wrapper.vm.results.Deals).toHaveLength(1)
+      expect(wrapper.vm.results.Organizations).toEqual([])
     })
 
     it('labels an organization with its industry', async () => {
@@ -185,7 +255,12 @@ describe('CommandPalette', () => {
 
   describe('keyboard navigation', () => {
     const populated = async () => {
-      respondWith({ leads: LEADS, deals: DEALS, contacts: CONTACTS, orgs: ORGS })
+      respondWith({
+        leads: LEADS,
+        deals: DEALS,
+        contacts: CONTACTS,
+        orgs: ORGS,
+      })
       const wrapper = mountPalette()
       await search(wrapper, 'acme')
       return wrapper
@@ -194,7 +269,10 @@ describe('CommandPalette', () => {
     it('flattens every category in display order', async () => {
       const wrapper = await populated()
       expect(wrapper.vm.flatResults.map((r) => r.badge)).toEqual([
-        'Lead', 'Deal', 'Contact', 'Organization',
+        'Lead',
+        'Deal',
+        'Contact',
+        'Organization',
       ])
     })
 

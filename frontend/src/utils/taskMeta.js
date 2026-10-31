@@ -46,6 +46,11 @@ export function priorityToneClass(priority) {
   return `crm-tone-${priorityTone(priority)}`
 }
 
+/** Whether a task is finished, so its due date is history rather than an alarm. */
+export function isClosedTask(status) {
+  return status === 'Done' || status === 'Canceled'
+}
+
 /**
  * Where a due date sits relative to now.
  *

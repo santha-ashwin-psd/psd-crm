@@ -1,12 +1,19 @@
 // Counts and trends come from one get_count per card, so the API is faked and
 // answers from a fixture keyed by the filters it receives.
-const api = vi.hoisted(() => ({ counts: {}, thisMonth: {}, lastMonth: {} }))
+const api = vi.hoisted(() => ({
+  total: 0,
+  counts: {},
+  thisMonth: {},
+  lastMonth: {},
+}))
 
 vi.mock('frappe-ui', async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,
     call: vi.fn((_method, { filters }) => {
+      // No filters => the total count, of every record.
+      if (!filters) return Promise.resolve(api.total)
       // Plain object filters => the total-per-status count.
       if (!Array.isArray(filters)) {
         return Promise.resolve(api.counts[filters.status] ?? 0)
@@ -56,6 +63,7 @@ const cardText = (wrapper) =>
 
 describe('StatusKpiBand', () => {
   beforeEach(() => {
+    api.total = 10
     api.counts = {
       Qualification: 3,
       Negotiation: 2,
@@ -90,8 +98,21 @@ describe('StatusKpiBand', () => {
       expect(cardText(wrapper)[0]).toContain('Total Deals')
     })
 
-    it('totals the per-status counts', async () => {
+    it('shows the total count', async () => {
       const wrapper = await mountBand()
+      expect(cardText(wrapper)[0]).toContain('10')
+    })
+
+    it('counts records with no status in the total', async () => {
+      // Counted separately, not summed: a record outside every card still counts.
+      api.total = 12
+      const wrapper = await mountBand()
+      expect(cardText(wrapper)[0]).toContain('12')
+    })
+
+    it('shows the total even with no statuses to break it down', async () => {
+      const wrapper = await mountBand({ statuses: [] })
+      expect(cardText(wrapper)).toHaveLength(1)
       expect(cardText(wrapper)[0]).toContain('10')
     })
 
@@ -153,7 +174,9 @@ describe('StatusKpiBand', () => {
       api.thisMonth = { __total__: 0 }
       api.lastMonth = { __total__: 0 }
       const wrapper = await mountBand()
-      expect(cardText(wrapper)[0]).toContain('↑ 0% vs last month')
+      expect(cardText(wrapper)[0]).toContain('No change vs last month')
+      const trends = wrapper.findAll('.crm-stat-trend')
+      expect(trends[0].classes()).toContain('crm-stat-trend--muted')
     })
 
     it('colours a rise green and a fall red', async () => {
@@ -161,8 +184,19 @@ describe('StatusKpiBand', () => {
       api.lastMonth = { __total__: 5, Qualification: 10 }
       const wrapper = await mountBand()
       const trends = wrapper.findAll('.crm-stat-trend')
-      expect(trends[0].classes()).toContain('crm-stat-trend--up')
-      expect(trends[1].classes()).toContain('crm-stat-trend--down')
+      expect(trends[0].classes()).toContain('crm-stat-trend--good')
+      expect(trends[1].classes()).toContain('crm-stat-trend--bad')
+    })
+
+    it('colours a rise in a bad status red and a fall green', async () => {
+      // More Lost is bad news even though the number went up.
+      api.thisMonth = { Lost: 4, Won: 1 }
+      api.lastMonth = { Lost: 2, Won: 2 }
+      const wrapper = await mountBand()
+      const trends = wrapper.findAll('.crm-stat-trend')
+      expect(cardText(wrapper)[5]).toContain('↑ 100%')
+      expect(trends[5].classes()).toContain('crm-stat-trend--bad') // Lost
+      expect(trends[4].classes()).toContain('crm-stat-trend--bad') // Won fell
     })
   })
 

@@ -96,8 +96,12 @@ import EmptyState from '../components/ListViews/EmptyState.vue'
 import SkeletonLoader from '@/components/SkeletonLoader.vue'
 import StatusKpiBand from '@/components/StatusKpiBand.vue'
 
-const { getFormattedPercent, getFormattedFloat, getFormattedCurrency } =
-  getMeta('CRM Organization')
+const {
+  doctypeMeta,
+  getFormattedPercent,
+  getFormattedFloat,
+  getFormattedCurrency,
+} = getMeta('CRM Organization')
 
 const organizationsListView = ref(null)
 const showOrganizationModal = ref(false)
@@ -126,20 +130,26 @@ onBeforeUnmount(() => {
   pageReloadAction.value = null
 })
 
-
-// ---- Status KPI band (custom field: Prospect / Active / Customer / Inactive) --
-const orgStatuses = [
-  { name: 'Prospect', color: '!text-blue-600' },
-  { name: 'Active', color: '!text-green-700' },
-  { name: 'Customer', color: '!text-violet-600' },
-  { name: 'Inactive', color: '!text-orange-600' },
-]
+// ---- Status KPI band ---------------------------------------------------------
+// CRM Organization has no status field of its own; some sites add one as a
+// custom Select field. The cards come from that field's options; a site
+// without it shows no band rather than counting a field that isn't there.
+const orgStatuses = computed(() => {
+  const field = doctypeMeta.value?.fields?.find(
+    (f) => f.fieldname === 'status' && f.fieldtype === 'Select',
+  )
+  return (field?.options || '')
+    .split('\n')
+    .filter(Boolean)
+    .map((name) => ({ name }))
+})
 
 const activeStatus = computed(
   () => organizations.value?.params?.filters?.status ?? null,
 )
 
 const showStatusBand = computed(() => {
+  if (!orgStatuses.value.length) return false
   if (organizations.value?.data && !rows.value.length && !activeStatus.value) {
     return false
   }

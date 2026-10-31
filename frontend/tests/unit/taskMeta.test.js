@@ -6,6 +6,7 @@ import {
   dueState,
   dueTone,
   dueToneClass,
+  isClosedTask,
 } from '@/utils/taskMeta'
 
 const NOW = new Date(2026, 8, 8, 15, 0) // 8 Sep 2026, 15:00 local
@@ -98,5 +99,18 @@ describe('dueTone', () => {
   it('returns a complete literal class name', () => {
     expect(dueToneClass(at(2026, 8, 7), NOW)).toBe('crm-tone-danger')
     expect(dueToneClass(null, NOW)).toBe('crm-tone-neutral')
+  })
+})
+
+describe('isClosedTask', () => {
+  it('treats Done and Canceled as closed, so they are never overdue', () => {
+    expect(isClosedTask('Done')).toBe(true)
+    expect(isClosedTask('Canceled')).toBe(true)
+  })
+
+  it('treats every other status as open', () => {
+    for (const s of ['Backlog', 'Todo', 'In Progress', '', null, undefined]) {
+      expect(isClosedTask(s)).toBe(false)
+    }
   })
 })

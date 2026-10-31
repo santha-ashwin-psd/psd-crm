@@ -143,3 +143,4 @@ deal,pipeline
 deals,pipelines
 Deals,Pipelines,Chart series
 Won Deals,Won Pipelines,Chart series
+"{0} isn't a contact yet. Add them as a contact first, or create this event from a deal or contact.","{0} isn't a contact yet. Add them as a contact first, or create this event from a pipeline or contact."

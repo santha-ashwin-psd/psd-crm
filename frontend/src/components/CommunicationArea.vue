@@ -254,11 +254,21 @@ async function deleteAttachedFiles() {
 async function submitEmail() {
   if (emailEmpty.value) return
   showEmailBox.value = false
-  await toast.promise(sendMail(), {
+  // toast.promise returns a toast id, not the promise, so awaiting it does not
+  // wait for the send; the timeline reloaded before the email existed.
+  const sending = sendMail()
+  toast.promise(sending, {
     loading: __('Sending email...'),
     success: __('Email sent'),
     error: (e) => e?.messages?.[0] || __('Failed to send email!'),
   })
+  try {
+    await sending
+  } catch {
+    // Keep the draft so it can be fixed and sent again.
+    showEmailBox.value = true
+    return
+  }
   newEmail.value = ''
   attachments.value = []
   reload.value = true
@@ -270,11 +280,18 @@ async function submitEmail() {
 async function submitComment() {
   if (commentEmpty.value) return
   showCommentBox.value = false
-  await toast.promise(sendComment(), {
+  const sending = sendComment()
+  toast.promise(sending, {
     loading: __('Sending comment...'),
     success: __('Comment sent'),
     error: (e) => e?.messages?.[0] || __('Failed to send comment!'),
   })
+  try {
+    await sending
+  } catch {
+    showCommentBox.value = true
+    return
+  }
   newComment.value = ''
   attachments.value = []
   reload.value = true

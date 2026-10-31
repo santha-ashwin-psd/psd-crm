@@ -76,17 +76,18 @@ const notes = defineModel({ type: Object })
 const { getUser } = usersStore()
 
 async function deleteNote(name) {
-  await toast.promise(
-    call('frappe.client.delete', {
-      doctype: 'FCRM Note',
-      name,
-    }),
-    {
-      loading: __('Deleting note...'),
-      success: __('Note deleted'),
-      error: __('Failed to delete note'),
-    },
-  )
+  // toast.promise does not return the promise, so await the call itself or
+  // the list reloads before the note is gone.
+  const deleting = call('frappe.client.delete', {
+    doctype: 'FCRM Note',
+    name,
+  })
+  toast.promise(deleting, {
+    loading: __('Deleting note...'),
+    success: __('Note deleted'),
+    error: __('Failed to delete note'),
+  })
+  await deleting.catch(() => {})
   notes.value?.reload()
 }
 </script>

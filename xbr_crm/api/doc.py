@@ -4,7 +4,7 @@ import frappe
 from frappe import _
 from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 from frappe.desk.form.assign_to import set_status
-from frappe.model import no_value_fields
+from frappe.model import default_fields, no_value_fields, optional_fields
 from frappe.model.delete_doc import get_dynamic_linked_docs, get_linked_docs
 from frappe.model.document import get_controller
 from frappe.utils import make_filter_tuple
@@ -405,6 +405,15 @@ def get_data(
 			rows = default_rows
 			columns = _list.default_list_data().get("columns")
 
+		# A saved view can name a field the doctype no longer has (a removed
+		# custom field); it would only ever show as an empty column.
+		standard = set(default_fields) | set(optional_fields)
+		columns = [
+			c
+			for c in columns
+			if not c.get("key") or meta.has_field(c["key"]) or c["key"] in standard or "." in c["key"]
+		]
+
 		# check if rows has all keys from columns if not add them
 		for column in columns:
 			if column.get("key") not in rows:
@@ -464,6 +473,10 @@ def get_data(
 		# Pipeline cards flag an overdue follow-up, which needs the date.
 		if doctype == "CRM Deal" and "next_follow_up" not in rows:
 			rows.append("next_follow_up")
+
+		# Task cards flag an overdue due date only while the task is open.
+		if doctype == "CRM Task" and "status" not in rows:
+			rows.append("status")
 
 		if not kanban_fields:
 			kanban_fields = ["name"]

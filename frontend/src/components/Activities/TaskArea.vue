@@ -129,6 +129,7 @@ import UserAvatar from '@/components/UserAvatar.vue'
 import { formatDate, taskStatusOptions } from '@/utils'
 import { usersStore } from '@/stores/users'
 import { globalStore } from '@/stores/global'
+import { isClosedTask } from '@/utils/taskMeta'
 import { Tooltip, Dropdown } from 'frappe-ui'
 
 defineProps({
@@ -140,7 +141,7 @@ const { getUser } = usersStore()
 const { $dialog } = globalStore()
 
 const isOverdue = (dueDate, status) => {
-  if (!dueDate || status === 'Done') return false
+  if (!dueDate || isClosedTask(status)) return false
   return new Date(dueDate) < new Date()
 }
 </script>

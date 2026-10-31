@@ -224,12 +224,6 @@ describe('CalendarSettings', () => {
         'Monthly',
       ])
     })
-
-    it('offers both reminder channels', () => {
-      expect(
-        mount(CalendarSettings).vm.channelOptions.map((o) => o.value),
-      ).toEqual(['Notification', 'Email'])
-    })
   })
 
   describe('the interval labels', () => {

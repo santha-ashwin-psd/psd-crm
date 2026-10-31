@@ -311,7 +311,9 @@ watchDebounced(
     activeIndex.value = 0
 
     try {
-      const [leadsRes, dealsRes, contactsRes, orgsRes] = await Promise.all([
+      // allSettled: one category failing (e.g. no read permission) must not
+      // blank out the results of the others.
+      const settled = await Promise.allSettled([
         leadsEnabled
           ? call('frappe.client.get_list', {
               doctype: 'CRM Lead',
@@ -326,9 +328,11 @@ watchDebounced(
           : [],
         call('frappe.client.get_list', {
           doctype: 'CRM Deal',
-          fields: ['name', 'deal_name', 'status', 'stage'],
+          fields: ['name', 'organization', 'lead_name', 'status'],
           or_filters: {
-            deal_name: ['like', `%${val}%`],
+            organization: ['like', `%${val}%`],
+            lead_name: ['like', `%${val}%`],
+            email: ['like', `%${val}%`],
             name: ['like', `%${val}%`],
           },
           limit_page_length: 5,
@@ -346,7 +350,12 @@ watchDebounced(
         }),
         call('frappe.client.get_list', {
           doctype: 'CRM Organization',
-          fields: ['name', 'organization_name', 'industry', 'image'],
+          fields: [
+            'name',
+            'organization_name',
+            'industry',
+            'organization_logo',
+          ],
           or_filters: {
             organization_name: ['like', `%${val}%`],
             name: ['like', `%${val}%`],
@@ -354,6 +363,11 @@ watchDebounced(
           limit_page_length: 5,
         }),
       ])
+      const [leadsRes, dealsRes, contactsRes, orgsRes] = settled.map((r) => {
+        if (r.status === 'rejected')
+          console.error('Command Palette Search Error:', r.reason)
+        return r.value
+      })
 
       results.value.Leads = (leadsRes || []).map((l) => ({
         id: `lead-${l.name}`,
@@ -366,8 +380,8 @@ watchDebounced(
 
       results.value.Deals = (dealsRes || []).map((d) => ({
         id: `deal-${d.name}`,
-        title: d.deal_name || d.name,
-        subtitle: d.stage || d.status,
+        title: d.organization || d.lead_name || d.name,
+        subtitle: [d.lead_name, d.status].filter(Boolean).join(' · '),
         badge: __('Deal'),
         route: { name: 'Deal', params: { dealId: d.name } },
       }))
@@ -385,7 +399,7 @@ watchDebounced(
         id: `org-${o.name}`,
         title: o.organization_name || o.name,
         subtitle: o.industry || __('Organization'),
-        image: o.image,
+        image: o.organization_logo,
         badge: __('Organization'),
         route: { name: 'Organization', params: { organizationId: o.name } },
       }))
