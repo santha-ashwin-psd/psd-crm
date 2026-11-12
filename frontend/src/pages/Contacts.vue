@@ -29,6 +29,7 @@
     v-model:resizeColumn="triggerResize"
     v-model:updatedPageCount="updatedPageCount"
     doctype="Contact"
+    :fieldLabels="{ company_name: __('Institution') }"
   />
   <ContactsListView
     v-if="contacts.data && rows.length"
@@ -217,6 +218,13 @@ const rows = computed(() => {
 
 const columns = computed(() => {
   let _columns = contacts.value?.data?.columns || []
+
+  // Page-only wording: the company_name column header reads Institution.
+  _columns = _columns.map((col) =>
+    col.key === 'company_name'
+      ? { ...col, label: __('Institution') }
+      : col,
+  )
 
   // Right-align the last column only when it's numeric — avatar/name/link
   // columns must stay left so the header and cells line up.
