@@ -315,7 +315,7 @@ import RefreshIcon from '@/components/Icons/RefreshIcon.vue'
 import Autocomplete from '@/components/frappe-ui/Autocomplete.vue'
 import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import { isTouchScreenDevice, colors, parseColor } from '@/utils'
-import { toneForStatus } from '@/utils/statusTheme'
+import { toneForStatus, STAGE_COLOR } from '@/utils/statusTheme'
 import Draggable from 'vuedraggable'
 import { Dropdown, Popover, FeatherIcon } from 'frappe-ui'
 import { computed, ref } from 'vue'
@@ -462,7 +462,11 @@ const columns = computed(() => {
     _columns.some((column) => column.column?.color) && !isLegacyAutoPalette
   if (!has_color) {
     _columns.forEach((column) => {
-      column.column['color'] = TONE_COLOR[toneForStatus(column.column.name)]
+      const name = String(column.column.name || '')
+        .trim()
+        .toLowerCase()
+      column.column['color'] =
+        STAGE_COLOR[name] || TONE_COLOR[toneForStatus(column.column.name)]
     })
   }
   return _columns

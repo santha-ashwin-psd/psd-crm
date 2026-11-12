@@ -25,7 +25,7 @@ from xbr_crm.fcrm.doctype.crm_deal.crm_deal import default_deal_status
 
 
 def expected_stage():
-	"""Website pipelines start in Qualification, or the default stage without it."""
+	"""Website pipelines start in Prospect, or the default stage without it."""
 	if frappe.db.exists("CRM Deal Status", web_lead.STAGE):
 		return web_lead.STAGE
 	return default_deal_status()
@@ -333,7 +333,7 @@ class TestWebLead(FrappeTestCase):
 		self.assertEqual(deal.custom_page_url, "https://ieagents.co.in/")
 		self.assertEqual(deal.source, "Website")
 		self.assertEqual(deal.custom_created_via, "Website")
-		# A qualifying form: skips Needs Analysis, where email inquiries start.
+		# A qualifying form: skips Interested Leads, where email inquiries start.
 		self.assertEqual(deal.status, expected_stage())
 
 		# The person is a Contact, linked as the pipeline's primary contact, and
@@ -677,7 +677,7 @@ class TestWebLead(FrappeTestCase):
 		self.assertTrue(any("Masters" in n for n in self.notes_on(first["pipeline"])))
 
 	def test_on_hold_pipeline_still_counts_as_open(self):
-		"""A parked pipeline (e.g. Future Requirements) is not closed: note it."""
+		"""A parked pipeline (e.g. Future Opportunity) is not closed: note it."""
 		first, _ = self.post(self.consultation_payload())
 		self.close_deal(first["pipeline"], status_type="On Hold")
 		self._age_submission_log()

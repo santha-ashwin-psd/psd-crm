@@ -54,7 +54,7 @@
             linear-gradient(180deg, var(--crm-surface-2), var(--crm-surface));
         "
       >
-        <Tooltip :text="__('Organization Logo')">
+        <Tooltip :text="__('Institution Logo')">
           <Avatar
             size="3xl"
             class="!size-14 shrink-0 !rounded-2xl"
@@ -69,7 +69,7 @@
                showed the deal ID as BOTH the heading and the line underneath
                it. The ID now appears exactly once, in the meta line, and an
                unnamed deal says so plainly instead of echoing its key. -->
-          <Tooltip :text="dealName || __('Set an Organization')">
+          <Tooltip :text="dealName || __('Set an Institution')">
             <div
               class="truncate text-xl font-semibold"
               :class="dealName ? 'text-ink-gray-9' : 'text-ink-gray-5'"

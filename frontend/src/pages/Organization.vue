@@ -251,7 +251,7 @@
                 :title="tab.label === 'Deals' ? __('No deals found') : ''"
                 :description="
                   tab.label === 'Deals'
-                    ? __('Deals linked to this organization will appear here.')
+                    ? __('Pipelines linked to this institution will appear here.')
                     : ''
                 "
               />
@@ -376,7 +376,7 @@ onMounted(async () => {
 })
 
 const breadcrumbs = computed(() => {
-  let items = [{ label: __('Organizations'), route: { name: 'Organizations' } }]
+  let items = [{ label: __('Institutions'), route: { name: 'Organizations' } }]
 
   if (route.query.view || route.query.viewType) {
     let view = getView(
@@ -492,7 +492,9 @@ const parsedSections = computed(() => {
               },
               edit: (address) => showAddressModal(address),
             }
-          : field,
+          : field.fieldname === 'organization_name'
+            ? { ...field, label: __('Institution Name') }
+            : field,
       ),
     })),
   }))
@@ -736,4 +738,3 @@ watch(
   { once: true },
 )
 </script>
-

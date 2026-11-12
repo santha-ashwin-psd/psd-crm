@@ -39,3 +39,6 @@ xbr_crm.patches.v1_1.reminder_emails
 xbr_crm.patches.v1_1.follow_ups
 xbr_crm.patches.v1_1.event_reminder_email_checkbox
 xbr_crm.patches.v1_1.email_creates_pipeline
+xbr_crm.patches.v1_1.pipeline_statuses_v2
+xbr_crm.patches.v1_1.pipeline_status_colors
+xbr_crm.patches.v1_1.rename_organization_to_institution

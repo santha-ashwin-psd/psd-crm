@@ -4,7 +4,7 @@
 """The follow-up stage: a dated task with a reminder, overdue and stuck pipelines.
 
 - Moving a pipeline into the follow-up stage (FCRM Settings → Follow-ups, default
-  "Followup") needs a follow-up date. The form asks for one; any other route gets
+  "Follow-up") needs a follow-up date. The form asks for one; any other route gets
   tomorrow at 10:00. The CRM then creates a task for the pipeline owner, due at
   that time, with an email + in-app reminder. A new date moves the same task.
 - Overdue: in the follow-up stage with the follow-up date passed.
@@ -19,7 +19,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, cint, get_datetime, get_url, getdate, now_datetime
 
-DEFAULT_STAGE = "Followup"
+DEFAULT_STAGE = "Follow-up"
 DEFAULT_STUCK_DAYS = 10
 DEFAULT_HOUR = 10  # follow-up time used when none is given: tomorrow at 10:00
 CLOSED_TASK_STATUSES = ("Done", "Canceled")

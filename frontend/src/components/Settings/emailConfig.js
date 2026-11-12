@@ -60,7 +60,7 @@ export const incomingOutgoingFields = [
     name: 'create_lead_from_incoming_email',
     type: 'checkbox',
     description: __(
-      'If enabled, a pipeline will be created in Needs Analysis when an email arrives from a new sender.',
+      'If enabled, a pipeline will be created in Interested Leads when an email arrives from a new sender.',
     ),
     condition: (state) => state.enable_incoming,
   },

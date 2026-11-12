@@ -72,6 +72,13 @@ export const EXACT = Object.freeze({
   lost: 'danger',
   'closed won': 'success',
   'closed lost': 'danger',
+  'interested leads': 'info',
+  counselling: 'info',
+  counseling: 'info',
+  'follow-up': 'warning',
+  followup: 'warning',
+  archive: 'neutral',
+  'future opportunity': 'warning', // parked, like "On Hold"
 
   // ---- CRM Task Status ----
   backlog: 'neutral',
@@ -120,6 +127,26 @@ export const EXACT = Object.freeze({
   draft: 'neutral',
   archived: 'neutral',
   closed: 'neutral',
+})
+
+/**
+ * Lane colour for each pipeline stage, as a Tailwind colour name (the alphabet
+ * `parseColor()` speaks). The tone table above only has five meanings, which
+ * left a board of eight stages as three identical blues, two oranges and a
+ * grey. The working stages instead step through a cool-to-warm progression
+ * (cyan, blue, violet, amber) and only the outcomes use the loud colours:
+ * green is won, red is lost. Keep in sync with DEFAULT_DEAL_STATUSES in
+ * install.py, which stores the same colours on the CRM Deal Status records.
+ */
+export const STAGE_COLOR = Object.freeze({
+  'interested leads': 'cyan',
+  prospect: 'blue',
+  counselling: 'violet',
+  'follow-up': 'amber',
+  won: 'green',
+  lost: 'red',
+  archive: 'gray',
+  'future opportunity': 'teal',
 })
 
 /**

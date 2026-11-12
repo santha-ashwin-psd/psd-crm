@@ -4,7 +4,7 @@ import { getSettings } from '@/stores/settings'
 import { dayjs } from 'frappe-ui'
 import { ref } from 'vue'
 
-const DEFAULT_STAGE = 'Followup'
+const DEFAULT_STAGE = 'Follow-up'
 const DEFAULT_HOUR = 10
 
 // The open prompt, if any: { initial, resolve }. Rendered by FollowUpModal,

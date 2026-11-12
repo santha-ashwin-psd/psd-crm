@@ -9,7 +9,7 @@
           : 'text-[var(--crm-text)]',
       ]"
     >
-      {{ __(routeName) }}
+      {{ label || __(routeName) }}
     </router-link>
     <span
       v-if="viewControls && viewControls.viewsDropdownOptions"
@@ -66,6 +66,8 @@ import { Dropdown } from 'frappe-ui'
 
 defineProps({
   routeName: { type: String, required: true },
+  // Optional display text; the route (and link target) stay routeName.
+  label: { type: String, default: '' },
 })
 
 const viewControls = defineModel({ type: Object, default: () => ({}) })

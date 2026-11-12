@@ -133,6 +133,31 @@ describe('KanbanView', () => {
       ])
     })
 
+    it('gives each pipeline stage its own colour, outcomes loudest', () => {
+      const wrapper = mount({
+        data: [
+          col('Interested Leads'),
+          col('Prospect'),
+          col('Counselling'),
+          col('Follow-up'),
+          col('Won'),
+          col('Lost'),
+          col('Archive'),
+          col('Future Opportunity'),
+        ],
+      })
+      expect(wrapper.vm.columns.map((c) => c.column.color)).toEqual([
+        'cyan',
+        'blue',
+        'violet',
+        'amber',
+        'green',
+        'red',
+        'gray',
+        'teal',
+      ])
+    })
+
     it('falls back to neutral for a status with no defined meaning', () => {
       // Grey is the honest answer — better than borrowing a colour that
       // implies something untrue about a site's custom column.

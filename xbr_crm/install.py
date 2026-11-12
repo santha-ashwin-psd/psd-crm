@@ -19,6 +19,7 @@ def before_install():
 def after_install(force=False):
 	add_default_lead_statuses()
 	add_default_deal_statuses()
+	set_default_follow_up_stage()
 	add_default_communication_statuses()
 	add_default_fields_layout(force)
 	add_property_setter()
@@ -103,16 +104,14 @@ def add_default_lead_statuses():
 # worked, Won/Lost are closed (Lost asks for a lost reason). The first Open stage
 # is where every new pipeline starts.
 DEFAULT_DEAL_STATUSES = {
-	"Needs Analysis": ("Open", 10, "gray"),
-	"Qualification": ("Ongoing", 20, "blue"),
-	"Proposal/Price Quote": ("Ongoing", 40, "cyan"),
-	"Followup": ("Ongoing", 50, "amber"),
-	"Negotiation/Review": ("Ongoing", 70, "orange"),
-	"Future Requirements": ("On Hold", 10, "violet"),
-	"Closed Won": ("Won", 100, "green"),
-	"Closed Lost": ("Lost", 0, "red"),
-	"Disqualified": ("Lost", 0, "pink"),
-	"Existing Customer": ("Won", 100, "teal"),
+	"Interested Leads": ("Open", 10, "cyan"),
+	"Prospect": ("Ongoing", 25, "blue"),
+	"Counselling": ("Ongoing", 50, "violet"),
+	"Follow-up": ("Ongoing", 60, "amber"),
+	"Won": ("Won", 100, "green"),
+	"Lost": ("Lost", 0, "red"),
+	"Archive": ("Lost", 0, "gray"),
+	"Future Opportunity": ("On Hold", 10, "teal"),
 }
 
 
@@ -128,6 +127,15 @@ def add_default_deal_statuses():
 		doc.probability = probability
 		doc.position = position
 		doc.insert()
+
+
+def set_default_follow_up_stage():
+	# Not a field default: init_singles() saves FCRM Settings before the deal
+	# statuses exist, and the Link would fail validation.
+	if not frappe.db.get_single_value("FCRM Settings", "follow_up_stage") and frappe.db.exists(
+		"CRM Deal Status", "Follow-up"
+	):
+		frappe.db.set_single_value("FCRM Settings", "follow_up_stage", "Follow-up")
 
 
 def add_default_communication_statuses():
@@ -185,7 +193,7 @@ def add_default_fields_layout(force=False):
 		},
 		"CRM Deal-Side Panel": {
 			"doctype": "CRM Deal",
-			"layout": '[{"label": "Contacts", "name": "contacts_section", "opened": true, "editable": false, "contacts": []}, {"label": "Organization Details", "name": "organization_section", "opened": true, "columns": [{"name": "column_na2Q", "fields": ["organization", "company_description", "industry", "no_of_employees", "website", "territory", "annual_revenue", "closed_date", "probability", "next_step", "deal_owner", "linkedin", "twitter", "facebook"]}]}]',
+			"layout": '[{"label": "Contacts", "name": "contacts_section", "opened": true, "editable": false, "contacts": []}, {"label": "Institution Details", "name": "organization_section", "opened": true, "columns": [{"name": "column_na2Q", "fields": ["organization", "company_description", "industry", "no_of_employees", "website", "territory", "annual_revenue", "closed_date", "probability", "next_step", "deal_owner", "linkedin", "twitter", "facebook"]}]}]',
 		},
 		"Contact-Side Panel": {
 			"doctype": "Contact",
@@ -305,7 +313,7 @@ def add_email_account_custom_field():
 					"fieldname": "create_lead_from_incoming_email",
 					"fieldtype": "Check",
 					"label": "Create Pipeline from Incoming Emails",
-					"description": "Automatically create a pipeline in Needs Analysis when an incoming email is received from a new sender",
+					"description": "Automatically create a pipeline in Interested Leads when an incoming email is received from a new sender",
 					"insert_after": "create_contact",
 				}
 			]

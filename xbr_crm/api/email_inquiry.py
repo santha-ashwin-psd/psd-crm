@@ -20,7 +20,7 @@ from xbr_crm.api.lead_origin import EMAIL, ORIGIN_FIELD
 
 # Where a pipeline from email starts. Falls back to the board's first open stage
 # when a site has renamed or removed this one.
-STAGE = "Needs Analysis"
+STAGE = "Interested Leads"
 
 SOURCE = "Email"
 

@@ -4,7 +4,7 @@
     size="5xl"
     icon="zap"
     :title="__('Create Pipeline')"
-    :subtitle="__('Add contact, organisation and pipeline details in one go')"
+    :subtitle="__('Add contact, institution and pipeline details in one go')"
     root-class="crm-dialog--entry"
     body-class="crm-doc-modal"
     max-body-height="min(74vh, calc(100vh - 13rem))"
@@ -246,9 +246,9 @@
               ><span class="lucide-building-2 size-[22px]"
             /></span>
             <div class="min-w-0">
-              <h3 class="crm-entry-card__title">{{ __('Organization') }}</h3>
+              <h3 class="crm-entry-card__title">{{ __('Institution') }}</h3>
               <p class="crm-entry-card__sub">
-                {{ __('Link to an existing organization or create a new one') }}
+                {{ __('Link to an existing institution or create a new one') }}
               </p>
             </div>
           </div>
@@ -259,7 +259,7 @@
                 doctype="CRM Organization"
                 variant="outline"
                 :value="deal.doc.organization"
-                :placeholder="__('Search organizations, or create a new one')"
+                :placeholder="__('Search institutions, or create a new one')"
                 :onCreate="startNewOrganization"
                 @change="(v) => (deal.doc.organization = v)"
               />
@@ -271,14 +271,14 @@
               @click="startNewOrganization('')"
             >
               <span class="lucide-plus size-[18px]" />
-              {{ __('Create new organization') }}
+              {{ __('Create new institution') }}
             </button>
           </template>
           <template v-else>
             <div class="flex flex-col gap-4">
               <EntryField
                 ref="organizationInput"
-                :label="__('Organization name')"
+                :label="__('Institution name')"
                 icon="lucide-building-2"
               >
                 <FormControl
@@ -326,7 +326,7 @@
               class="self-start text-sm text-[var(--crm-accent-text)] hover:underline"
               @click="cancelNewOrganization"
             >
-              {{ __('Pick an existing organization instead') }}
+              {{ __('Pick an existing institution instead') }}
             </button>
           </template>
         </section>
@@ -766,8 +766,8 @@ const guideSteps = computed(() => {
     {
       icon: 'lucide-building-2',
       tone: 'crm-tone-violet',
-      title: __('Select or create organization'),
-      sub: __('Associate with an organization'),
+      title: __('Select or create institution'),
+      sub: __('Associate with an institution'),
       done: Boolean(
         d.organization || (creatingOrganization.value && d.organization_name),
       ),

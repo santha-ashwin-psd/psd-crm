@@ -91,7 +91,7 @@
    "fieldname": "organization",
    "fieldtype": "Link",
    "in_standard_filter": 1,
-   "label": "Organization",
+   "label": "Institution",
    "options": "CRM Organization"
   },
   {
@@ -173,7 +173,7 @@
   {
    "fieldname": "organization_tab",
    "fieldtype": "Tab Break",
-   "label": "Organization"
+   "label": "Institution"
   },
   {
    "fieldname": "sla_tab",
@@ -301,12 +301,12 @@
   {
    "fieldname": "organization_details_section",
    "fieldtype": "Section Break",
-   "label": "Organization Details"
+   "label": "Institution Details"
   },
   {
    "fieldname": "organization_name",
    "fieldtype": "Data",
-   "label": "Organization Name"
+   "label": "Institution Name"
   },
   {
    "fieldname": "column_break_xbyf",
@@ -482,7 +482,7 @@
   {
    "fieldname": "organization_logo",
    "fieldtype": "Attach Image",
-   "label": "Organization Logo",
+   "label": "Institution Logo",
    "no_copy": 1
   },
   {

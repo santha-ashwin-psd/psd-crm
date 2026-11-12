@@ -36,9 +36,9 @@ from xbr_crm.fcrm.doctype.crm_web_lead_log.crm_web_lead_log import write_log
 SOURCE = "Website"
 
 # Where a website pipeline starts. The visitor filled a qualifying form, so it
-# skips Needs Analysis (where unreviewed email inquiries start). Falls back to the
+# skips Interested Leads (where unreviewed email inquiries start). Falls back to the
 # board's first open stage when a site has renamed or removed this one.
-STAGE = "Qualification"
+STAGE = "Prospect"
 
 # Website field -> CRM Deal field. Only these are written, so a payload cannot set
 # arbitrary fields (`status`, `deal_owner`, `crm_company`...). Email and mobile

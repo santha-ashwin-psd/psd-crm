@@ -1,7 +1,11 @@
 <template>
   <LayoutHeader>
     <template #left-header>
-      <ViewBreadcrumbs v-model="viewControls" routeName="Organizations" />
+      <ViewBreadcrumbs
+        v-model="viewControls"
+        routeName="Organizations"
+        :label="__('Institutions')"
+      />
     </template>
     <template #right-header>
       <CustomActions
@@ -15,7 +19,7 @@
     class="mx-3 sm:mx-5 mt-3"
     doctype="CRM Organization"
     :statuses="orgStatuses"
-    totalLabel="Total Organizations"
+    totalLabel="Total Institutions"
     :activeStatus="activeStatus"
     :refreshToken="organizations?.data?.total_count"
     :show="showStatusBand"
@@ -29,6 +33,7 @@
     v-model:resizeColumn="triggerResize"
     v-model:updatedPageCount="updatedPageCount"
     doctype="CRM Organization"
+    :fieldLabels="{ organization_name: __('Institution Name') }"
   />
   <OrganizationsListView
     v-if="organizations.data && rows.length"
@@ -60,16 +65,16 @@
     v-else-if="!organizations.data"
     class="flex flex-col mt-3"
     aria-busy="true"
-    aria-label="Loading organizations"
+    aria-label="Loading institutions"
   >
     <SkeletonLoader type="table" />
   </div>
   <EmptyState
     v-else-if="organizations.data && !rows.length"
     framed
-    name="Organizations"
+    name="Institutions"
     :icon="OrganizationsIcon"
-    :ctaLabel="__('Create Organization')"
+    :ctaLabel="__('Create Institution')"
     @ctaClick="showOrganizationModal = true"
   />
   <OrganizationModal
@@ -224,6 +229,13 @@ const rows = computed(() => {
 
 const columns = computed(() => {
   let _columns = organizations.value?.data?.columns || []
+
+  // Page-only wording: the name column header reads Institution.
+  _columns = _columns.map((col) =>
+    col.key === 'organization_name'
+      ? { ...col, label: __('Institution') }
+      : col,
+  )
 
   // Right-align the last column only when it's numeric — avatar/name/link
   // columns must stay left so the header and cells line up.

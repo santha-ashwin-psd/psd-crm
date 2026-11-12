@@ -2,7 +2,21 @@ import json
 
 import frappe
 
-from xbr_crm.install import DEFAULT_DEAL_STATUSES
+# The board this patch installed, frozen. It must not follow install.py: that
+# file now describes the current board, and this patch only ever moved sites
+# from the original board to this one (pipeline_statuses_v2 moves them on).
+DEFAULT_DEAL_STATUSES = {
+	"Needs Analysis": ("Open", 10, "gray"),
+	"Qualification": ("Ongoing", 20, "blue"),
+	"Proposal/Price Quote": ("Ongoing", 40, "cyan"),
+	"Followup": ("Ongoing", 50, "amber"),
+	"Negotiation/Review": ("Ongoing", 70, "orange"),
+	"Future Requirements": ("On Hold", 10, "violet"),
+	"Closed Won": ("Won", 100, "green"),
+	"Closed Lost": ("Lost", 0, "red"),
+	"Disqualified": ("Lost", 0, "pink"),
+	"Existing Customer": ("Won", 100, "teal"),
+}
 
 # Old stage -> the new stage its pipelines move to. "Qualification" keeps its name.
 OLD_TO_NEW = {

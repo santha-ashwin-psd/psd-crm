@@ -1239,17 +1239,16 @@ def get_stage_reach_counts(from_date: str, to_date: str, user: str | None = None
 
 	A pipeline has reached every working stage (Open/Ongoing) up to the furthest
 	one it has been in — its current stage or any stage in its change history —
-	so a pipeline now in Followup also counts for Needs Analysis, Qualification
-	and Proposal/Price Quote. The last bar, "Won", counts pipelines that ended in
-	any Won stage (Closed Won, Existing Customer) — one bar, so the funnel only
-	ever narrows.
+	so a pipeline now in Follow-up also counts for Interested Leads, Prospect
+	and Counselling. The last bar, "Won", counts pipelines that ended in any
+	Won-type stage — one bar, so the funnel only ever narrows.
 	On Hold and Lost stages are not steps on the way to a sale and are left out;
 	a pipeline that was lost or parked still counts for the stages it reached.
 
-	History entries written before the stages were renamed still carry the old
+	History entries written before the stages were replaced still carry the old
 	names; they are read as their new names.
 	"""
-	from xbr_crm.patches.v1_1.pipeline_stages import OLD_TO_NEW
+	from xbr_crm.patches.v1_1.pipeline_statuses_v2 import LEGACY_TO_CURRENT
 
 	statuses = frappe.get_all(
 		"CRM Deal Status", fields=["name", "type", "position"], order_by="position asc, modified asc"
@@ -1286,7 +1285,7 @@ def get_stage_reach_counts(from_date: str, to_date: str, user: str | None = None
 	for log in logs:
 		for name in (log["from"], log.to):
 			# Translate only names that are no longer stages.
-			stage = name if name in rank else OLD_TO_NEW.get(name, name)
+			stage = name if name in rank else LEGACY_TO_CURRENT.get(name, name)
 			if stage in rank:
 				furthest[log.parent] = max(furthest[log.parent], rank[stage])
 

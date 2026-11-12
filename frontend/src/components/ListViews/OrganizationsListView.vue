@@ -173,7 +173,7 @@
     <ListPagination
       v-if="list?.data?.total_count"
       :list="list"
-      :label="__('organizations')"
+      :label="__('institutions')"
       @pageChange="(p) => emit('pageChange', p)"
       @pageSizeChange="(s) => emit('pageSizeChange', s)"
     />

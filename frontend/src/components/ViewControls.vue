@@ -400,6 +400,8 @@ import ImportIcon from '~icons/lucide/import'
 const props = defineProps({
   doctype: { type: String, required: true },
   filters: { type: Object, default: () => ({}) },
+  // Per-page display labels for quick filters, e.g. { fieldname: 'Label' }.
+  fieldLabels: { type: Object, default: () => ({}) },
   options: {
     type: Object,
     default: () => ({
@@ -979,6 +981,8 @@ const quickFilterList = computed(() => {
   let filters = quickFilters.data || []
 
   filters.forEach((filter) => {
+    if (props.fieldLabels?.[filter.fieldname])
+      filter['label'] = props.fieldLabels[filter.fieldname]
     filter['value'] = filter.fieldtype == 'Check' ? false : ''
     if (list.value.params?.filters?.[filter.fieldname]) {
       let value = list.value.params.filters[filter.fieldname]

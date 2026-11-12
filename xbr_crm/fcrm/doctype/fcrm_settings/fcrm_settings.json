@@ -305,7 +305,6 @@
    "fieldtype": "Link",
    "label": "Follow-up Stage",
    "options": "CRM Deal Status",
-   "default": "Followup",
    "description": "Moving a pipeline to this stage asks for a follow-up date and creates a task with a reminder."
   },
   {
