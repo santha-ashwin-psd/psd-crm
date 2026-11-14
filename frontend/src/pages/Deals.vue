@@ -38,7 +38,7 @@
       v-model:updatedPageCount="updatedPageCount"
       doctype="CRM Deal"
       :options="{
-        allowedViews: ['list', 'group_by', 'kanban'],
+        allowedViews: ['kanban'],
       }"
     />
     <KanbanView
@@ -344,6 +344,10 @@ const columns = computed(() => {
 
   if (_columns.length) {
     _columns = _columns.map((col, index) => {
+      // Saved views may still carry the old "Organization" header.
+      if (col.key === 'organization') {
+        col = { ...col, label: __('Institution') }
+      }
       if (index === _columns.length - 1) {
         return { ...col, align: 'right' }
       }

@@ -19,6 +19,17 @@
 
     <div v-if="tabs.data">
       <FieldLayout :tabs="tabs.data" :data="_data.doc" :doctype="doctype" />
+      <!-- Same reminders block as the Edit Task modal (DoctypeModal). -->
+      <div
+        v-if="doctype === 'CRM Task' && _data.doc"
+        class="mt-4 flex flex-col gap-1.5"
+      >
+        <div class="text-xs text-ink-gray-5">{{ __('Reminders') }}</div>
+        <EventNotifications v-model="_data.doc.reminders" :show-type="false" />
+        <div class="text-xs text-ink-gray-5">
+          {{ __('Sent by email and in-app, before the due date.') }}
+        </div>
+      </div>
       <ErrorMessage class="mt-3" :message="error" />
     </div>
 
@@ -38,6 +49,7 @@
 <script setup>
 import CrmDialog from '@/components/Modals/CrmDialog.vue'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
+import EventNotifications from '@/components/Calendar/EventNotifications.vue'
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import { usersStore } from '@/stores/users'
 import { getMeta } from '@/stores/meta'

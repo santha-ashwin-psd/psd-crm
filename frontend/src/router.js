@@ -178,6 +178,17 @@ let router = createRouter({
 router.beforeEach(async (to, from, next) => {
   router.previousRoute = from
 
+  // Pipeline is Kanban-only: /pipeline, /pipeline/view and any list or
+  // group-by URL (including old /deals links and saved views) land on Kanban.
+  if (to.name === 'Deals' && to.params.viewType !== 'kanban') {
+    return next({
+      name: 'Deals',
+      params: { viewType: 'kanban' },
+      query: to.query,
+      replace: true,
+    })
+  }
+
   const { isLoggedIn, user } = sessionStore()
   const { users, isCrmUser, isAdmin } = usersStore()
 

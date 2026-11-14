@@ -65,7 +65,8 @@
    "fieldname": "due_date",
    "fieldtype": "Datetime",
    "in_standard_filter": 1,
-   "label": "Due Date"
+   "label": "Due Date",
+   "reqd": 1
   },
   {
    "description": "Reminders before the due date. Each one sends an in-app notification and an email at its time.",
