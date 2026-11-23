@@ -42,3 +42,5 @@ xbr_crm.patches.v1_1.email_creates_pipeline
 xbr_crm.patches.v1_1.pipeline_statuses_v2
 xbr_crm.patches.v1_1.pipeline_status_colors
 xbr_crm.patches.v1_1.rename_organization_to_institution
+xbr_crm.patches.v1_1.ai_assistant
+xbr_crm.patches.v1_1.desk_user_role

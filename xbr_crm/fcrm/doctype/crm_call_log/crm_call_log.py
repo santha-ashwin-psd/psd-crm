@@ -253,6 +253,15 @@ def get_call_log(name: str):
 
 	call = parse_call_log(call)
 
+	# A call logged by hand has no telephony recording; an audio file uploaded to
+	# it plays (and is transcribed) in its place.
+	if not call.get("recording_url_path"):
+		from xbr_crm.ai.transcription import attached_audio
+
+		audio = attached_audio(name)
+		if audio:
+			call["recording_url_path"] = audio.file_url
+
 	notes = []
 	tasks = []
 

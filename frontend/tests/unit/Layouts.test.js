@@ -202,6 +202,7 @@ describe('AppSidebar', () => {
     it('lists every section of the app', () => {
       expect(mount().vm.links.map((l) => l.to)).toEqual([
         'Dashboard',
+        'Inbox',
         'Leads',
         'Deals',
         'Contacts',
@@ -220,7 +221,13 @@ describe('AppSidebar', () => {
     it('groups them under All Views', () => {
       const groups = mount().vm.allViews
       expect(groups[0].name).toBe('All Views')
-      expect(groups[0].views).toHaveLength(9)
+      expect(groups[0].views).toHaveLength(10)
+    })
+
+    it('badges the Inbox with conversations waiting for a reply', () => {
+      const inbox = mount().vm.links.find((l) => l.to === 'Inbox')
+      expect(typeof inbox.badge).toBe('function')
+      expect(typeof inbox.badge()).toBe('number')
     })
 
     it('shows no other group when there are no saved views', () => {

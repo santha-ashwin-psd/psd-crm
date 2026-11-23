@@ -84,7 +84,15 @@
   "status_change_log",
   "lost_details_tab",
   "lost_reason",
-  "lost_notes"
+  "lost_notes",
+  "ai_tab",
+  "ai_controlled",
+  "ai_review_pending",
+  "ai_reviewed_on",
+  "ai_summary",
+  "ai_suggested_status",
+  "ai_suggestion_reason",
+  "ai_suggestion_confidence"
  ],
  "fields": [
   {
@@ -513,10 +521,10 @@
    "no_copy": 1
   },
   {
+   "description": "When the owner will follow up. Setting it while in the follow-up stage creates a task with a reminder.",
    "fieldname": "next_follow_up",
    "fieldtype": "Datetime",
-   "label": "Next Follow-up",
-   "description": "When the owner will follow up. Setting it while in the follow-up stage creates a task with a reminder."
+   "label": "Next Follow-up"
   },
   {
    "fieldname": "follow_up_note",
@@ -527,15 +535,73 @@
    "fieldname": "follow_up_task",
    "fieldtype": "Link",
    "label": "Follow-up Task",
+   "no_copy": 1,
    "options": "CRM Task",
-   "read_only": 1,
-   "no_copy": 1
+   "read_only": 1
+  },
+  {
+   "fieldname": "ai_tab",
+   "fieldtype": "Tab Break",
+   "label": "AI"
+  },
+  {
+   "default": "0",
+   "fieldname": "ai_controlled",
+   "fieldtype": "Check",
+   "label": "Under AI control",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "ai_review_pending",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "AI review pending",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "ai_reviewed_on",
+   "fieldtype": "Datetime",
+   "label": "Last AI review",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "ai_summary",
+   "fieldtype": "Small Text",
+   "label": "AI summary",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "ai_suggested_status",
+   "fieldtype": "Link",
+   "label": "AI suggested stage",
+   "no_copy": 1,
+   "options": "CRM Deal Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ai_suggestion_reason",
+   "fieldtype": "Small Text",
+   "label": "Why",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "ai_suggestion_confidence",
+   "fieldtype": "Int",
+   "label": "Confidence (%)",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-09 12:00:00.000000",
+ "modified": "2026-11-23 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Deal",

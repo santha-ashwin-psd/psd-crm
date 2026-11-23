@@ -253,6 +253,9 @@ def create_pipeline_for_unknown_number(doc) -> tuple[str, str] | None:
 			deal.set(ORIGIN_FIELD, WHATSAPP)
 		# Unassigned, like email inquiries: the team picks it up from the board.
 		deal.flags.from_inquiry = True
+		from xbr_crm.ai.pipeline import mark_new_pipeline
+
+		mark_new_pipeline(deal)
 		deal.insert(ignore_permissions=True)
 		return "CRM Deal", deal.name
 	except Exception:

@@ -123,6 +123,11 @@ const routes = [
     component: () => import('@/pages/CallLogs.vue'),
   },
   {
+    path: '/inbox',
+    name: 'Inbox',
+    component: () => import('@/pages/Inbox.vue'),
+  },
+  {
     path: '/calendar',
     name: 'Calendar',
     component: () => import('@/pages/Calendar.vue'),

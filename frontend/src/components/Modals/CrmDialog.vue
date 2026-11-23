@@ -29,6 +29,7 @@
   >
     <template #default="{ close }">
       <div
+        ref="dialogRoot"
         class="crm-dialog font-sans"
         :class="[rootClass, { 'crm-dialog--wash': showWash }]"
       >
@@ -130,7 +131,7 @@
 
 <script setup>
 import { Dialog, FeatherIcon } from 'frappe-ui'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   CRM_DIALOG_HEADER_VARIANT,
   CRM_DIALOG_SIZES,
@@ -189,13 +190,41 @@ const props = defineProps({
 
 const emit = defineEmits(['update:open', 'close', 'after-leave'])
 
-const variant = computed(
-  () => props.headerVariant ?? CRM_DIALOG_HEADER_VARIANT,
-)
+const variant = computed(() => props.headerVariant ?? CRM_DIALOG_HEADER_VARIANT)
 const showChip = computed(() => variant.value !== 'plain')
 // A headerless dialog (AboutModal) has nothing for the wash to sit behind.
 const showWash = computed(() => variant.value === 'wash' && !props.hideHeader)
 const isLucideName = computed(
   () => typeof props.icon === 'string' && props.icon.startsWith('lucide-'),
+)
+
+// Initial focus belongs to the first field, not the header. With nothing in
+// the body marked [autofocus], focus went to the first tabbable element — the
+// header's "Edit fields layout" button — which also popped its tooltip on
+// every open. Fields can render a moment after the dialog (layouts load
+// async), so this retries briefly, and only ever moves focus out of the
+// header: a body that set its own focus is left alone.
+const dialogRoot = ref(null)
+const FIELD =
+  'input:not([type=hidden]):not([disabled]), textarea:not([disabled]), select:not([disabled]), [contenteditable=true]'
+
+watch(
+  () => props.open,
+  (open) => {
+    if (!open) return
+    let tries = 0
+    const attempt = () => {
+      const root = dialogRoot.value
+      if (!root) return tries++ < 10 && setTimeout(attempt, 60)
+      const active = document.activeElement
+      const inHeader = active?.closest?.('.crm-dialog__header')
+      if (active && root.contains(active) && !inHeader) return
+      const field = root.querySelector(`.crm-dialog__body :is(${FIELD})`)
+      if (field) field.focus({ preventScroll: true })
+      else if (tries++ < 10) setTimeout(attempt, 60)
+    }
+    setTimeout(attempt, 60)
+  },
+  { immediate: true },
 )
 </script>

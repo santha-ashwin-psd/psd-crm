@@ -138,6 +138,19 @@ describe('users store', () => {
         store.getUser('zoe@example.com'),
       )
     })
+
+    it('marks a disabled user as removed', () => {
+      // get_user_info is the only source of `enabled`, and only for people
+      // missing from the active list: removed users on old records.
+      const store = usersStore()
+      store.users._seed([
+        [{ name: 'vin@example.com', full_name: 'Vinoth Kumar', enabled: 0 }],
+        [],
+      ])
+      expect(store.getUser('vin@example.com').full_name).toBe(
+        'Vinoth Kumar (removed)',
+      )
+    })
   })
 
   describe('role helpers', () => {

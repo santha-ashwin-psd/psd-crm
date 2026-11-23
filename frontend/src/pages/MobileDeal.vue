@@ -100,6 +100,12 @@
           :statusLabel="statusLabel"
           @change="triggerStatusChange"
         />
+        <AiStageSuggestion
+          :doc="doc"
+          :statusLabel="statusLabel"
+          @accept="triggerStatusChange"
+          @dismissed="document.reload()"
+        />
       </div>
 
       <!-- Four facts, not the desktop's six: value, probability and close date
@@ -378,12 +384,17 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import Activities from '@/components/Activities/Activities.vue'
 import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
 import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
+import {
+  isLostReasonSection,
+  showLostReasonSection,
+} from '@/utils/lostReasonSection'
 import AssignTo from '@/components/AssignTo.vue'
 import ContactModal from '@/components/Modals/ContactModal.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import Link from '@/components/Controls/Link.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import StatusPipeline from '@/components/StatusPipeline.vue'
+import AiStageSuggestion from '@/components/AiStageSuggestion.vue'
 import { useDealFacts } from '@/composables/dealFacts'
 import SLASection from '@/components/SLASection.vue'
 import CustomActions from '@/components/CustomActions.vue'
@@ -609,8 +620,11 @@ const sections = createResource({
 
 const parsedSections = computed(() => {
   if (!sections.data) return []
+  const showLost = showLostReasonSection(doc.value, getDealStatus)
   // Spread rather than mutate: `sections.data` is the shared cache entry.
-  return sections.data.map((section) => {
+  return sections.data
+    .filter((section) => showLost || !isLostReasonSection(section))
+    .map((section) => {
     if (section.name == 'contacts_section')
       return { ...section, contacts: contactRows.value }
     return {

@@ -8,6 +8,16 @@ const api = vi.hoisted(() => ({
   events: null,
 }))
 
+// Loaded through the AI draft composable (composables/aiDraft.js); the real
+// store fetches FCRM Settings as soon as it is imported. AI stays off here.
+vi.mock('@/stores/settings', async () => {
+  const { ref } = await import('vue')
+  return {
+    getSettings: () => ({ brand: ref({}), _settings: { doc: {} } }),
+    isTranslatable: () => false,
+  }
+})
+
 vi.mock('frappe-ui', async (importOriginal) => {
   const actual = await importOriginal()
   const { reactive } = await import('vue')

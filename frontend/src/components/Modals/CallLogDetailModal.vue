@@ -162,6 +162,83 @@
           </div>
         </div>
       </div>
+
+      <!-- AI transcript and summary (xbr_crm/ai/transcription.py) -->
+      <section
+        v-if="aiEnabled && callLog?.data"
+        class="rounded-xl border border-[var(--crm-border)] px-3.5 py-3"
+        data-testid="call-transcript"
+      >
+        <div class="flex items-center gap-2">
+          <span
+            class="lucide-sparkles size-4 text-[var(--crm-accent-primary)]"
+            aria-hidden="true"
+          />
+          <span class="text-base font-semibold text-ink-gray-9">
+            {{ __('AI summary') }}
+          </span>
+          <div class="ml-auto flex items-center gap-1.5">
+            <FileUploader
+              v-if="!hasRecording"
+              :upload-args="{
+                doctype: 'CRM Call Log',
+                docname: callLog.data.name,
+                private: true,
+              }"
+              :fileTypes="['audio/*']"
+              @success="() => callLog.reload?.()"
+            >
+              <template #default="{ openFileSelector, uploading }">
+                <Button
+                  size="sm"
+                  icon-left="lucide-upload"
+                  :label="__('Upload recording')"
+                  :loading="uploading"
+                  @click="openFileSelector()"
+                />
+              </template>
+            </FileUploader>
+            <Button
+              v-else
+              size="sm"
+              :variant="callLog.data.transcript ? 'ghost' : 'solid'"
+              :label="
+                callLog.data.transcript ? __('Transcribe again') : __('Transcribe')
+              "
+              :loading="transcribing"
+              @click="transcribe"
+            />
+          </div>
+        </div>
+        <template v-if="callLog.data.call_summary">
+          <p
+            class="mt-2 whitespace-pre-line text-sm leading-relaxed text-ink-gray-8"
+          >
+            {{ callLog.data.call_summary }}
+          </p>
+          <button
+            v-if="callLog.data.transcript"
+            type="button"
+            class="mt-2 text-sm font-medium text-[var(--crm-accent-primary)] hover:underline"
+            @click="showTranscript = !showTranscript"
+          >
+            {{ showTranscript ? __('Hide transcript') : __('Show transcript') }}
+          </button>
+          <p
+            v-if="showTranscript"
+            class="mt-2 max-h-60 overflow-y-auto whitespace-pre-line rounded-lg bg-[var(--crm-surface-2)] px-3 py-2 text-sm leading-relaxed text-ink-gray-7"
+          >
+            {{ callLog.data.transcript }}
+          </p>
+        </template>
+        <p v-else class="mt-1.5 text-sm text-ink-gray-5">
+          {{
+            hasRecording
+              ? __('Get a transcript of this call and a short summary with next steps.')
+              : __('Upload the call recording to get a transcript and a summary.')
+          }}
+        </p>
+      </section>
     </div>
 
     <!-- v-if on the slot itself, not on a button inside it: the shell renders
@@ -196,7 +273,9 @@ import { isMobileView } from '@/composables/settings'
 import { useDoctypeModal } from '@/composables/doctypeModal'
 import { useDocument } from '@/data/document'
 import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
-import { FeatherIcon, Dropdown, Avatar, call, toast } from 'frappe-ui'
+import { FeatherIcon, Dropdown, Avatar, FileUploader, call, toast } from 'frappe-ui'
+import { getSettings } from '@/stores/settings'
+import { formatError } from '@/utils/formatError'
 import { ref, computed, h, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { isLeadsEnabled } from '@/utils/leads'
@@ -213,6 +292,29 @@ const { showModal } = useDoctypeModal()
 
 const note = ref('')
 const task = ref('')
+
+// AI transcript (xbr_crm/ai/transcription.py)
+const aiEnabled = computed(() =>
+  Boolean(getSettings()._settings.doc?.ai_enabled),
+)
+const hasRecording = computed(() => Boolean(callLog.value?.data?.recording_url_path))
+const transcribing = ref(false)
+const showTranscript = ref(false)
+
+async function transcribe() {
+  transcribing.value = true
+  try {
+    await call('xbr_crm.ai.transcription.transcribe_call', {
+      call_log: callLog.value.data.name,
+    })
+    await callLog.value.reload?.()
+    capture('call_transcribed')
+  } catch (error) {
+    toast.error(formatError(error, __('Could not transcribe this call')))
+  } finally {
+    transcribing.value = false
+  }
+}
 
 function showNote(name) {
   showModal({

@@ -3112,6 +3112,207 @@ button.crm-settings-action svg {
   }
 }
 
+/* Sidebar count (Inbox: conversations waiting for a reply). */
+.crm-sidebar-count {
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: var(--crm-radius-pill);
+  background: var(--crm-accent-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* =====================================================
+   UNIFIED INBOX (pages/Inbox.vue)
+   A conversation list beside the open thread. Below lg one pane shows at a
+   time: the list, or the thread once one is picked.
+   ===================================================== */
+.crm-inbox {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  flex: 1;
+  /* Exactly the page's height: the list and the thread scroll inside it and
+     the reply box stays pinned at the bottom. */
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--crm-surface);
+}
+.crm-inbox-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--crm-border);
+}
+.crm-inbox-thread-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  background: var(--crm-bg);
+}
+@media (max-width: 1023px) {
+  .crm-inbox {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .crm-inbox.is-thread-open .crm-inbox-list,
+  .crm-inbox:not(.is-thread-open) .crm-inbox-thread-pane {
+    display: none;
+  }
+}
+.crm-inbox-chip,
+.crm-filter-chip {
+  padding: 3px 10px;
+  border-radius: var(--crm-radius-pill);
+  border: 1px solid var(--crm-border);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--crm-text-3);
+  background: var(--crm-surface);
+}
+.crm-inbox-chip:hover:not(:disabled),
+.crm-filter-chip:hover {
+  background: var(--crm-row-hover);
+  color: var(--crm-text-2);
+}
+.crm-inbox-chip.is-active,
+.crm-filter-chip.is-active {
+  border-color: var(--crm-accent-primary);
+  background: var(--crm-accent-soft);
+  color: var(--crm-accent-text);
+}
+.crm-inbox-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.crm-inbox-thread {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--crm-border);
+  border-left: 3px solid transparent;
+}
+.crm-inbox-thread:hover {
+  background: var(--crm-row-hover);
+}
+.crm-inbox-thread.is-selected {
+  background: var(--crm-accent-soft);
+  border-left-color: var(--crm-accent-primary);
+}
+.crm-inbox-thread:focus-visible {
+  outline: 2px solid var(--crm-accent-primary);
+  outline-offset: -2px;
+}
+.crm-inbox-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--crm-accent-primary);
+}
+.crm-inbox-ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--crm-accent-text);
+}
+.crm-inbox-thread-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--crm-border);
+  background: var(--crm-surface);
+}
+.crm-inbox-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+.crm-inbox-msg {
+  max-width: min(680px, 85%);
+  padding: 10px 14px;
+  border-radius: var(--crm-radius-md);
+  border: 1px solid var(--crm-border);
+  background: var(--crm-surface);
+}
+.crm-inbox-msg.is-out {
+  align-self: flex-end;
+  background: var(--crm-accent-soft);
+  border-color: transparent;
+}
+.crm-inbox-msg-body {
+  margin-top: 4px;
+  font-size: var(--text-body);
+  line-height: 1.55;
+  color: var(--crm-text-2);
+  overflow-wrap: anywhere;
+}
+.crm-inbox-msg-body p + p {
+  margin-top: 0.6em;
+}
+.crm-inbox-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.crm-inbox-composer .crm-inbox-attachments {
+  margin-top: 0;
+}
+.crm-inbox-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--crm-border);
+  background: var(--crm-surface);
+}
+
+/* AI stage suggestion (components/AiStageSuggestion.vue): one quiet line under
+   the stage track. Tinted like the accent, not a warning: it is a proposal. */
+.crm-ai-suggestion {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: 8px 10px 8px 12px;
+  border-radius: var(--crm-radius-sm);
+  background: var(--crm-accent-soft);
+}
+.crm-ai-suggestion-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--crm-accent-primary);
+}
+.crm-ai-suggestion-title {
+  font-size: var(--text-body);
+  color: var(--crm-text-2);
+}
+.crm-ai-suggestion-meta {
+  font-size: var(--text-caption);
+  color: var(--crm-text-4);
+}
+.crm-ai-suggestion-reason {
+  margin-top: 1px;
+  font-size: var(--text-caption);
+  color: var(--crm-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Single-segment donut — a ring drawn to say "100%" communicates one number
    with a large circle. This states the number instead, with a full-width bar
    standing in for the arc. */

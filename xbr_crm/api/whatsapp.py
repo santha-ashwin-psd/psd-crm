@@ -292,7 +292,9 @@ def create_whatsapp_message(
 		{
 			"reference_doctype": reference_doctype,
 			"reference_name": reference_name,
-			"message": message or attach,
+			# The message is the caption the customer sees; a file sent without
+			# text is captioned with its name rather than its server path.
+			"message": message or (attach.split("?")[0].rsplit("/", 1)[-1] if attach else ""),
 			"to": to,
 			"attach": attach,
 			"content_type": content_type,

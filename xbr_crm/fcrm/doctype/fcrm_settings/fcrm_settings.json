@@ -47,6 +47,18 @@
   "whatsapp_follow_ups",
   "whatsapp_follow_up_template",
   "whatsapp_creates_pipeline",
+  "ai_tab",
+  "ai_enabled",
+  "ai_enabled_on",
+  "ai_include_existing",
+  "ai_min_confidence",
+  "ai_connection_section",
+  "ai_base_url",
+  "ai_model",
+  "ai_api_key",
+  "ai_transcription_model",
+  "ai_rules_section",
+  "ai_rules",
   "dropdown_items_tab",
   "dropdown_items",
   "persona_captured",
@@ -301,26 +313,26 @@
    "label": "Follow-ups"
   },
   {
+   "description": "Moving a pipeline to this stage asks for a follow-up date and creates a task with a reminder.",
    "fieldname": "follow_up_stage",
    "fieldtype": "Link",
    "label": "Follow-up Stage",
-   "options": "CRM Deal Status",
-   "description": "Moving a pipeline to this stage asks for a follow-up date and creates a task with a reminder."
+   "options": "CRM Deal Status"
   },
   {
+   "default": "1",
+   "description": "A daily email to each owner, and their manager, listing pipelines with no activity for the set number of days.",
    "fieldname": "enable_stuck_follow_up_alerts",
    "fieldtype": "Check",
-   "label": "Email stuck follow-ups",
-   "default": "1",
-   "description": "A daily email to each owner, and their manager, listing pipelines with no activity for the set number of days."
+   "label": "Email stuck follow-ups"
   },
   {
+   "default": "10",
+   "depends_on": "enable_stuck_follow_up_alerts",
    "fieldname": "stuck_follow_up_days",
    "fieldtype": "Int",
    "label": "Stuck after (days)",
-   "default": "10",
-   "non_negative": 1,
-   "depends_on": "enable_stuck_follow_up_alerts"
+   "non_negative": 1
   },
   {
    "fieldname": "whatsapp_automation_tab",
@@ -329,44 +341,120 @@
   },
   {
    "default": "0",
+   "description": "When an event or task reminder fires, also send it on WhatsApp to each CRM user it goes to, at the mobile number on their user profile. Needs the WhatsApp app and an approved template.",
    "fieldname": "whatsapp_reminders",
    "fieldtype": "Check",
-   "label": "WhatsApp reminders to the team",
-   "description": "When an event or task reminder fires, also send it on WhatsApp to each CRM user it goes to, at the mobile number on their user profile. Needs the WhatsApp app and an approved template."
+   "label": "WhatsApp reminders to the team"
   },
   {
    "depends_on": "whatsapp_reminders",
+   "description": "Name of an approved WhatsApp template. Parameters in order: recipient name, item title, when.",
    "fieldname": "whatsapp_reminder_template",
    "fieldtype": "Data",
-   "label": "Reminder template",
-   "description": "Name of an approved WhatsApp template. Parameters in order: recipient name, item title, when."
+   "label": "Reminder template"
   },
   {
    "default": "0",
+   "description": "When a pipeline in the follow-up stage reaches its follow-up date, send its contact a WhatsApp message. Sent once per follow-up date, never late.",
    "fieldname": "whatsapp_follow_ups",
    "fieldtype": "Check",
-   "label": "WhatsApp follow-ups to customers",
-   "description": "When a pipeline in the follow-up stage reaches its follow-up date, send its contact a WhatsApp message. Sent once per follow-up date, never late."
+   "label": "WhatsApp follow-ups to customers"
   },
   {
    "depends_on": "whatsapp_follow_ups",
+   "description": "Name of an approved WhatsApp template. Parameters in order: contact first name, owner name, organisation.",
    "fieldname": "whatsapp_follow_up_template",
    "fieldtype": "Data",
-   "label": "Follow-up template",
-   "description": "Name of an approved WhatsApp template. Parameters in order: contact first name, owner name, organisation."
+   "label": "Follow-up template"
   },
   {
    "default": "0",
+   "description": "A message from a number the CRM does not know creates a contact and a pipeline in the first stage, like an inquiry email.",
    "fieldname": "whatsapp_creates_pipeline",
    "fieldtype": "Check",
-   "label": "Create pipelines from WhatsApp",
-   "description": "A message from a number the CRM does not know creates a contact and a pipeline in the first stage, like an inquiry email."
+   "label": "Create pipelines from WhatsApp"
+  },
+  {
+   "fieldname": "ai_tab",
+   "fieldtype": "Tab Break",
+   "label": "AI Assistant"
+  },
+  {
+   "default": "0",
+   "description": "AI screens out junk inquiry emails and, on every new email or WhatsApp message, re-reads the conversation and suggests a stage. Pipelines still start in the entry stage; a person accepts or dismisses each suggestion.",
+   "fieldname": "ai_enabled",
+   "fieldtype": "Check",
+   "label": "Let AI suggest pipeline stages"
+  },
+  {
+   "description": "Pipelines created before this are left alone unless older pipelines are included.",
+   "fieldname": "ai_enabled_on",
+   "fieldtype": "Datetime",
+   "label": "AI switched on at",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Also give suggestions on pipelines created before AI was switched on.",
+   "fieldname": "ai_include_existing",
+   "fieldtype": "Check",
+   "label": "Include older pipelines"
+  },
+  {
+   "default": "70",
+   "description": "AI suggestions and junk decisions below this are ignored.",
+   "fieldname": "ai_min_confidence",
+   "fieldtype": "Int",
+   "label": "Minimum confidence (%)"
+  },
+  {
+   "fieldname": "ai_connection_section",
+   "fieldtype": "Section Break",
+   "label": "Connection"
+  },
+  {
+   "default": "https://api.groq.com/openai/v1",
+   "description": "Any OpenAI-compatible API, e.g. Groq or OpenAI.",
+   "fieldname": "ai_base_url",
+   "fieldtype": "Data",
+   "label": "API base URL"
+  },
+  {
+   "default": "openai/gpt-oss-120b",
+   "fieldname": "ai_model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "description": "Leave empty to use groq_api_key from the site config.",
+   "fieldname": "ai_api_key",
+   "fieldtype": "Password",
+   "label": "API key"
+  },
+  {
+   "default": "whisper-large-v3-turbo",
+   "description": "Speech-to-text model for call recordings, e.g. whisper-large-v3-turbo on Groq or whisper-1 on OpenAI.",
+   "fieldname": "ai_transcription_model",
+   "fieldtype": "Data",
+   "label": "Transcription model"
+  },
+  {
+   "fieldname": "ai_rules_section",
+   "fieldtype": "Section Break",
+   "label": "Keyword rules"
+  },
+  {
+   "description": "Checked before the AI, in order. The first rule whose keywords appear in the latest message decides the suggested stage.",
+   "fieldname": "ai_rules",
+   "fieldtype": "Table",
+   "label": "Keyword rules",
+   "options": "CRM AI Rule"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-26 22:49:50.007649",
+ "modified": "2026-11-23 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "FCRM Settings",

@@ -39,6 +39,7 @@ def after_install(force=False):
 	seed_default_rules_and_mappings()
 	setup_tenancy()
 	create_default_templates()
+	add_desk_user_role()
 	frappe.db.commit()
 
 
@@ -454,6 +455,19 @@ def add_default_territories():
 		doc.territory_name = territory
 		doc.is_group = 0
 		doc.insert(ignore_permissions=True)
+
+
+def add_desk_user_role():
+	"""Users with this role may open the Frappe desk (/app, /desk); everyone
+	else is sent to the CRM dashboard by xbr_crm.utils.desk_guard."""
+	from xbr_crm.utils.desk_guard import DESK_USER_ROLE
+
+	if frappe.db.exists("Role", DESK_USER_ROLE):
+		return
+
+	frappe.get_doc({"doctype": "Role", "role_name": DESK_USER_ROLE, "desk_access": 1}).insert(
+		ignore_permissions=True
+	)
 
 
 def add_default_lead_sources():

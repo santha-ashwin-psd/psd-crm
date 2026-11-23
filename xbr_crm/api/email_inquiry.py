@@ -57,10 +57,11 @@ def _handle(doc):
 	if not sender or sender == (account.email_id or "").strip().lower():
 		return
 
-	if not is_inquiry(doc):
-		return
-
-	deal = find_pipeline_for_email(sender) or _create_pipeline(doc, sender)
+	deal = find_pipeline_for_email(sender)
+	if not deal:
+		if not is_inquiry(doc):
+			return
+		deal = _create_pipeline(doc, sender)
 
 	doc.reference_doctype = "CRM Deal"
 	doc.reference_name = deal
@@ -68,11 +69,22 @@ def _handle(doc):
 
 
 def is_inquiry(doc) -> bool:
-	"""Whether this email deserves a pipeline at all.
+	"""Whether this email deserves a new pipeline at all.
 
-	Every email counts for now. This is the single place a junk/relevance check
-	(planned: an AI review of the message) plugs in; return False to drop it.
+	With the AI assistant on, the model reads it first: spam, newsletters and
+	auto-replies are dropped (and logged as a Skipped CRM AI Decision). Its stage
+	pick rides along on doc.flags for _create_pipeline, as a suggestion only: the
+	pipeline still starts in STAGE. With AI off, or out of reach, every email
+	counts. Replies from senders who already have a pipeline never come here:
+	they are filed on that pipeline whatever they say.
 	"""
+	from xbr_crm.ai import pipeline as ai
+
+	decision = ai.screen_new_email(doc)
+	if ai.is_junk(decision):
+		ai.log(None, "Skipped", decision, reference_doctype="Communication", reference_name=doc.name)
+		return False
+	doc.flags.ai_decision = decision
 	return True
 
 
@@ -118,7 +130,13 @@ def _create_pipeline(doc, sender: str) -> str:
 	# Unassigned on purpose: the sales team picks these up from the board.
 	# No value or close date yet, so forecasting's mandatory fields are skipped.
 	deal.flags.from_inquiry = True
+	from xbr_crm.ai import pipeline as ai
+
+	ai.apply_to_new_pipeline(deal, doc.flags.get("ai_decision"))
 	deal.insert(ignore_permissions=True)
+	ai.after_new_pipeline(deal)
+	# This email was just read to create the pipeline; no second review for it.
+	doc.flags.ai_screened = bool(doc.flags.get("ai_decision"))
 	return deal.name
 
 

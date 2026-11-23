@@ -167,6 +167,8 @@ def get_deal_activities(name: str):
 		}
 		activities.append(activity)
 
+	activities += get_ai_activities(name)
+
 	calls = calls + get_linked_calls(name).get("calls", [])
 	notes = notes + get_linked_notes(name) + get_linked_calls(name).get("notes", [])
 	tasks = tasks + get_linked_tasks(name) + get_linked_calls(name).get("tasks", [])
@@ -546,3 +548,31 @@ def parse_attachment_log(html: str, type: str):
 
 def is_translatable(doctype: str) -> bool:
 	return doctype in get_translated_doctypes()
+
+
+def get_ai_activities(deal: str) -> list:
+	"""What the AI assistant did on a pipeline (crm/ai/pipeline.py). Reviews
+	that changed nothing stay in CRM AI Decision and out of the timeline."""
+	return [
+		{
+			"name": d.name,
+			"activity_type": "ai",
+			"creation": d.creation,
+			"owner": d.user or d.owner,
+			"data": {
+				"action": d.action,
+				"decided_by": d.decided_by,
+				"from_status": d.from_status,
+				"to_status": d.to_status,
+				"tags": d.tags,
+				"confidence": d.confidence,
+				"reason": d.reason,
+			},
+			"is_lead": False,
+		}
+		for d in frappe.get_all(
+			"CRM AI Decision",
+			filters={"deal": deal, "action": ["in", ["Set stage", "Suggested", "Accepted", "Dismissed", "Tagged"]]},
+			fields=["name", "creation", "owner", "user", "action", "decided_by", "from_status", "to_status", "tags", "confidence", "reason"],
+		)
+	]

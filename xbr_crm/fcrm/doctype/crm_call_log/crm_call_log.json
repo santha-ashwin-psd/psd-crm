@@ -28,7 +28,11 @@
   "end_time",
   "note",
   "section_break_kebz",
-  "links"
+  "links",
+  "ai_section",
+  "call_summary",
+  "transcript",
+  "transcribed_on"
  ],
  "fields": [
   {
@@ -155,11 +159,37 @@
   {
    "fieldname": "section_break_gyqe",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "ai_section",
+   "fieldtype": "Section Break",
+   "label": "Transcript"
+  },
+  {
+   "fieldname": "call_summary",
+   "fieldtype": "Text",
+   "label": "AI summary",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "transcript",
+   "fieldtype": "Long Text",
+   "label": "Transcript",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "transcribed_on",
+   "fieldtype": "Datetime",
+   "label": "Transcribed on",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-04 15:08:11.626910",
+ "modified": "2026-11-23 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Call Log",

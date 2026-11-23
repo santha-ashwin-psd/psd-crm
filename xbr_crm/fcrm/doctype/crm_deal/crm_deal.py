@@ -8,6 +8,7 @@ from frappe.model.document import Document
 from frappe.utils import flt
 
 from xbr_crm import follow_ups
+from xbr_crm.ai import pipeline as ai_pipeline
 from xbr_crm.api.exchange_rate import get_exchange_rate
 from xbr_crm.fcrm.doctype.crm_service_level_agreement.utils import get_sla
 from xbr_crm.fcrm.doctype.crm_status_change_log.crm_status_change_log import add_status_change_log
@@ -93,6 +94,7 @@ class CRMDeal(Document):
 
 	def validate(self):
 		self.validate_status()
+		self.set_lead_name()
 		self.set_primary_contact()
 		self.set_primary_email_mobile_no()
 		if not self.is_new() and self.has_value_changed("deal_owner") and self.deal_owner:
@@ -105,6 +107,7 @@ class CRMDeal(Document):
 		self.validate_forecasting_fields()
 		self.validate_lost_reason()
 		follow_ups.prepare(self)
+		ai_pipeline.on_deal_validate(self)
 		self.update_exchange_rate()
 		if self.organization and (self.is_new() or self.has_value_changed("organization")):
 			self.copy_enrichment_from_organization()
@@ -122,6 +125,7 @@ class CRMDeal(Document):
 
 	def on_update(self):
 		follow_ups.sync_task(self)
+		ai_pipeline.on_deal_update(self)
 
 	def on_trash(self):
 		# Remember the contacts before the child rows go with the pipeline.
@@ -132,6 +136,12 @@ class CRMDeal(Document):
 
 	def before_save(self):
 		self.apply_sla()
+
+	def set_lead_name(self):
+		"""Name a pipeline after its person when only first/last name is known
+		(email and WhatsApp pipelines), so board cards are not "Untitled"."""
+		if not self.lead_name and (self.first_name or self.last_name):
+			self.lead_name = " ".join(filter(None, [self.first_name, self.last_name]))
 
 	def validate_status(self):
 		if self.is_new() and not self.status:

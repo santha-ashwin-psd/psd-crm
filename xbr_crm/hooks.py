@@ -119,7 +119,7 @@ website_route_rules = [
 # to the dashboard) without stealing framework pages.
 page_renderer = ["xbr_crm.website.fallback.CRMFallbackPage"]
 
-# Blocks the desk UI for everyone but Administrator. Must be a before_request
+# Blocks the desk UI for everyone but Administrator and the Desk User role. Must be a before_request
 # hook: /desk is hardcoded in frappe/website/path_resolver.py ahead of route
 # rules and page renderers, so nothing else can see it.
 before_request = ["xbr_crm.utils.desk_guard.block_desk"]
@@ -277,6 +277,7 @@ doc_events = {
 	"WhatsApp Message": {
 		"validate": ["xbr_crm.api.whatsapp.validate"],
 		"on_update": ["xbr_crm.api.whatsapp.on_update"],
+		"after_insert": ["xbr_crm.ai.pipeline.on_whatsapp_message"],
 	},
 	"CRM Deal": {
 		"before_insert": ["xbr_crm.permissions.tenancy.stamp_company", _ORIGIN_FN],
@@ -332,7 +333,11 @@ scheduler_events = {
 		"*/2 * * * *": ["frappe.email.doctype.email_account.email_account.pull"],
 		# Daily at 09:00 (site timezone): pipelines stuck in the follow-up stage.
 		"0 9 * * *": ["xbr_crm.follow_ups.send_stuck_follow_up_alerts"],
-		"*/5 * * * *": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_5_minutes"],
+		"*/5 * * * *": [
+			"xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_5_minutes",
+			# Off unless the AI assistant is on: retries postponed reviews.
+			"xbr_crm.ai.pipeline.sweep",
+		],
 		"*/10 * * * *": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_10_minutes"],
 		"*/15 * * * *": ["xbr_crm.lead_syncing.background_sync.sync_leads_from_sources_15_minutes"],
 	},

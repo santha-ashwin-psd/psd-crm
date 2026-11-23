@@ -1,4 +1,5 @@
-"""Block the Frappe desk UI for everyone except Administrator.
+"""Block the Frappe desk UI for everyone except Administrator and users with
+the "Desk User" role.
 
 Why a before_request hook and nothing else:
   * /app is a website_redirect declared by Frappe itself -> /desk.
@@ -31,6 +32,10 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.utils import redirect
 
 BLOCKED_PREFIXES = ("/app", "/apps", "/desk")
+
+# Holders of this role are let through like Administrator. Created by
+# xbr_crm.install.add_desk_user_role.
+DESK_USER_ROLE = "Desk User"
 
 
 class _DeskBlocked(HTTPException):
@@ -73,6 +78,9 @@ def block_desk():
 	session = getattr(frappe.local, "session", None) or {}
 	user = session.get("user") or "Guest"
 	if user == "Administrator":
+		return
+
+	if user != "Guest" and DESK_USER_ROLE in frappe.get_roles(user):
 		return
 
 	raise _DeskBlocked("/login" if user == "Guest" else "/dashboard")

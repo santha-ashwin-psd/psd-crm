@@ -56,11 +56,22 @@
       >
         <Tooltip :text="__('Institution Logo')">
           <Avatar
+            v-if="
+              dealName || doc.organization_logo || organization?.organization_logo
+            "
             size="3xl"
             class="!size-14 shrink-0 !rounded-2xl"
             :label="dealName"
             :image="doc.organization_logo || organization?.organization_logo"
           />
+          <!-- No name to take an initial from: an empty circle read as a
+               broken image, so show what kind of record this is instead. -->
+          <span
+            v-else
+            class="grid size-14 shrink-0 place-items-center rounded-2xl bg-[var(--crm-surface-2)] text-ink-gray-5"
+          >
+            <FeatherIcon name="briefcase" class="size-6" />
+          </span>
         </Tooltip>
 
         <div class="min-w-0 flex-1">
@@ -114,6 +125,12 @@
             :current="doc.status"
             :statusLabel="statusLabel"
             @change="triggerStatusChange"
+          />
+          <AiStageSuggestion
+            :doc="doc"
+            :statusLabel="statusLabel"
+            @accept="triggerStatusChange"
+            @dismissed="onAiDismissed"
           />
         </div>
 
@@ -189,6 +206,14 @@
                   ? openWebsite(doc.website)
                   : toast.error(__('Please set a website to visit'))
               "
+            />
+            <Button
+              v-if="aiEnabled"
+              :tooltip="__('Ask AI for the right stage')"
+              :label="__('Ask AI')"
+              icon="lucide-sparkles"
+              :loading="askingAi"
+              @click="askAi"
             />
             <Button
               :tooltip="__('Attach a File')"
@@ -503,6 +528,10 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import Activities from '@/components/Activities/Activities.vue'
 import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
 import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
+import {
+  isLostReasonSection,
+  showLostReasonSection,
+} from '@/utils/lostReasonSection'
 import AssignTo from '@/components/AssignTo.vue'
 import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
 import ContactModal from '@/components/Modals/ContactModal.vue'
@@ -510,6 +539,7 @@ import Link from '@/components/Controls/Link.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import StatusPipeline from '@/components/StatusPipeline.vue'
+import AiStageSuggestion from '@/components/AiStageSuggestion.vue'
 import { useDealFacts } from '@/composables/dealFacts'
 import SLASection from '@/components/SLASection.vue'
 import CustomActions from '@/components/CustomActions.vue'
@@ -777,8 +807,11 @@ if (!sections.data) sections.fetch()
 
 const parsedSections = computed(() => {
   if (!sections.data) return []
+  const showLost = showLostReasonSection(document.doc, getDealStatus)
   // Spread rather than mutate: `sections.data` is now a shared cache entry.
-  return sections.data.map((section) => {
+  return sections.data
+    .filter((section) => showLost || !isLostReasonSection(section))
+    .map((section) => {
     if (section.name == 'contacts_section') return section
     return {
       ...section,
@@ -907,6 +940,35 @@ function triggerCall() {
   }
 
   makeCall(mobile_no)
+}
+
+// AI assistant (xbr_crm/ai/pipeline.py): the header suggestion and "Ask AI".
+const aiEnabled = computed(() =>
+  Boolean(getSettings()._settings.doc?.ai_enabled),
+)
+const askingAi = ref(false)
+
+function onAiDismissed() {
+  document.reload()
+  reload.value = true
+}
+
+async function askAi() {
+  askingAi.value = true
+  try {
+    const decision = await call('xbr_crm.ai.pipeline.review_now', {
+      deal: props.dealId,
+    })
+    await document.reload()
+    reload.value = true
+    if (!decision?.stage || decision.stage === doc.value.status) {
+      toast.success(__('AI agrees with the current stage'))
+    }
+  } catch (error) {
+    toast.error(formatError(error, __('AI could not review this pipeline')))
+  } finally {
+    askingAi.value = false
+  }
 }
 
 async function triggerStatusChange(value) {

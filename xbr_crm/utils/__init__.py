@@ -210,9 +210,12 @@ def update_modified_background(doctype: str, docname: str):
 
 
 def on_communication_insert(doc: Communication, method: str | None = None):
+	from xbr_crm.ai.pipeline import on_communication
 	from xbr_crm.api.email_inquiry import create_pipeline_from_incoming_email
 
 	create_pipeline_from_incoming_email(doc)
+	# After the inquiry check, so an email it just filed onto a pipeline counts.
+	on_communication(doc)
 
 
 def on_communication_update(doc: Communication, method: str | None = None):

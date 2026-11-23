@@ -174,6 +174,19 @@
               :icon="EmailTemplateIcon"
               @click="showEmailTemplateSelectorModal = true"
             />
+            <Button
+              v-if="aiDraftAvailable"
+              variant="ghost"
+              icon-left="lucide-sparkles"
+              :label="__('Draft with AI')"
+              :tooltip="
+                __(
+                  'Write a reply from the conversation. Anything you have typed is used as points to cover.',
+                )
+              "
+              :loading="aiDrafting"
+              @click="draftWithAi"
+            />
           </div>
           <div class="mt-2 flex items-center justify-end space-x-2 sm:mt-0">
             <Button v-bind="discardButtonProps || {}" :label="__('Discard')" />
@@ -211,6 +224,7 @@ import {
 } from 'frappe-ui'
 import { useTelemetry } from 'frappe-ui/frappe'
 import { useDocument } from '@/data/document'
+import { useAiDraft } from '@/composables/aiDraft'
 import { validateEmail } from '@/utils'
 import Paragraph from '@tiptap/extension-paragraph'
 import { EditorContent } from '@tiptap/vue-3'
@@ -323,6 +337,25 @@ async function applyEmailTemplate(template) {
   }
   showEmailTemplateSelectorModal.value = false
   capture('email_template_applied', { doctype: props.doctype })
+}
+
+const {
+  available: aiDraftAvailable,
+  drafting: aiDrafting,
+  draft,
+} = useAiDraft(
+  () => props.doctype,
+  () => modelValue.value?.name,
+  'email',
+)
+
+async function draftWithAi() {
+  const result = await draft(editor.value?.getText() || '')
+  if (!result) return
+  content.value = result.html
+  editor.value.commands.setContent(result.html)
+  editor.value.commands.focus('end')
+  capture('ai_draft_applied', { channel: 'email' })
 }
 
 function appendEmoji() {

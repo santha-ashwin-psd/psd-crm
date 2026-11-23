@@ -139,6 +139,8 @@ import PreferencesSettings from '@/components/Settings/PreferencesSettings.vue'
 import WhatsAppSettings from '@/components/Settings/WhatsAppSettings.vue'
 import WhatsAppAutomationSettings from '@/components/Settings/WhatsAppAutomationSettings.vue'
 import ERPNextSettings from '@/components/Settings/ERPNextSettings.vue'
+import AiSettings from '@/components/Settings/AiSettings.vue'
+import LucideSparkles from '~icons/lucide/sparkles'
 import LeadSyncSourcePage from '@/components/Settings/LeadSyncing/LeadSyncSourcePage.vue'
 import DefaultsSettings from '@/components/Settings/DefaultsSettings.vue'
 import FollowUpSettings from '@/components/Settings/FollowUpSettings.vue'
@@ -319,6 +321,12 @@ const tabs = computed(() => {
           icon: WhatsAppIcon,
           component: markRaw(WhatsAppAutomationSettings),
           condition: () => isWhatsappInstalled.value && isManager(),
+        },
+        {
+          label: __('AI Assistant'),
+          icon: LucideSparkles,
+          component: markRaw(AiSettings),
+          condition: () => isManager(),
         },
         {
           label: __('ERPNext'),

@@ -196,7 +196,7 @@ def get_user_info(users: str | list):
 	return frappe.get_all(
 		"User",
 		filters={"name": ["in", list(users)[:200]]},
-		fields=["name", "email", "full_name", "user_image", "user_type"],
+		fields=["name", "email", "full_name", "user_image", "user_type", "enabled"],
 	)
 
 

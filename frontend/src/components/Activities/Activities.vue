@@ -278,6 +278,32 @@
               </div>
             </div>
             <div
+              v-else-if="activity.activity_type == 'ai'"
+              :id="activity.name"
+              class="mb-4 flex flex-col gap-1 py-1.5"
+              data-testid="ai-activity"
+            >
+              <div class="flex items-center justify-stretch gap-2 text-base">
+                <div
+                  class="inline-flex flex-wrap items-center gap-1.5 text-ink-gray-8"
+                >
+                  <span class="font-medium">{{ aiActor(activity) }}</span>
+                  <span class="text-ink-gray-5">{{ aiVerb(activity) }}</span>
+                  <span class="font-medium">{{
+                    activity.data.action === 'Tagged'
+                      ? activity.data.tags
+                      : __(activity.data.to_status)
+                  }}</span>
+                </div>
+                <div class="ml-auto whitespace-nowrap">
+                  <TimelineTimestamp :date="activity.creation" />
+                </div>
+              </div>
+              <p v-if="activity.data.reason" class="text-sm text-ink-gray-5">
+                {{ activity.data.reason }}
+              </p>
+            </div>
+            <div
               v-else-if="
                 activity.activity_type == 'incoming_call' ||
                 activity.activity_type == 'outgoing_call'
@@ -517,6 +543,7 @@ import { activityDayGroup, startsDayGroup } from '@/utils/activityGroups'
 import LeadsIcon from '@/components/Icons/LeadsIcon.vue'
 import DealsIcon from '@/components/Icons/DealsIcon.vue'
 import DotIcon from '@/components/Icons/DotIcon.vue'
+import LucideSparkles from '~icons/lucide/sparkles'
 import CommentIcon from '@/components/Icons/CommentIcon.vue'
 import SelectIcon from '@/components/Icons/SelectIcon.vue'
 import MissedCallIcon from '@/components/Icons/MissedCallIcon.vue'
@@ -906,6 +933,9 @@ function timelineIcon(activity_type, is_lead) {
     case 'attachment_log':
       icon = AttachmentIcon
       break
+    case 'ai':
+      icon = LucideSparkles
+      break
     default:
       icon = DotIcon
   }
@@ -942,6 +972,23 @@ function scroll(hash) {
   }, 500)
 }
 
+// AI assistant entries (xbr_crm/api/activities.get_ai_activities).
+function aiActor(activity) {
+  const by = activity.data.decided_by
+  if (by === 'User') return activity.owner_name || getUser(activity.owner).full_name
+  return by === 'Rule' ? __('Keyword rule') : __('AI')
+}
+
+function aiVerb(activity) {
+  return {
+    'Set stage': __('moved this pipeline to'),
+    Suggested: __('suggested moving to'),
+    Accepted: __('accepted the AI suggestion'),
+    Dismissed: __('dismissed the AI suggestion'),
+    Tagged: __('tagged this pipeline'),
+  }[activity.data.action]
+}
+
 const activityBubbleClass = (type) => {
   if (type === 'communication') return ''
   // Theme-safe tints (color/10 fill + color/30 border + solid text) so the
@@ -958,6 +1005,8 @@ const activityBubbleClass = (type) => {
       return 'bg-orange-500/10 border border-orange-500/30 text-orange-500 rounded-full'
     case 'comment':
       return 'bg-[var(--crm-surface-2)] border border-[var(--crm-border)] text-ink-gray-6 rounded-full'
+    case 'ai':
+      return 'bg-[var(--crm-accent-soft)] border border-[var(--crm-accent-soft)] text-[var(--crm-accent-primary)] rounded-full'
     default:
       return 'bg-[var(--crm-surface-2)] border border-[var(--crm-border)] text-ink-gray-5 rounded-full'
   }

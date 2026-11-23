@@ -54,6 +54,20 @@
           @click="togglePopover"
         />
       </IconPicker>
+      <Button
+        v-if="aiDraftAvailable"
+        variant="ghost"
+        size="sm"
+        icon="lucide-sparkles"
+        :aria-label="__('Draft with AI')"
+        :tooltip="
+          __(
+            'Draft with AI. Anything you have typed is used as points to cover.',
+          )
+        "
+        :loading="aiDrafting"
+        @click="draftWithAi"
+      />
     </div>
     <Textarea
       ref="textareaRef"
@@ -73,6 +87,7 @@
 import IconPicker from '@/components/IconPicker.vue'
 import SmileIcon from '@/components/Icons/SmileIcon.vue'
 import { sanitizeHTML } from '@/utils'
+import { useAiDraft } from '@/composables/aiDraft'
 import { formatError } from '@/utils/formatError'
 import { useTelemetry } from 'frappe-ui/frappe'
 import {
@@ -101,6 +116,25 @@ const emoji = ref('')
 const content = ref('')
 const placeholder = ref(__('Type your message here...'))
 const fileType = ref('')
+
+const {
+  available: aiDraftAvailable,
+  drafting: aiDrafting,
+  draft,
+} = useAiDraft(
+  () => props.doctype,
+  () => doc.value?.name,
+  'whatsapp',
+)
+
+async function draftWithAi() {
+  const result = await draft(content.value)
+  if (!result) return
+  content.value = result.text
+  rows.value = 6
+  nextTick(() => textareaRef.value?.el?.focus())
+  capture('ai_draft_applied', { channel: 'whatsapp' })
+}
 
 function show() {
   nextTick(() => textareaRef.value.el.focus())

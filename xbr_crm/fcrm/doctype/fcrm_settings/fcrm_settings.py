@@ -64,6 +64,7 @@ class FCRMSettings(Document):
 		self.setup_forecasting()
 		self.make_currency_read_only()
 		self.stamp_reminder_emails_enabled_on()
+		self.stamp_ai_enabled_on()
 
 	def stamp_reminder_emails_enabled_on(self):
 		"""Record when reminder emails were switched on.
@@ -75,6 +76,17 @@ class FCRMSettings(Document):
 			return
 		if self.has_value_changed("enable_reminder_emails") or not self.reminder_emails_enabled_on:
 			self.reminder_emails_enabled_on = frappe.utils.now_datetime()
+
+	def stamp_ai_enabled_on(self):
+		"""Record when the AI assistant was switched on.
+
+		Only pipelines created after this come under AI control, unless older
+		pipelines are included; switching it back on moves the line forward.
+		"""
+		if not self.ai_enabled:
+			return
+		if self.has_value_changed("ai_enabled") or not self.ai_enabled_on:
+			self.ai_enabled_on = frappe.utils.now_datetime()
 
 	def do_not_allow_to_delete_if_standard(self):
 		if not self.has_value_changed("dropdown_items"):

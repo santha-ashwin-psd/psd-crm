@@ -124,11 +124,10 @@ export const usersStore = defineStore('crm-users', () => {
         user_image: null,
         role: null,
       }
-      // Try to upgrade the stub via a batched fetch unless the full list
-      // has already arrived.
-      if (!usersFull.data) {
-        queueResolve(email)
-      }
+      // Upgrade the stub via a batched fetch. Even after the full list has
+      // arrived: it holds active users only, so a removed user who owns old
+      // records would otherwise stay a name made from their email.
+      queueResolve(email)
     }
     return usersByName[email]
   }
@@ -221,10 +220,14 @@ function normalizeUser(user) {
   const email = user.email || name
   const fallbackName = name || email
 
+  let full_name = user.full_name?.trim() || fallbackName
+  // Only get_user_info sends `enabled`; it is how a removed user reaches us.
+  if (user.enabled === 0) full_name = `${full_name} (${__('removed')})`
+
   return {
     ...user,
     name,
     email,
-    full_name: user.full_name?.trim() || fallbackName,
+    full_name,
   }
 }

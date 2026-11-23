@@ -21,6 +21,8 @@ vi.mock('frappe-ui/frappe', async (importOriginal) => {
 })
 
 const modal = vi.hoisted(() => ({ showModal: vi.fn() }))
+// Shared, so a test can switch the AI assistant on before mounting.
+const settingsDoc = vi.hoisted(() => ({}))
 // stores/settings.js builds a createDocumentResource with `auto: true` at
 // module scope, and the frappe-ui mock above passes that factory through — so
 // merely importing this page fired a real fetch at localhost:3000 and left an
@@ -30,7 +32,7 @@ vi.mock('@/stores/settings', async () => {
   return {
     getSettings: () => ({
       brand: ref({ favicon: '/f.ico' }),
-      _settings: { doc: {} },
+      _settings: { doc: settingsDoc },
     }),
     isTranslatable: () => false,
   }
@@ -100,6 +102,10 @@ const mountModal = (data = LOG) => {
         ArrowUpRightIcon: true, DurationIcon: true, ContactsIcon: true,
         LeadsIcon: true, DealsIcon: true, CalendarIcon: true,
         NoteIcon: true, TaskIcon: true, CheckCircleIcon: true,
+        FileUploader: {
+          template:
+            '<div class="stub-uploader"><slot :openFileSelector="() => {}" :uploading="false" /></div>',
+        },
       },
     },
   })
@@ -355,6 +361,64 @@ describe('CallLogDetailModal', () => {
       modal.showModal.mock.calls[0][0].callbacks.afterUpdate()
       expect(callLog.reload).toHaveBeenCalled()
       expect(api.capture).toHaveBeenCalledWith('call_log_updated')
+    })
+  })
+
+  describe('the AI transcript', () => {
+    const transcriptBox = (w) => w.find('[data-testid="call-transcript"]')
+    const button = (w, label) =>
+      w.findAll('button.stub-button').find((b) => b.text() === label)
+
+    beforeEach(() => {
+      settingsDoc.ai_enabled = 1
+    })
+    afterEach(() => {
+      delete settingsDoc.ai_enabled
+    })
+
+    it('is hidden while the AI assistant is off', () => {
+      settingsDoc.ai_enabled = 0
+      expect(transcriptBox(mountModal().wrapper).exists()).toBe(false)
+    })
+
+    it('asks for the recording when the call has none', () => {
+      const box = transcriptBox(mountModal().wrapper)
+      expect(box.text()).toContain('Upload recording')
+      expect(box.text()).not.toContain('Transcribe')
+    })
+
+    it('transcribes a recorded call and refreshes it', async () => {
+      api.call.mockResolvedValue({})
+      const { wrapper, callLog } = mountModal({ ...LOG, recording_url_path: '/rec.mp3' })
+      await button(wrapper, 'Transcribe').trigger('click')
+      await flushPromises()
+      expect(api.call).toHaveBeenCalledWith('xbr_crm.ai.transcription.transcribe_call', {
+        call_log: 'CALL-1',
+      })
+      expect(callLog.reload).toHaveBeenCalled()
+    })
+
+    it('says so when transcribing fails', async () => {
+      api.call.mockRejectedValue(new Error('AI is busy'))
+      const { wrapper } = mountModal({ ...LOG, recording_url_path: '/rec.mp3' })
+      await button(wrapper, 'Transcribe').trigger('click')
+      await flushPromises()
+      expect(api.toast.error).toHaveBeenCalled()
+    })
+
+    it('shows the summary, with the transcript a click away', async () => {
+      const { wrapper } = mountModal({
+        ...LOG,
+        recording_url_path: '/rec.mp3',
+        call_summary: 'Pilot agreed.',
+        transcript: 'Hello, this is Priya.',
+      })
+      const box = transcriptBox(wrapper)
+      expect(box.text()).toContain('Pilot agreed.')
+      expect(box.text()).not.toContain('Hello, this is Priya.')
+      await box.findAll('button').find((b) => b.text() === 'Show transcript').trigger('click')
+      expect(transcriptBox(wrapper).text()).toContain('Hello, this is Priya.')
+      expect(button(wrapper, 'Transcribe again')).toBeTruthy()
     })
   })
 })

@@ -8,6 +8,16 @@ const api = vi.hoisted(() => ({
   newestFirst: null,
 }))
 
+// Loaded through the AI draft composable (composables/aiDraft.js); the real
+// store fetches FCRM Settings as soon as it is imported. AI stays off here.
+vi.mock('@/stores/settings', async () => {
+  const { ref } = await import('vue')
+  return {
+    getSettings: () => ({ brand: ref({}), _settings: { doc: {} } }),
+    isTranslatable: () => false,
+  }
+})
+
 vi.mock('frappe-ui', async (importOriginal) => {
   const actual = await importOriginal()
   const { reactive } = await import('vue')
@@ -401,6 +411,42 @@ describe('Activities', () => {
 
     it('falls back to a dot for anything unrecognised', () => {
       expect(icon('something_new')).toBe(icon('changed'))
+    })
+  })
+
+  describe('AI assistant entries', () => {
+    const ai = (over = {}) => ({
+      owner: 'ada@x.com',
+      data: { action: 'Suggested', decided_by: 'AI', to_status: 'Won' },
+      ...over,
+      data: { action: 'Suggested', decided_by: 'AI', ...(over.data || {}) },
+    })
+
+    it('has its own icon', () => {
+      const wrapper = mount()
+      expect(wrapper.vm.timelineIcon('ai')).not.toBe(
+        wrapper.vm.timelineIcon('changed'),
+      )
+    })
+
+    it('names AI, a keyword rule or the person as the actor', () => {
+      const vm = mount().vm
+      expect(vm.aiActor(ai())).toBe('AI')
+      expect(vm.aiActor(ai({ data: { decided_by: 'Rule' } }))).toBe(
+        'Keyword rule',
+      )
+      expect(
+        vm.aiActor(ai({ owner_name: 'Ada', data: { decided_by: 'User' } })),
+      ).toBe('Ada')
+    })
+
+    it('describes each action', () => {
+      const vm = mount().vm
+      const verb = (action) => vm.aiVerb(ai({ data: { action } }))
+      expect(verb('Set stage')).toBe('moved this pipeline to')
+      expect(verb('Suggested')).toBe('suggested moving to')
+      expect(verb('Accepted')).toBe('accepted the AI suggestion')
+      expect(verb('Dismissed')).toBe('dismissed the AI suggestion')
     })
   })
 

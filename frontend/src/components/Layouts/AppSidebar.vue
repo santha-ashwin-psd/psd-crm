@@ -84,7 +84,16 @@
               :label="__(link.label)"
               :to="link.to"
               :isCollapsed="isSidebarCollapsed"
-            />
+            >
+              <template v-if="link.badge" #right>
+                <span
+                  v-if="!isSidebarCollapsed && link.badge()"
+                  class="crm-sidebar-count"
+                  :aria-label="__('{0} waiting for a reply', [link.badge()])"
+                  >{{ link.badge() > 99 ? '99+' : link.badge() }}</span
+                >
+              </template>
+            </SidebarLink>
           </nav>
         </CollapsibleSection>
       </div>
@@ -205,6 +214,8 @@ import {
 } from 'frappe-ui/frappe'
 import router from '@/router'
 import { useStorage } from '@vueuse/core'
+import LucideInbox from '~icons/lucide/inbox'
+import { needsReplyCount, startInboxPolling } from '@/composables/inbox'
 import {
   ref,
   reactive,
@@ -239,6 +250,13 @@ const links = [
     label: 'Dashboard',
     icon: LucideLayoutDashboard,
     to: 'Dashboard',
+  },
+  {
+    label: 'Inbox',
+    icon: LucideInbox,
+    to: 'Inbox',
+    // Conversations whose latest message is from the customer.
+    badge: () => needsReplyCount.data || 0,
   },
   {
     label: 'Leads',
@@ -523,6 +541,7 @@ const steps = reactive([
 ])
 
 onMounted(async () => {
+  startInboxPolling()
   await users.promise
 
   const filteredSteps = steps.filter((step) => {
