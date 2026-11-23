@@ -69,13 +69,26 @@ def chat_json(system: str, user: str, timeout: int = 30) -> dict:
 		raise AIUnavailable(f"Could not reach the AI service: {e}") from e
 
 	if response.status_code != 200:
-		raise AIUnavailable(f"AI service answered {response.status_code}: {response.text[:300]}")
+		raise AIUnavailable(_error_message(response))
 
 	try:
 		content = response.json()["choices"][0]["message"]["content"] or ""
 	except (ValueError, KeyError, IndexError) as e:
 		raise AIUnavailable("AI service returned an unexpected response.") from e
 	return parse_json(content)
+
+
+def _error_message(response) -> str:
+	"""A readable reason for a failed call, rather than the service's raw JSON."""
+	if response.status_code == 401:
+		return "The API key was rejected. Create a new key with your AI provider (console.groq.com/keys for Groq) and paste it in Settings → AI Assistant."
+	if response.status_code == 429:
+		return "The AI service is busy or the usage limit was reached. Try again in a minute."
+	try:
+		detail = response.json().get("error", {}).get("message") or ""
+	except (ValueError, AttributeError):
+		detail = ""
+	return f"AI service answered {response.status_code}: {detail or response.text[:300]}"
 
 
 def parse_json(content: str) -> dict:
@@ -112,7 +125,7 @@ def transcribe_audio(content: bytes, filename: str, timeout: int = 120) -> str:
 	except requests.RequestException as e:
 		raise AIUnavailable(f"Could not reach the AI service: {e}") from e
 	if response.status_code != 200:
-		raise AIUnavailable(f"AI service answered {response.status_code}: {response.text[:300]}")
+		raise AIUnavailable(_error_message(response))
 	try:
 		return (response.json().get("text") or "").strip()
 	except ValueError as e:
