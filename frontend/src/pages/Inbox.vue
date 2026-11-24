@@ -348,7 +348,7 @@ import SkeletonLoader from '@/components/SkeletonLoader.vue'
 import AiStageSuggestion from '@/components/AiStageSuggestion.vue'
 import AttachmentItem from '@/components/AttachmentItem.vue'
 import { useAiDraft } from '@/composables/aiDraft'
-import { needsReplyCount } from '@/composables/inbox'
+import { inboxFilters, needsReplyCount } from '@/composables/inbox'
 import { whatsappEnabled } from '@/composables/whatsapp'
 import { askFollowUp, isFollowUpStage } from '@/composables/followUp'
 import { statusesStore } from '@/stores/statuses'
@@ -378,9 +378,8 @@ const { getUser } = usersStore()
 
 usePageMeta(() => ({ title: __('Inbox') }))
 
-const search = ref('')
-const filter = ref('all')
-const channel = ref('')
+// Shared with composables/inbox so they stay as set until changed by hand.
+const { search, filter, channel, stage } = inboxFilters
 const filterChips = [
   { value: 'all', label: __('All') },
   { value: 'needs_reply', label: __('Needs reply') },
@@ -392,8 +391,18 @@ const channelChips = computed(() => [
   ...(whatsappEnabled.value ? [{ value: 'whatsapp', label: 'WhatsApp' }] : []),
 ])
 
-const stage = ref('')
 const stageOptions = computed(() => dealStatuses?.data || [])
+// A remembered stage that has since been renamed or removed would hide every
+// conversation behind a blank dropdown; fall back to "Any stage".
+watch(
+  stageOptions,
+  (options) => {
+    if (stage.value && options.length && !options.some((s) => s.name === stage.value)) {
+      stage.value = ''
+    }
+  },
+  { immediate: true },
+)
 
 const threads = createResource({
   url: 'xbr_crm.api.inbox.get_threads',
@@ -458,6 +467,15 @@ const messagesEl = ref(null)
 function open(name) {
   selected.value = name
 }
+
+// The page is kept when only the query changes (router meta keepOnQueryChange),
+// so a link to another conversation while the Inbox is open lands here.
+watch(
+  () => route.query.pipeline,
+  (name) => {
+    if ((name || '') !== selected.value) selected.value = name || ''
+  },
+)
 
 watch(
   selected,

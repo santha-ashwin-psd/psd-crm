@@ -3,7 +3,7 @@
     <NotPermitted v-if="$route.name === 'Not Permitted'" />
     <router-view v-else-if="$route.name === 'Onboarding'" />
     <Layout v-else-if="session.isLoggedIn" class="isolate">
-      <router-view :key="$route.fullPath" />
+      <router-view :key="viewKey" />
     </Layout>
     <Dialogs />
     <DoctypeModals />
@@ -27,8 +27,17 @@ import { isCommandPaletteOpen } from '@/composables/commandPalette'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 
 import { useWindowSize } from '@vueuse/core'
+import { useRoute } from 'vue-router'
 
 const session = sessionStore()
+
+// Pages are rebuilt when the URL changes, so a new record or saved view starts
+// fresh. A page marked `keepOnQueryChange` (Inbox) only uses the query to
+// remember what is open; rebuilding it would throw away its filters.
+const route = useRoute()
+const viewKey = computed(() =>
+  route.meta?.keepOnQueryChange ? route.path : route.fullPath,
+)
 provide('session', session)
 
 const shortcutsHelpModalRef = ref(null)

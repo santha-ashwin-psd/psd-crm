@@ -41,7 +41,17 @@ vi.mock('@/stores/statuses', () => ({
 vi.mock('@/stores/users', () => ({
   usersStore: () => ({ getUser: () => ({ email: 'me@x.com', full_name: 'Me' }) }),
 }))
-vi.mock('@/composables/inbox', () => ({ needsReplyCount: { reload: vi.fn() } }))
+const filters = vi.hoisted(() => ({ value: null }))
+vi.mock('@/composables/inbox', async () => {
+  const { ref } = await import('vue')
+  filters.value = {
+    search: ref(''),
+    filter: ref('all'),
+    channel: ref(''),
+    stage: ref(''),
+  }
+  return { needsReplyCount: { reload: vi.fn() }, inboxFilters: filters.value }
+})
 
 const wa = vi.hoisted(() => ({ enabled: null }))
 vi.mock('@/composables/whatsapp', async () => {
@@ -140,6 +150,10 @@ describe('Inbox', () => {
     api.call.mockReset().mockResolvedValue({})
     api.router.replace.mockClear()
     wa.enabled.value = true
+    filters.value.search.value = ''
+    filters.value.filter.value = 'all'
+    filters.value.channel.value = ''
+    filters.value.stage.value = ''
   })
 
   it('lists conversations with what was said last', async () => {
@@ -165,6 +179,32 @@ describe('Inbox', () => {
     await select.setValue('Junk')
     expect(threads().reload).toHaveBeenCalled()
     expect(threads().options.makeParams().status).toBe('Junk')
+  })
+
+  it('keeps the stage filter when a conversation is opened', async () => {
+    const w = mountInbox()
+    await flushPromises()
+    await w.find('select.crm-inbox-stage').setValue('Junk')
+    await w.find('.crm-inbox-thread').trigger('click')
+    expect(w.find('select.crm-inbox-stage').element.value).toBe('Junk')
+    expect(threads().options.makeParams().status).toBe('Junk')
+  })
+
+  it('keeps every filter when the page is opened again', async () => {
+    const first = mountInbox()
+    await first.find('select.crm-inbox-stage').setValue('Junk')
+    await first.findAll('.crm-inbox-chip').find((c) => c.text() === 'Needs reply').trigger('click')
+    first.unmount()
+
+    const again = mountInbox()
+    expect(again.find('select.crm-inbox-stage').element.value).toBe('Junk')
+    expect(threads().options.makeParams()).toMatchObject({ status: 'Junk', needs_reply: 1 })
+  })
+
+  it('drops a remembered stage that no longer exists', () => {
+    filters.value.stage.value = 'Removed Stage'
+    mountInbox()
+    expect(filters.value.stage.value).toBe('')
   })
 
   it('opens a conversation and keeps it in the URL', async () => {

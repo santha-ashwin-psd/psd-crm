@@ -126,6 +126,9 @@ const routes = [
     path: '/inbox',
     name: 'Inbox',
     component: () => import('@/pages/Inbox.vue'),
+    // ?pipeline= only says which conversation is open: keep the page (and its
+    // filters) when it changes. See App.vue.
+    meta: { keepOnQueryChange: true },
   },
   {
     path: '/calendar',
