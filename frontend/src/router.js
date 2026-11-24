@@ -183,9 +183,9 @@ let router = createRouter({
 router.beforeEach(async (to, from, next) => {
   router.previousRoute = from
 
-  // Pipeline is Kanban-only: /pipeline, /pipeline/view and any list or
-  // group-by URL (including old /deals links and saved views) land on Kanban.
-  if (to.name === 'Deals' && to.params.viewType !== 'kanban') {
+  // Pipeline opens on Kanban (/pipeline, /pipeline/view, old /deals links);
+  // List is the one other view. Group-by URLs and saved views land on Kanban.
+  if (to.name === 'Deals' && !['kanban', 'list'].includes(to.params.viewType)) {
     return next({
       name: 'Deals',
       params: { viewType: 'kanban' },
