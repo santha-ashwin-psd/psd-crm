@@ -9,69 +9,84 @@
 -->
 <template>
   <div class="flex flex-col gap-2.5">
-    <div v-for="(row, i) in rows" :key="row.name || i" class="crm-reminder-row">
-      <span
-        class="lucide-bell-ring size-4 shrink-0 text-[var(--crm-accent-primary)]"
-        aria-hidden="true"
-      />
-      <FormControl
-        class="crm-reminder-row__select"
-        type="select"
-        :aria-label="__('Reminder {0}', [i + 1])"
-        :options="optionsFor(row)"
-        :modelValue="presetKey(row)"
-        @update:modelValue="(key) => applyPreset(row, key)"
-      />
+    <div v-if="rows.length" class="crm-reminder-list">
       <div
-        v-if="customRows.has(row) || presetKey(row) === CUSTOM"
-        class="flex shrink-0 items-center gap-2"
+        v-for="(row, i) in rows"
+        :key="row.name || i"
+        class="crm-reminder-row"
       >
-        <div class="w-20">
-          <FormControl
-            v-model.number="row.before"
-            type="number"
-            :aria-label="__('How many')"
-            :min="min(row)"
-            :max="max(row)"
-            :step="row.interval === 'minutes' ? 5 : 1"
-            @blur="handleIntervalChange(row)"
-          />
+        <span
+          class="lucide-bell-ring size-4 shrink-0 text-[var(--crm-accent-primary)]"
+          aria-hidden="true"
+        />
+        <FormControl
+          class="crm-reminder-row__select"
+          type="select"
+          :aria-label="__('Reminder {0}', [i + 1])"
+          :options="optionsFor(row)"
+          :modelValue="presetKey(row)"
+          @update:modelValue="(key) => applyPreset(row, key)"
+        />
+        <div
+          v-if="customRows.has(row) || presetKey(row) === CUSTOM"
+          class="flex shrink-0 items-center gap-2"
+        >
+          <div class="w-20">
+            <FormControl
+              v-model.number="row.before"
+              type="number"
+              :aria-label="__('How many')"
+              :min="min(row)"
+              :max="max(row)"
+              :step="row.interval === 'minutes' ? 5 : 1"
+              @blur="handleIntervalChange(row)"
+            />
+          </div>
+          <div class="w-40">
+            <FormControl
+              v-model="row.interval"
+              type="select"
+              :aria-label="__('Unit')"
+              :options="unitOptions(row)"
+              @update:modelValue="handleIntervalChange(row)"
+            />
+          </div>
         </div>
-        <div class="w-40">
-          <FormControl
-            v-model="row.interval"
-            type="select"
-            :aria-label="__('Unit')"
-            :options="unitOptions(row)"
-            @update:modelValue="handleIntervalChange(row)"
-          />
+        <div v-if="isAllDay" class="flex shrink-0 items-center gap-2">
+          <span class="text-sm text-[var(--crm-text-3)]">{{ __('at') }}</span>
+          <div class="w-28">
+            <TimePicker v-model="row.time" :placeholder="__('08:00 am')" />
+          </div>
         </div>
+        <span
+          v-if="duplicates.has(i)"
+          class="text-sm text-[var(--crm-danger)]"
+          role="alert"
+        >
+          {{ __('Same time as another reminder') }}
+        </span>
+        <Button
+          class="ml-auto"
+          variant="ghost"
+          icon="lucide-x"
+          :tooltip="__('Remove reminder')"
+          :aria-label="__('Remove reminder')"
+          @click="remove(i)"
+        />
       </div>
-      <div v-if="isAllDay" class="flex shrink-0 items-center gap-2">
-        <span class="text-sm text-[var(--crm-text-3)]">{{ __('at') }}</span>
-        <div class="w-28">
-          <TimePicker v-model="row.time" :placeholder="__('08:00 am')" />
-        </div>
-      </div>
-      <span
-        v-if="duplicates.has(i)"
-        class="text-sm text-[var(--crm-danger)]"
-        role="alert"
+      <button
+        v-if="rows.length < MAX_REMINDERS && nextUnused"
+        type="button"
+        class="crm-reminder-add"
+        @click="add()"
       >
-        {{ __('Same time as another reminder') }}
-      </span>
-      <Button
-        class="ml-auto"
-        variant="ghost"
-        icon="lucide-x"
-        :tooltip="__('Remove reminder')"
-        :aria-label="__('Remove reminder')"
-        @click="remove(i)"
-      />
+        <span class="lucide-plus size-4" aria-hidden="true" />
+        {{ __('Add reminder') }}
+      </button>
     </div>
 
     <!-- Empty: one click adds a common reminder. -->
-    <div v-if="!rows.length" class="flex flex-wrap items-center gap-2">
+    <div v-else class="flex flex-wrap items-center gap-2">
       <span class="text-sm text-[var(--crm-text-3)]">
         {{ __('No reminders yet. Quick add:') }}
       </span>
@@ -86,14 +101,6 @@
         {{ q.label }}
       </button>
     </div>
-    <Button
-      v-else-if="rows.length < MAX_REMINDERS && nextUnused"
-      class="self-start"
-      variant="ghost"
-      icon-left="plus"
-      :label="__('Add reminder')"
-      @click="add()"
-    />
   </div>
 </template>
 
@@ -176,10 +183,18 @@ function optionsFor(row) {
   ]
 }
 
-// The first suggestion no row uses yet; none left means nothing to add.
+// The next suggestion no row uses yet: the first one after the last row's
+// (10 minutes -> 15 minutes, 1 hour -> 2 hours), else any unused one. None
+// left means nothing to add.
 const nextUnused = computed(() => {
-  const used = usedBy(rows.value || [])
-  return presets.value.find(([b, i]) => !used.has(keyOf(b, i, '08:00')))
+  const list = rows.value || []
+  const used = usedBy(list)
+  const free = presets.value.filter(([b, i]) => !used.has(keyOf(b, i, '08:00')))
+  const last = list[list.length - 1]
+  const lastAt = presets.value.findIndex(
+    ([b, i]) => last && b == last.before && i === last.interval,
+  )
+  return free.find((p) => presets.value.indexOf(p) > lastAt) || free[0]
 })
 
 const quickAdds = computed(() =>

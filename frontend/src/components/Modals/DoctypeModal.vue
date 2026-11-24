@@ -34,13 +34,16 @@
     />
     <div
       v-if="doctype === 'CRM Task' && document.doc"
-      class="mt-4 flex flex-col gap-1.5"
+      class="mt-4"
     >
-      <div class="text-xs text-ink-gray-5">{{ __('Reminders') }}</div>
-      <EventNotifications v-model="document.doc.reminders" :show-type="false" />
-      <div class="text-xs text-ink-gray-5">
-        {{ __('Sent by email and in-app, before the due date.') }}
-      </div>
+      <ReminderPanel
+        v-model="document.doc.reminders"
+        :emailOnHelp="
+          __(
+            'Each reminder is emailed to the assignee before the due date, and shows in the CRM.',
+          )
+        "
+      />
     </div>
     <ErrorMessage v-if="error" class="mt-4" :message="__(error)" />
 
@@ -61,7 +64,7 @@ import CrmDialog from '@/components/Modals/CrmDialog.vue'
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
 import CustomActions from '@/components/CustomActions.vue'
-import EventNotifications from '@/components/Calendar/EventNotifications.vue'
+import ReminderPanel from '@/components/Calendar/ReminderPanel.vue'
 import { useDocument } from '@/data/document'
 import { globalStore } from '@/stores/global'
 import { usersStore } from '@/stores/users'

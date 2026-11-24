@@ -13,14 +13,22 @@
           <div class="flex justify-between items-center gap-1 p-3">
             <div class="flex items-stretch space-x-2">
               <div>
-                <CalendarIcon class="size-4 text-cyan-500" />
+                <span
+                  v-if="isTask(alert)"
+                  class="lucide-square-check-big block size-4 text-[var(--crm-accent-primary)]"
+                  aria-hidden="true"
+                />
+                <CalendarIcon v-else class="size-4 text-cyan-500" />
               </div>
               <div class="flex flex-col text-base">
                 <div
                   class="font-medium text-ink-gray-8 mb-1 cursor-pointer"
                   @click="openEvent(alert)"
                 >
-                  {{ alert.notification.subject || 'Event Notification' }}
+                  {{
+                    alert.notification.subject ||
+                    (isTask(alert) ? __('Task') : __('Event Notification'))
+                  }}
                 </div>
                 <div class="text-ink-gray-6">
                   {{ formatEventTime(alert.notification) }}
@@ -71,8 +79,18 @@ const visibleAlerts = computed(() => {
   return eventNotificationAlerts.value.filter((alert) => !alert.completed)
 })
 
+// Task reminders come through the same channel with `kind: 'task'`
+// (xbr_crm/reminders/tasks.py) and open the task instead of the calendar.
+function isTask(alert) {
+  return alert.notification?.kind === 'task'
+}
+
 function openEvent(e) {
   completeAlert(e.id)
+  if (isTask(e)) {
+    router.push({ name: 'Tasks', query: { open: e.notification.task } })
+    return
+  }
   router.push({
     name: 'Calendar',
     query: {
@@ -89,6 +107,16 @@ function completeAlert(id) {
 }
 
 function formatEventTime(notification) {
+  if (notification.kind === 'task') {
+    if (!notification.starts_on) return ''
+    const due = dayjs(notification.starts_on)
+    const when = due.isSame(dayjs(), 'day')
+      ? due.format('h:mm a')
+      : due.format('D MMM, h:mm a')
+    return notification.priority
+      ? __('Due {0} · {1} priority', [when, __(notification.priority)])
+      : __('Due {0}', [when])
+  }
   if (notification.all_day_event) {
     return __('All Day')
   } else if (notification.starts_on) {

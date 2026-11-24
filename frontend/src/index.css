@@ -1516,20 +1516,47 @@ body,
 }
 
 /* Event modal: reminder rows, quick-add chips and the email switch. */
+/* One white list for all reminders: rows split by a line, not boxed one by one. */
+.crm-reminder-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--crm-border);
+  border-radius: 12px;
+  background: var(--crm-surface);
+  overflow: hidden;
+}
 .crm-reminder-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 10px;
+  gap: 8px 12px;
   padding: 8px 8px 8px 14px;
-  border: 1px solid var(--crm-border);
-  border-radius: 10px;
-  background: var(--crm-surface);
+}
+.crm-reminder-row + .crm-reminder-row {
+  border-top: 1px solid var(--crm-border);
+}
+.crm-reminder-add {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  border-top: 1px solid var(--crm-border);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--crm-accent-text);
+  text-align: left;
+}
+.crm-reminder-add:hover {
+  background: var(--crm-accent-soft);
+}
+.crm-reminder-add:focus-visible {
+  outline: 2px solid var(--crm-accent-primary);
+  outline-offset: -2px;
 }
 .crm-reminder-row__select {
-  flex: 1 1 200px;
+  flex: 1 1 220px;
   min-width: 0;
-  max-width: 260px;
 }
 .crm-doc-modal
   .crm-reminder-row
@@ -1565,7 +1592,8 @@ body,
   padding: 12px 14px;
   border-top: 1px solid var(--crm-border);
   margin: 0 -18px -16px;
-  padding-inline: 18px;
+  /* Icon in the same column as the reminder bells above (panel 18 + list 1 + row 14). */
+  padding-inline: 33px 18px;
   cursor: pointer;
   color: var(--crm-accent-primary);
 }

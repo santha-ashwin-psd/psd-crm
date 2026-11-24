@@ -186,4 +186,39 @@ describe('EventNotificationPopup', () => {
       expect(wrapper.vm.getParticipants({})).toEqual([])
     })
   })
+
+  describe('task reminders', () => {
+    const taskAlert = (notification = {}) =>
+      alert({
+        id: 'task:7:2026-08-20T08:00:00',
+        notification: {
+          event_name: 'task:7:2026-08-20T08:00:00',
+          kind: 'task',
+          task: '7',
+          subject: 'Send the quote',
+          starts_on: '2026-08-20 09:00:00',
+          ends_on: undefined,
+          priority: 'High',
+          ...notification,
+        },
+      })
+
+    it('shows the task, when it is due and its priority', () => {
+      const w = mountPopup([taskAlert()])
+      expect(document.body.textContent).toContain('Send the quote')
+      expect(document.body.textContent).toContain('Due 20 Aug, 9:00 am · High priority')
+      w.unmount()
+    })
+
+    it('opens the task', async () => {
+      nav.push.mockClear()
+      const w = mountPopup([taskAlert()])
+      const title = [...document.body.querySelectorAll('div')].find(
+        (d) => d.textContent.trim() === 'Send the quote',
+      )
+      title.click()
+      expect(nav.push).toHaveBeenCalledWith({ name: 'Tasks', query: { open: '7' } })
+      w.unmount()
+    })
+  })
 })

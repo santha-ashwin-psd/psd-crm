@@ -9,7 +9,7 @@ fell due in the last few minutes and, per recipient:
 1. writes a CRM Reminder Log row whose `dedupe_key` is unique — if the row already
    exists the reminder was handled before and is skipped, so nothing is ever sent
    twice, even when runs overlap;
-2. CRM users get a CRM Notification (the bell) and, for events, the live pop-up;
+2. CRM users get a CRM Notification (the bell) and the live pop-up;
 3. everyone gets an email rendered from the reminder type's Email Template, sent
    through the email queue as an Automated Message on the linked record (the deal,
    or the event/task itself) so it appears in that record's activity.
@@ -181,7 +181,7 @@ def deliver(reminder: DueReminder, recipient: Recipient, emails_on: bool, emails
 
 
 def notify_in_app(reminder: DueReminder, recipient: Recipient):
-	"""The bell (CRM Notification) and, for events, the live reminder pop-up."""
+	"""The bell (CRM Notification) and the live reminder pop-up."""
 	tz = user_timezone(recipient.user)
 	when = format_when(reminder.occurrence_start, tz, reminder.context.get("all_day"))
 	esc = frappe.utils.escape_html
@@ -211,10 +211,12 @@ def notify_in_app(reminder: DueReminder, recipient: Recipient):
 		}
 	).insert(ignore_permissions=True)
 
-	if reminder.reminder_type == "event" and reminder.context.get("event"):
-		frappe.publish_realtime(
-			"event_notification", reminder.context["event"], user=recipient.user, after_commit=True
-		)
+	# The live pop-up: events send the event itself, tasks a small task card.
+	popup = reminder.context.get("popup") or (
+		reminder.context.get("event") if reminder.reminder_type == "event" else None
+	)
+	if popup:
+		frappe.publish_realtime("event_notification", popup, user=recipient.user, after_commit=True)
 
 
 def _target(reminder: DueReminder) -> tuple[str, str]:

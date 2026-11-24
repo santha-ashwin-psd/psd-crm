@@ -223,63 +223,15 @@
           </EntryField>
 
           <!-- REMINDERS -->
-          <section class="crm-entry-panel">
-            <button
-              type="button"
-              class="flex w-full items-center gap-3 text-left"
-              :aria-expanded="showReminders"
-              @click="showReminders = !showReminders"
-            >
-              <span class="crm-entry-card__chip !size-9 !rounded-[10px]"
-                ><span class="lucide-bell size-[18px]"
-              /></span>
-              <div class="min-w-0 flex-1">
-                <div class="text-base font-semibold text-[var(--crm-text)]">
-                  {{ __('Reminders') }}
-                </div>
-                <div class="truncate text-[13px] text-[var(--crm-text-3)]">
-                  {{ reminderSummaryText }}
-                </div>
-              </div>
-              <span
-                class="size-5 shrink-0 text-[var(--crm-text-2)]"
-                :class="
-                  showReminders ? 'lucide-chevron-up' : 'lucide-chevron-down'
-                "
-              />
-            </button>
-            <div v-if="showReminders" class="mt-4 flex flex-col gap-4">
-              <EventReminders
-                v-model="_event.notifications"
-                :isAllDay="_event.isFullDay"
-              />
-              <label class="crm-reminder-email">
-                <span class="lucide-mail size-4 shrink-0" aria-hidden="true" />
-                <span class="min-w-0 flex-1">
-                  <span
-                    class="block text-sm font-medium text-[var(--crm-text)]"
-                  >
-                    {{ __('Also send by email') }}
-                  </span>
-                  <span class="block text-[13px] text-[var(--crm-text-3)]">
-                    {{
-                      emailReminders
-                        ? __(
-                            'Each reminder is emailed to you and every attendee, and shows in the CRM.',
-                          )
-                        : __(
-                            'Reminders only show in the CRM. No emails are sent.',
-                          )
-                    }}
-                  </span>
-                </span>
-                <Switch
-                  :modelValue="emailReminders"
-                  @update:modelValue="setEmailReminders"
-                />
-              </label>
-            </div>
-          </section>
+          <ReminderPanel
+            v-model="_event.notifications"
+            :isAllDay="_event.isFullDay"
+            :emailOnHelp="
+              __(
+                'Each reminder is emailed to you and every attendee, and shows in the CRM.',
+              )
+            "
+          />
         </div>
 
         <!-- RIGHT: live summary of what will be saved -->
@@ -360,7 +312,7 @@
 <script setup>
 import CrmDialog from '@/components/Modals/CrmDialog.vue'
 import { duplicateReminders } from '@/components/Calendar/utils'
-import EventReminders from '@/components/Calendar/EventReminders.vue'
+import ReminderPanel from '@/components/Calendar/ReminderPanel.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import Attendee from '@/components/Calendar/Attendee.vue'
 import EntryField from '@/components/Controls/EntryField.vue'
@@ -465,7 +417,6 @@ onMounted(() => {
       end = dayjs().add(1, 'hour')
     }
 
-    adoptReminders(props.event.notifications)
     _event.value = {
       id: props.event.name || '',
       title: props.event.subject,
@@ -505,7 +456,6 @@ async function loadDetails(name) {
       event_participants: doc.event_participants || [],
       notifications: doc.notifications || [],
     }
-    adoptReminders(details.notifications)
     Object.assign(_event.value, JSON.parse(JSON.stringify(details)))
     Object.assign(oldEvent.value, JSON.parse(JSON.stringify(details)))
   } catch {
@@ -666,43 +616,6 @@ function deleteEvent() {
 
 const toOptions = computed(() => buildEndTimeOptions(_event.value.fromTime))
 
-// --- Reminders --------------------------------------------------------------
-// One "Send email notification" switch for the event. Each reminder row still
-// stores its own type (Email = bell + email, Notification = bell only), so the
-// switch writes every row, and rows added later follow it.
-const showReminders = ref(true)
-const emailReminders = ref(true)
-// Set while reminders are loaded from a saved event, so loading them doesn't
-// count as the user adding rows.
-let loadingReminders = false
-
-function adoptReminders(rows) {
-  loadingReminders = true
-  emailReminders.value = rows?.length
-    ? rows.every((r) => r.type === 'Email')
-    : true
-  setTimeout(() => (loadingReminders = false))
-}
-
-function setEmailReminders(on) {
-  emailReminders.value = Boolean(on)
-  for (const row of _event.value.notifications || []) {
-    row.type = on ? 'Email' : 'Notification'
-  }
-}
-
-watch(
-  () => (_event.value.notifications || []).length,
-  (len, prev) => {
-    if (!loadingReminders && len > (prev || 0)) {
-      const rows = _event.value.notifications
-      for (const row of rows.slice(prev || 0)) {
-        row.type = emailReminders.value ? 'Email' : 'Notification'
-      }
-    }
-  },
-)
-
 // --- Attendees ---------------------------------------------------------------
 const ATTENDEE_FOLD = 6
 const showAllAttendees = ref(false)
@@ -715,14 +628,6 @@ function removeAttendee(email) {
   peoples.value = peoples.value.filter((p) => p.email !== email)
 }
 
-const reminderSummaryText = computed(() => {
-  const n = (_event.value.notifications || []).length
-  if (!n) return __('No reminders set')
-  const count = n === 1 ? __('1 reminder') : __('{0} reminders', [n])
-  return emailReminders.value
-    ? __('{0} · in the CRM and by email', [count])
-    : __('{0} · in the CRM only', [count])
-})
 
 // --- Summary ----------------------------------------------------------------
 const summary = computed(() => {

@@ -168,7 +168,7 @@ class ReminderTestCase(FrappeTestCase):
 
 
 class TestTaskReminders(ReminderTestCase):
-	def task(self, due, reminders, **values):
+	def task(self, due, reminders, row_type="Email", **values):
 		doc = frappe.get_doc(
 			{
 				"doctype": "CRM Task",
@@ -177,7 +177,7 @@ class TestTaskReminders(ReminderTestCase):
 				"priority": "High",
 				"due_date": due,
 				"assigned_to": values.pop("assigned_to", USER_A),
-				"reminders": [{"type": "Email", "before": b, "interval": i} for b, i in reminders],
+				"reminders": [{"type": row_type, "before": b, "interval": i} for b, i in reminders],
 				**values,
 			}
 		).insert(ignore_permissions=True)
@@ -284,6 +284,35 @@ class TestTaskReminders(ReminderTestCase):
 		self.assertEqual(len(note), 1)
 		self.assertEqual(note[0].type, "Reminder")
 		self.assertEqual((note[0].reference_doctype, note[0].reference_name), ("CRM Task", str(task.name)))
+
+	def test_email_unchecked_reminds_in_app_only(self):
+		task = self.task(NOW + timedelta(minutes=10), [(10, "minutes")], row_type="Notification")
+		self.run_at(NOW)
+		self.assertEqual(len(self.logs(task.name)), 1)
+		self.assertEqual(self.queued(task.name), [])
+		self.assertTrue(
+			frappe.db.exists("CRM Notification", {"notification_type_doc": task.name, "type": "Reminder"})
+		)
+
+	def test_reminder_saved_before_the_email_switch_is_still_emailed(self):
+		task = self.task(NOW + timedelta(minutes=10), [(10, "minutes")], row_type="")
+		self.run_at(NOW)
+		self.assertEqual(len(self.queued(task.name)), 1)
+
+	def test_live_pop_up_for_the_assignee(self):
+		due = NOW + timedelta(hours=1)
+		task = self.task(due, [(1, "hours"), (10, "minutes")])
+		with patch("frappe.publish_realtime") as publish:
+			self.run_at(due - timedelta(hours=1))
+			self.run_at(due - timedelta(minutes=10))
+		popups = [c for c in publish.call_args_list if c.args and c.args[0] == "event_notification"]
+		self.assertEqual(len(popups), 2)
+		first = popups[0].args[1]
+		self.assertEqual(popups[0].kwargs["user"], USER_A)
+		self.assertEqual((first["kind"], first["task"], first["subject"]), ("task", str(task.name), task.title))
+		self.assertEqual(first["priority"], "High")
+		# Each reminder is its own pop-up, so dismissing one doesn't hide the next.
+		self.assertNotEqual(first["event_name"], popups[1].args[1]["event_name"])
 
 	def test_type_switch_off_keeps_in_app_but_no_email(self):
 		self._settings({"enable_task_reminder_emails": 0})

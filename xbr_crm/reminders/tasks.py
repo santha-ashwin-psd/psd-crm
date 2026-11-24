@@ -5,7 +5,9 @@
 
 Reminders live in the task's `reminders` table. Done and Canceled tasks never
 remind. The reminder goes to the assignee, or to whoever created the task when
-it is unassigned.
+it is unassigned. Like event reminders, a row of type "Notification" is in-app
+only; "Email" rows (and rows saved before the type was offered, which have none)
+are also emailed. CRM users also get the live reminder pop-up.
 """
 
 from datetime import datetime
@@ -51,7 +53,7 @@ def due_reminders(window_start: datetime, window_end: datetime) -> list[DueRemin
 			"parentfield": "reminders",
 			"parent": ("in", [t.name for t in tasks]),
 		},
-		fields=["name", "parent", "before", "interval"],
+		fields=["name", "parent", "type", "before", "interval"],
 		order_by="idx asc",
 	)
 	by_task: dict[str, list] = {}
@@ -97,11 +99,23 @@ def _build(task, row, due_at: datetime, trigger: datetime) -> DueReminder:
 		recipients=_recipients(task),
 		related_doctype=task.reference_doctype or None,
 		related_name=task.reference_docname or None,
+		email=row.type != "Notification",
 		context={
 			"category": "Task",
 			"priority": task.priority,
 			"status": task.status,
 			"description": task.description,
+			# The live pop-up (EventNotificationPopup). One per reminder, so a
+			# "1 day before" that was dismissed doesn't hide the "1 hour before".
+			"popup": {
+				"event_name": f"task:{task.name}:{trigger.isoformat()}",
+				"kind": "task",
+				"task": task.name,
+				"subject": task.title or frappe._("Task"),
+				"starts_on": str(due_at),
+				"priority": task.priority,
+				"owner": task.owner,
+			},
 		},
 	)
 
