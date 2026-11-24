@@ -187,6 +187,7 @@
             :statusLabel="(s) => __(s)"
             @accept="acceptSuggestion"
             @dismissed="reloadAll"
+            @moved="reloadAll"
           />
         </div>
 

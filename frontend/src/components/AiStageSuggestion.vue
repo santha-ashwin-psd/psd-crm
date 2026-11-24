@@ -29,8 +29,9 @@
         size="sm"
         variant="solid"
         :label="__('Move')"
-        :disabled="readonly"
-        @click="$emit('accept', suggested)"
+        :loading="moving"
+        :disabled="readonly || dismissing"
+        @click="move"
       />
       <Button
         size="sm"
@@ -48,13 +49,17 @@
 /**
  * The stage the AI assistant suggests for a pipeline (xbr_crm/ai/pipeline.py).
  *
- * "Move" hands the stage back to the page, which changes it the same way the
- * stage dropdown does (follow-up date and lost-reason prompts included); the
- * server then records the suggestion as accepted. "Dismiss" settles it here.
+ * "Move" to a lost-type stage other than Lost (Junk, Archive) is done here in
+ * one click: the server fills the lost reason with AI's pick. Any other stage
+ * goes back to the page, which changes it the same way the stage dropdown does
+ * (follow-up date, and the manual reason for Lost). "Dismiss" settles it here.
  */
+import { statusesStore } from '@/stores/statuses'
 import { formatError } from '@/utils/formatError'
 import { Button, call, toast } from 'frappe-ui'
 import { computed, ref } from 'vue'
+
+const MANUAL_REASON_STAGE = 'Lost'
 
 const props = defineProps({
   doc: { type: Object, required: true },
@@ -62,7 +67,44 @@ const props = defineProps({
   readonly: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['accept', 'dismissed'])
+const emit = defineEmits(['accept', 'dismissed', 'moved'])
+
+const { getDealStatus } = statusesStore()
+
+const moving = ref(false)
+
+function closesInOneClick(status) {
+  return (
+    getDealStatus(status)?.type === 'Lost' && status !== MANUAL_REASON_STAGE
+  )
+}
+
+async function move() {
+  const status = suggested.value
+  if (!closesInOneClick(status)) {
+    emit('accept', status)
+    return
+  }
+  moving.value = true
+  try {
+    const result = await call('xbr_crm.ai.pipeline.accept_suggestion', {
+      deal: props.doc.name,
+    })
+    toast.success(
+      result?.lost_reason
+        ? __('Moved to {0} · reason: {1}', [
+            props.statusLabel(status),
+            result.lost_reason,
+          ])
+        : __('Moved to {0}', [props.statusLabel(status)]),
+    )
+    emit('moved', status)
+  } catch (error) {
+    toast.error(formatError(error, __('Could not move the pipeline')))
+  } finally {
+    moving.value = false
+  }
+}
 
 const suggested = computed(() => {
   const status = props.doc?.ai_suggested_status

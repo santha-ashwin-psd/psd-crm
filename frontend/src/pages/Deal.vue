@@ -131,6 +131,7 @@
             :statusLabel="statusLabel"
             @accept="triggerStatusChange"
             @dismissed="onAiDismissed"
+            @moved="onAiDismissed"
           />
         </div>
 

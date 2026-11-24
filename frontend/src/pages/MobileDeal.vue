@@ -105,6 +105,7 @@
           :statusLabel="statusLabel"
           @accept="triggerStatusChange"
           @dismissed="document.reload()"
+          @moved="document.reload()"
         />
       </div>
 

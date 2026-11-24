@@ -278,3 +278,48 @@ class TestAIPipeline(IntegrationTestCase):
 		self.assertEqual(entry["activity_type"], "ai")
 		self.assertEqual(entry["data"]["action"], "Suggested")
 		self.assertEqual(entry["data"]["to_status"], self.later)
+
+	# ------------------------------------------------------------ one-click close
+
+	def suggested_close(self, email, stage):
+		if not frappe.db.exists("CRM Deal Status", stage):
+			frappe.get_doc({"doctype": "CRM Deal Status", "deal_status": stage, "type": "Lost"}).insert()
+		with patch("xbr_crm.ai.pipeline.chat_json", return_value=answer(self.entry)):
+			self.receive(email)
+		deal = self.deal_for(email)
+		frappe.db.set_value(
+			"CRM Deal",
+			deal.name,
+			{"ai_suggested_status": stage, "ai_suggestion_reason": "Automated tender alerts.", "ai_suggestion_confidence": 95},
+		)
+		return deal.name
+
+	def test_junk_move_uses_the_reason_ai_picks(self):
+		deal = self.suggested_close("junk.pick@example.com", "Junk")
+		existing = frappe.get_all("CRM Lost Reason", pluck="name", limit=1)[0]
+		with patch("xbr_crm.ai.pipeline.chat_json", return_value={"reason": existing.upper()}):
+			ai.accept_suggestion(deal)
+		doc = frappe.get_doc("CRM Deal", deal)
+		self.assertEqual((doc.status, doc.lost_reason), ("Junk", existing))
+		self.assertEqual(doc.lost_notes, "Automated tender alerts.")
+		self.assertFalse(doc.ai_suggested_status)
+		self.assertIn("Accepted", self.decisions(deal))
+
+	def test_junk_move_creates_a_new_reason(self):
+		deal = self.suggested_close("junk.new@example.com", "Junk")
+		with patch("xbr_crm.ai.pipeline.chat_json", return_value={"reason": "Automated Alert."}):
+			ai.accept_suggestion(deal)
+		self.assertEqual(frappe.db.get_value("CRM Deal", deal, "lost_reason"), "Automated Alert")
+		self.assertTrue(frappe.db.exists("CRM Lost Reason", "Automated Alert"))
+
+	def test_junk_move_without_ai_uses_the_stage_name(self):
+		deal = self.suggested_close("junk.offline@example.com", "Junk")
+		with patch("xbr_crm.ai.pipeline.chat_json", side_effect=AIUnavailable("down")):
+			ai.accept_suggestion(deal)
+		self.assertEqual(frappe.db.get_value("CRM Deal", deal, ["status", "lost_reason"]), ("Junk", "Junk"))
+
+	def test_lost_still_needs_a_manual_reason(self):
+		deal = self.suggested_close("lost.manual@example.com", ai.MANUAL_REASON_STAGE)
+		with self.assertRaises(frappe.ValidationError):
+			ai.accept_suggestion(deal)
+		self.assertNotEqual(frappe.db.get_value("CRM Deal", deal, "status"), ai.MANUAL_REASON_STAGE)
