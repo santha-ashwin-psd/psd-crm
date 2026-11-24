@@ -203,10 +203,13 @@ def get_threads(
 	mine: int = 0,
 	start: int = 0,
 	page_length: int = PAGE_LENGTH,
+	status: str | None = None,
 ) -> dict:
 	threads = _threads(bool(int(mine or 0)))
 	if channel in ("email", "whatsapp"):
 		threads = [t for t in threads if channel in t["channels"]]
+	if status:
+		threads = [t for t in threads if t["status"] == status]
 	if int(needs_reply or 0):
 		threads = [t for t in threads if t["needs_reply"]]
 	query = (search or "").strip().lower()

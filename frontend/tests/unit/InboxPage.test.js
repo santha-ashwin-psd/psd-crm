@@ -33,7 +33,10 @@ vi.mock('@/stores/settings', () => ({
   getSettings: () => ({ _settings: { doc: { ai_enabled: 1 } } }),
 }))
 vi.mock('@/stores/statuses', () => ({
-  statusesStore: () => ({ getDealStatus: (s) => ({ type: s === 'Lost' ? 'Lost' : 'Ongoing' }) }),
+  statusesStore: () => ({
+    getDealStatus: (s) => ({ type: s === 'Lost' ? 'Lost' : 'Ongoing' }),
+    dealStatuses: { data: [{ name: 'Interested Leads' }, { name: 'Junk' }] },
+  }),
 }))
 vi.mock('@/stores/users', () => ({
   usersStore: () => ({ getUser: () => ({ email: 'me@x.com', full_name: 'Me' }) }),
@@ -153,6 +156,15 @@ describe('Inbox', () => {
     await w.findAll('.crm-inbox-chip').find((c) => c.text() === 'Needs reply').trigger('click')
     expect(threads().reload).toHaveBeenCalled()
     expect(threads().options.makeParams().needs_reply).toBe(1)
+  })
+
+  it('filters conversations by stage', async () => {
+    const w = mountInbox()
+    const select = w.find('select.crm-inbox-stage')
+    expect(select.findAll('option').map((o) => o.text())).toEqual(['Any stage', 'Interested Leads', 'Junk'])
+    await select.setValue('Junk')
+    expect(threads().reload).toHaveBeenCalled()
+    expect(threads().options.makeParams().status).toBe('Junk')
   })
 
   it('opens a conversation and keeps it in the URL', async () => {

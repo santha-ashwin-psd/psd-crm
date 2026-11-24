@@ -44,6 +44,18 @@
           >
             {{ c.label }}
           </button>
+          <span class="mx-1 h-4 w-px bg-[var(--crm-border)]" aria-hidden="true" />
+          <select
+            v-model="stage"
+            class="crm-inbox-chip crm-inbox-stage"
+            :class="{ 'is-active': stage }"
+            :aria-label="__('Stage')"
+          >
+            <option value="">{{ __('Any stage') }}</option>
+            <option v-for="s in stageOptions" :key="s.name" :value="s.name">
+              {{ __(s.name) }}
+            </option>
+          </select>
         </div>
       </div>
 
@@ -361,7 +373,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
-const { getDealStatus } = statusesStore()
+const { getDealStatus, dealStatuses } = statusesStore()
 const { getUser } = usersStore()
 
 usePageMeta(() => ({ title: __('Inbox') }))
@@ -380,11 +392,15 @@ const channelChips = computed(() => [
   ...(whatsappEnabled.value ? [{ value: 'whatsapp', label: 'WhatsApp' }] : []),
 ])
 
+const stage = ref('')
+const stageOptions = computed(() => dealStatuses?.data || [])
+
 const threads = createResource({
   url: 'xbr_crm.api.inbox.get_threads',
   makeParams: () => ({
     search: search.value,
     channel: channel.value,
+    status: stage.value,
     needs_reply: filter.value === 'needs_reply' ? 1 : 0,
     mine: filter.value === 'mine' ? 1 : 0,
     page_length: 200,
@@ -392,7 +408,7 @@ const threads = createResource({
   auto: true,
 })
 const threadList = computed(() => threads.data?.threads || [])
-watch([search, filter, channel], () => threads.reload())
+watch([search, filter, channel, stage], () => threads.reload())
 
 const emptyTitle = computed(() =>
   filter.value === 'needs_reply'

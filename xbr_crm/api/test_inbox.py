@@ -67,6 +67,14 @@ class TestInbox(IntegrationTestCase):
 		self.assertIsNotNone(self.thread(self.waiting, needs_reply=1))
 		self.assertIsNone(self.thread(self.answered, needs_reply=1))
 
+	def test_stage_filter(self):
+		stage = frappe.db.get_value("CRM Deal", self.waiting.name, "status")
+		other = frappe.get_all("CRM Deal Status", filters={"name": ["!=", stage]}, pluck="name", limit=1)[0]
+		frappe.db.set_value("CRM Deal", self.answered.name, "status", other)
+		self.assertIsNotNone(self.thread(self.waiting, status=stage))
+		self.assertIsNone(self.thread(self.answered, status=stage))
+		self.assertIsNotNone(self.thread(self.answered, status=other))
+
 	def test_search(self):
 		self.assertIsNotNone(self.thread(self.waiting, search="any update"))
 		self.assertIsNone(self.thread(self.answered, search="any update"))
