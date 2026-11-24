@@ -895,3 +895,107 @@ def _add_origin_to_layout(name: str, after: str | None):
 	fields.insert(position, "custom_created_via")
 	doc.layout = json.dumps(layout)
 	doc.save(ignore_permissions=True)
+
+# ---------------------------------------------------------------------------
+# Website contact form emails (xbr_crm/api/contact_form.py)
+# ---------------------------------------------------------------------------
+
+
+def _contact_form_fields():
+	from xbr_crm.api.contact_form import CURRENT_SOFTWARE, USER_COUNTS
+
+	description = "From the website contact form"
+	return [
+		{
+			"fieldname": "custom_services",
+			"fieldtype": "Table MultiSelect",
+			"label": "Services",
+			"options": "CRM Deal Service",
+			"insert_after": "custom_form_type",
+			"description": description,
+		},
+		{
+			"fieldname": "custom_current_software",
+			"fieldtype": "Select",
+			"label": "Current Software",
+			"options": "\n" + "\n".join(CURRENT_SOFTWARE),
+			"insert_after": "custom_services",
+			"description": description,
+		},
+		{
+			"fieldname": "custom_user_count",
+			"fieldtype": "Select",
+			"label": "Number of Users",
+			"options": "\n" + "\n".join(USER_COUNTS),
+			"insert_after": "custom_current_software",
+			"description": description,
+		},
+	]
+
+
+# Shown first in the side panel's Website Inquiry section, before the
+# web-lead fields (custom_start_timeline there holds "When to start?").
+CONTACT_FORM_PANEL_FIELDS = ["custom_services", "custom_current_software", "custom_user_count"]
+
+
+def add_contact_form_fields():
+	"""Install the contact form fields on CRM Deal, seed the form's services and
+	industries, and show the fields on the pipeline side panel. Safe to re-run:
+	existing fields get the current options; nothing a person set is removed."""
+	from xbr_crm.api.contact_form import INDUSTRIES, SERVICES
+
+	fields = _contact_form_fields()
+	meta = frappe.get_meta("CRM Deal")
+	missing = [f for f in fields if not meta.has_field(f["fieldname"])]
+	for f in fields:
+		name = frappe.db.get_value("Custom Field", {"dt": "CRM Deal", "fieldname": f["fieldname"]})
+		if name and f["fieldtype"] == "Select" and frappe.db.get_value("Custom Field", name, "options") != f["options"]:
+			frappe.db.set_value("Custom Field", name, "options", f["options"])
+			frappe.clear_cache(doctype="CRM Deal")
+	if missing:
+		click.secho("* Installing contact form Custom Fields in CRM Deal")
+		create_custom_fields({"CRM Deal": missing})
+		frappe.clear_cache(doctype="CRM Deal")
+
+	for service in SERVICES:
+		if not frappe.db.exists("CRM Service", service):
+			frappe.get_doc({"doctype": "CRM Service", "service_name": service}).insert(ignore_permissions=True)
+	for industry in INDUSTRIES:
+		if not frappe.db.exists("CRM Industry", industry):
+			frappe.get_doc({"doctype": "CRM Industry", "industry": industry}).insert(ignore_permissions=True)
+
+	_add_contact_form_fields_to_panel()
+
+
+def _add_contact_form_fields_to_panel():
+	name = "CRM Deal-Side Panel"
+	if not frappe.db.exists("CRM Fields Layout", name):
+		return
+	doc = frappe.get_doc("CRM Fields Layout", name)
+	try:
+		layout = json.loads(doc.layout or "[]")
+	except ValueError:
+		return
+	if not isinstance(layout, list):
+		return
+
+	present = {
+		field for section in layout for column in section.get("columns") or [] for field in column.get("fields") or []
+	}
+	missing = [f for f in CONTACT_FORM_PANEL_FIELDS if f not in present]
+	if not missing:
+		return
+
+	section = next((s for s in layout if s.get("name") == WEB_LEAD_PANEL_SECTION["name"]), None)
+	if section is None:
+		section = {**WEB_LEAD_PANEL_SECTION, "columns": [{"name": "column_webinq", "fields": []}]}
+		layout.append(section)
+	column = (section.get("columns") or [None])[0]
+	if column is None:
+		column = {"name": "column_webinq", "fields": []}
+		section["columns"] = [column]
+	column["fields"] = missing + list(column.get("fields") or [])
+
+	click.secho("* Adding contact form fields to the CRM Deal side panel")
+	doc.layout = json.dumps(layout)
+	doc.save(ignore_permissions=True)

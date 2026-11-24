@@ -426,6 +426,7 @@ after_migrate = [
 	"xbr_crm.install.add_web_form_custom_fields",
 	"xbr_crm.install.add_web_lead_custom_fields",
 	"xbr_crm.install.add_web_lead_side_panel_section",
+	"xbr_crm.install.add_contact_form_fields",
 	"xbr_crm.install.add_lead_origin_field",
 	"xbr_crm.install.add_lead_origin_to_side_panel",
 	"xbr_crm.reminders.templates.create_default_templates",

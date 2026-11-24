@@ -230,7 +230,7 @@ def create_pipeline_for_unknown_number(doc) -> tuple[str, str] | None:
 	if not number:
 		return None
 	try:
-		from xbr_crm.api.email_inquiry import STAGE
+		from xbr_crm.api.email_inquiry import entry_stage
 		from xbr_crm.api.lead_origin import ORIGIN_FIELD, WHATSAPP
 
 		first_name, last_name = _split_name(doc.get("profile_name"), number)
@@ -247,7 +247,7 @@ def create_pipeline_for_unknown_number(doc) -> tuple[str, str] | None:
 		deal.last_name = last_name
 		deal.mobile_no = mobile
 		deal.append("contacts", {"contact": contact.name, "is_primary": 1})
-		deal.status = STAGE if frappe.db.exists("CRM Deal Status", STAGE) else None
+		deal.status = entry_stage()
 		deal.source = _ensure_source()
 		if deal.meta.has_field(ORIGIN_FIELD):
 			deal.set(ORIGIN_FIELD, WHATSAPP)

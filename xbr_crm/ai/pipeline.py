@@ -104,11 +104,10 @@ def stage_type(name: str | None) -> str | None:
 
 
 def entry_stage() -> str | None:
-	"""The stage an inquiry pipeline starts in (see api/email_inquiry.STAGE)."""
-	from xbr_crm.api.email_inquiry import STAGE
-	from xbr_crm.fcrm.doctype.crm_deal.crm_deal import default_deal_status
+	"""The stage an inquiry pipeline starts in (see api/email_inquiry.entry_stage)."""
+	from xbr_crm.api import email_inquiry
 
-	return STAGE if frappe.db.exists("CRM Deal Status", STAGE) else default_deal_status()
+	return email_inquiry.entry_stage()
 
 
 def _stage_lines(rows) -> str:

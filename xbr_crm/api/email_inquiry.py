@@ -16,13 +16,22 @@ qualified by anyone yet, so it starts at the beginning.
 
 import frappe
 
+from xbr_crm.api import contact_form
 from xbr_crm.api.lead_origin import EMAIL, ORIGIN_FIELD
 
-# Where a pipeline from email starts. Falls back to the board's first open stage
-# when a site has renamed or removed this one.
+# Where a pipeline from email starts. A site without this stage uses the
+# board's first Open stage instead (e.g. "New"); see entry_stage().
 STAGE = "Interested Leads"
 
 SOURCE = "Email"
+
+
+def entry_stage() -> str | None:
+	"""The stage new inquiry pipelines start in: STAGE when the site has it,
+	otherwise the first Open stage on the board."""
+	from xbr_crm.fcrm.doctype.crm_deal.crm_deal import default_deal_status
+
+	return STAGE if frappe.db.exists("CRM Deal Status", STAGE) else default_deal_status()
 
 
 def create_pipeline_from_incoming_email(doc, method=None):
@@ -40,10 +49,6 @@ def create_pipeline_from_incoming_email(doc, method=None):
 def _handle(doc):
 	if doc.doctype != "Communication" or doc.sent_or_received != "Received":
 		return
-	# Already filed: a reply threaded onto an existing pipeline, or a record
-	# someone linked by hand.
-	if doc.reference_doctype and doc.reference_name:
-		return
 	if not doc.email_account:
 		return
 
@@ -51,6 +56,24 @@ def _handle(doc):
 		"Email Account", doc.email_account, ["email_id", "create_lead_from_incoming_email"], as_dict=True
 	)
 	if not account or not account.create_lead_from_incoming_email:
+		return
+
+	# A website form submission is about the person in the form, not its sender
+	# (always the website's own address). Checked before the "already filed" test:
+	# mail threading by subject would otherwise put every submission on the first
+	# one's pipeline.
+	form = contact_form.form_for(doc)
+	if form:
+		deal = contact_form.handle(doc, form)
+		if deal:
+			doc.reference_doctype = "CRM Deal"
+			doc.reference_name = deal
+			doc.save(ignore_permissions=True)
+		return
+
+	# Already filed: a reply threaded onto an existing pipeline, or a record
+	# someone linked by hand.
+	if doc.reference_doctype and doc.reference_name:
 		return
 
 	sender = (doc.sender or "").strip().lower()
@@ -123,7 +146,7 @@ def _create_pipeline(doc, sender: str) -> str:
 	deal.first_name = first_name
 	deal.last_name = last_name
 	deal.append("contacts", {"contact": contact, "is_primary": 1})
-	deal.status = STAGE if frappe.db.exists("CRM Deal Status", STAGE) else None
+	deal.status = entry_stage()
 	deal.source = _ensure_source()
 	if deal.meta.has_field(ORIGIN_FIELD):
 		deal.set(ORIGIN_FIELD, EMAIL)
