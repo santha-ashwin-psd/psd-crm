@@ -137,3 +137,43 @@ class TestInbox(IntegrationTestCase):
 			frappe.db.get_value("WhatsApp Message", {"reference_name": self.waiting.name}, "message"),
 			"site-photo.jpg",
 		)
+
+	# ------------------------------------------------------------ mark as read
+
+	def test_mark_read_clears_waiting_and_unread(self):
+		before = inbox.get_needs_reply_count()
+		inbox.mark_read(self.waiting.name)
+		t = self.thread(self.waiting)
+		self.assertFalse(t["needs_reply"])
+		self.assertEqual(t["unread"], 0)
+		self.assertEqual(inbox.get_needs_reply_count(), before - 1)
+
+	def test_the_customer_writing_again_brings_it_back(self):
+		inbox.mark_read(self.waiting.name)
+		frappe.db.set_value("CRM Deal", self.waiting.name, "inbox_done_on", add_to_date(now_datetime(), minutes=-2))
+		email(self.waiting, "One more question", received=True, minutes_ago=1)
+		t = self.thread(self.waiting)
+		self.assertTrue(t["needs_reply"])
+		self.assertEqual(t["unread"], 1)
+
+	def test_mark_all_read_follows_the_filters(self):
+		other = make_deal("inbox.other@example.com")
+		email(other, "Hello?", received=True, minutes_ago=3)
+		n = inbox.mark_all_read(search="any update")
+		self.assertEqual(n, 1)
+		self.assertFalse(self.thread(self.waiting)["needs_reply"])
+		self.assertTrue(self.thread(other)["needs_reply"])
+
+	def test_junk_never_waits_or_counts(self):
+		if not frappe.db.exists("CRM Deal Status", "Junk"):
+			frappe.get_doc({"doctype": "CRM Deal Status", "deal_status": "Junk", "type": "Lost"}).insert()
+		before = inbox.get_needs_reply_count()
+		frappe.db.set_value("CRM Deal", self.waiting.name, "status", "Junk")
+		t = self.thread(self.waiting)
+		self.assertFalse(t["needs_reply"])
+		self.assertEqual(t["unread"], 0)
+		self.assertEqual(inbox.get_needs_reply_count(), before - 1)
+
+	def test_lost_still_counts(self):
+		frappe.db.set_value("CRM Deal", self.waiting.name, "status", "Lost")
+		self.assertTrue(self.thread(self.waiting)["needs_reply"])

@@ -5,8 +5,12 @@
 list, newest first, with the thread and a reply box beside it.
 
 A thread is one pipeline. It "needs a reply" when its latest message came from
-the customer, whatever the channel. Only pipelines the user may read are listed
-(frappe.get_list applies the tenancy and sales-hierarchy rules).
+the customer, whatever the channel, unless someone marked it as read since
+(CRM Deal.inbox_done_on; the customer's next message brings it back) or it is
+junk (a closing stage other than Lost, e.g. Junk: never counted, no unread
+badge). The sidebar badge counts threads that need a reply. Only pipelines the
+user may read are listed (frappe.get_list applies the tenancy and
+sales-hierarchy rules).
 """
 
 import html
@@ -14,7 +18,7 @@ import re
 
 import frappe
 from frappe import _
-from frappe.utils import get_datetime
+from frappe.utils import get_datetime, now_datetime
 
 PAGE_LENGTH = 50
 SNIPPET_CHARS = 160
@@ -46,6 +50,7 @@ def _visible_deals(mine: bool) -> dict:
 			"status",
 			"deal_owner",
 			"ai_suggested_status",
+			"inbox_done_on",
 		],
 		limit_page_length=0,
 	)
@@ -168,9 +173,13 @@ def _threads(mine: bool) -> list[dict]:
 		if not t["last"] or get_datetime(m["at"]) > get_datetime(t["last"]["at"]):
 			t["last"] = m
 
+	junk = _junk_stages()
 	out = []
 	for name, t in threads.items():
 		deal, last = deals[name], t["last"]
+		quiet = deal.status in junk
+		done_on = get_datetime(deal.inbox_done_on) if deal.inbox_done_on else None
+		waiting = last["inbound"] and not quiet and not (done_on and get_datetime(last["at"]) <= done_on)
 		out.append(
 			{
 				"deal": name,
@@ -181,8 +190,8 @@ def _threads(mine: bool) -> list[dict]:
 				"ai_suggested_status": deal.ai_suggested_status,
 				"channels": sorted(t["channels"]),
 				"messages": t["messages"],
-				"unread": t["unread"],
-				"needs_reply": last["inbound"],
+				"unread": 0 if quiet else t["unread"],
+				"needs_reply": waiting,
 				"last_at": last["at"],
 				"last_channel": last["channel"],
 				"last_inbound": last["inbound"],
@@ -195,17 +204,16 @@ def _threads(mine: bool) -> list[dict]:
 	return out
 
 
-@frappe.whitelist()
-def get_threads(
-	search: str | None = None,
-	channel: str | None = None,
-	needs_reply: int = 0,
-	mine: int = 0,
-	start: int = 0,
-	page_length: int = PAGE_LENGTH,
-	status: str | None = None,
-) -> dict:
-	threads = _threads(bool(int(mine or 0)))
+def _junk_stages() -> set[str]:
+	"""Stages whose conversations never wait on a reply: closing stages other
+	than Lost (Junk, Archive). Lost is kept: a lost customer writing back is
+	worth seeing."""
+	from xbr_crm.ai.pipeline import closes_in_one_click
+
+	return {s.name for s in frappe.get_all("CRM Deal Status", fields=["name"]) if closes_in_one_click(s.name)}
+
+
+def _filter(threads, search=None, channel=None, needs_reply=0, status=None) -> list[dict]:
 	if channel in ("email", "whatsapp"):
 		threads = [t for t in threads if channel in t["channels"]]
 	if status:
@@ -219,6 +227,20 @@ def get_threads(
 			for t in threads
 			if any(query in (t.get(k) or "").lower() for k in ("title", "contact", "subject", "snippet", "deal"))
 		]
+	return threads
+
+
+@frappe.whitelist()
+def get_threads(
+	search: str | None = None,
+	channel: str | None = None,
+	needs_reply: int = 0,
+	mine: int = 0,
+	start: int = 0,
+	page_length: int = PAGE_LENGTH,
+	status: str | None = None,
+) -> dict:
+	threads = _filter(_threads(bool(int(mine or 0))), search, channel, needs_reply, status)
 	start, page_length = int(start or 0), int(page_length or PAGE_LENGTH)
 	return {"threads": threads[start : start + page_length], "total": len(threads)}
 
@@ -262,3 +284,43 @@ def get_thread(deal: str) -> dict:
 def get_needs_reply_count() -> int:
 	"""How many of my visible conversations wait on us; the sidebar badge."""
 	return sum(1 for t in _threads(False) if t["needs_reply"])
+
+
+def _mark_read(deals: list[str]) -> int:
+	"""Mark these conversations as read: their emails seen, and nothing in them
+	waiting for a reply until the customer writes again."""
+	deals = [d for d in dict.fromkeys(deals) if frappe.has_permission("CRM Deal", "read", d)]
+	if not deals:
+		return 0
+	frappe.db.sql(
+		"""
+		update `tabCommunication` set seen = 1
+		where reference_doctype = 'CRM Deal' and reference_name in %(deals)s
+			and sent_or_received = 'Received' and seen = 0
+		""",
+		{"deals": deals},
+	)
+	frappe.db.set_value("CRM Deal", {"name": ["in", deals]}, "inbox_done_on", now_datetime(), update_modified=False)
+	return len(deals)
+
+
+@frappe.whitelist(methods=["POST"])
+def mark_read(deal: str) -> int:
+	"""'Mark as read' on one conversation."""
+	if not frappe.has_permission("CRM Deal", "read", deal):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	return _mark_read([deal])
+
+
+@frappe.whitelist(methods=["POST"])
+def mark_all_read(
+	search: str | None = None,
+	channel: str | None = None,
+	needs_reply: int = 0,
+	mine: int = 0,
+	status: str | None = None,
+) -> int:
+	"""'Mark all as read': every conversation in the list as it is filtered now
+	that is waiting for a reply or has unread emails. Returns how many."""
+	threads = _filter(_threads(bool(int(mine or 0))), search, channel, needs_reply, status)
+	return _mark_read([t["deal"] for t in threads if t["needs_reply"] or t["unread"]])

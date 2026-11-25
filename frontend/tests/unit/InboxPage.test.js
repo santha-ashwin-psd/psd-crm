@@ -108,7 +108,9 @@ const THREAD = (over = {}) => ({
 })
 
 const STUBS = {
-  LayoutHeader: { template: '<div><slot name="left-header" /></div>' },
+  LayoutHeader: {
+    template: '<div><slot name="left-header" /><slot name="right-header" /></div>',
+  },
   Breadcrumbs: true,
   StatusBadge: { props: ['label'], template: '<span class="stub-status">{{ label }}</span>' },
   SkeletonLoader: true,
@@ -205,6 +207,48 @@ describe('Inbox', () => {
     filters.value.stage.value = 'Removed Stage'
     mountInbox()
     expect(filters.value.stage.value).toBe('')
+  })
+
+  describe('mark as read', () => {
+    const button = (w, label) =>
+      w.findAll('button').find((b) => b.text().trim() === label)
+
+    it('marks every conversation in the filtered list', async () => {
+      filters.value.stage.value = 'Junk'
+      api.call.mockResolvedValue(1)
+      const w = mountInbox()
+      await flushPromises()
+      await button(w, 'Mark all as read').trigger('click')
+      await flushPromises()
+      expect(api.call).toHaveBeenCalledWith(
+        'xbr_crm.api.inbox.mark_all_read',
+        expect.objectContaining({ status: 'Junk', needs_reply: 0, mine: 0 }),
+      )
+      expect(api.toast.success).toHaveBeenCalledWith('1 conversation marked as read')
+      expect(threads().reload).toHaveBeenCalled()
+    })
+
+    it('is disabled when nothing in the list waits', async () => {
+      const w = mountComponent(Inbox, { global: { stubs: STUBS } })
+      api.resources['xbr_crm.api.inbox.get_threads']._seed({
+        threads: [{ ...THREADS.threads[0], needs_reply: false, unread: 0 }],
+        total: 1,
+      })
+      await flushPromises()
+      expect(button(w, 'Mark all as read').attributes('disabled')).toBeDefined()
+    })
+
+    it('marks the open conversation', async () => {
+      api.route.query = { pipeline: 'PIPE-1' }
+      const w = mountInbox()
+      thread()._seed(THREAD())
+      await flushPromises()
+      await button(w, 'Mark as read').trigger('click')
+      await flushPromises()
+      expect(api.call).toHaveBeenCalledWith('xbr_crm.api.inbox.mark_read', {
+        deal: 'PIPE-1',
+      })
+    })
   })
 
   it('opens a conversation and keeps it in the URL', async () => {

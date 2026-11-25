@@ -4,6 +4,20 @@
     <template #left-header>
       <Breadcrumbs :items="[{ label: __('Inbox'), route: { name: 'Inbox' } }]" />
     </template>
+    <template #right-header>
+      <Button
+        :label="__('Mark all as read')"
+        icon-left="lucide-check-check"
+        :loading="markingAll"
+        :disabled="!unhandledCount"
+        :tooltip="
+          unhandledCount
+            ? __('Mark the {0} conversations in this list as read', [unhandledCount])
+            : __('Nothing to mark as read in this list')
+        "
+        @click="markAllRead"
+      />
+    </template>
   </LayoutHeader>
 
   <div class="crm-inbox" :class="{ 'is-thread-open': Boolean(selected) }">
@@ -178,6 +192,22 @@
             class="max-sm:!hidden"
             :status="deal.status"
             :label="__(deal.status)"
+          />
+          <Button
+            v-if="selectedThread?.needs_reply"
+            class="max-sm:!hidden"
+            :label="__('Mark as read')"
+            icon-left="lucide-check-check"
+            :loading="markingOne"
+            @click="markRead"
+          />
+          <Button
+            v-if="selectedThread?.needs_reply"
+            class="sm:!hidden"
+            icon="lucide-check-check"
+            :aria-label="__('Mark as read')"
+            :loading="markingOne"
+            @click="markRead"
           />
           <Button
             class="max-sm:!hidden"
@@ -417,6 +447,58 @@ const threads = createResource({
   auto: true,
 })
 const threadList = computed(() => threads.data?.threads || [])
+
+// ---- mark as read
+// Clears a conversation from "Needs reply" and the sidebar count until the
+// customer writes again (xbr_crm/api/inbox.py).
+const unhandledCount = computed(
+  () => threadList.value.filter((t) => t.needs_reply || t.unread).length,
+)
+const selectedThread = computed(() =>
+  threadList.value.find((t) => t.deal === selected.value),
+)
+const markingAll = ref(false)
+const markingOne = ref(false)
+
+function afterMarking() {
+  threads.reload()
+  needsReplyCount.reload()
+}
+
+async function markAllRead() {
+  markingAll.value = true
+  try {
+    const n = await call('xbr_crm.api.inbox.mark_all_read', {
+      search: search.value,
+      channel: channel.value,
+      status: stage.value,
+      needs_reply: filter.value === 'needs_reply' ? 1 : 0,
+      mine: filter.value === 'mine' ? 1 : 0,
+    })
+    toast.success(
+      n === 1
+        ? __('1 conversation marked as read')
+        : __('{0} conversations marked as read', [n || 0]),
+    )
+    afterMarking()
+  } catch (error) {
+    toast.error(formatError(error, __('Could not mark as read')))
+  } finally {
+    markingAll.value = false
+  }
+}
+
+async function markRead() {
+  markingOne.value = true
+  try {
+    await call('xbr_crm.api.inbox.mark_read', { deal: selected.value })
+    afterMarking()
+  } catch (error) {
+    toast.error(formatError(error, __('Could not mark as read')))
+  } finally {
+    markingOne.value = false
+  }
+}
 watch([search, filter, channel, stage], () => threads.reload())
 
 const emptyTitle = computed(() =>

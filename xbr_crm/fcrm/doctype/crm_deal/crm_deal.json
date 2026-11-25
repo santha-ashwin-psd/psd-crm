@@ -92,7 +92,8 @@
   "ai_summary",
   "ai_suggested_status",
   "ai_suggestion_reason",
-  "ai_suggestion_confidence"
+  "ai_suggestion_confidence",
+  "inbox_done_on"
  ],
  "fields": [
   {
@@ -596,12 +597,21 @@
    "label": "Confidence (%)",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "description": "When someone marked this conversation as read in the Inbox. Customer messages up to then no longer count as waiting for a reply.",
+   "fieldname": "inbox_done_on",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Inbox Marked Read On",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-11-23 18:00:00.000000",
+ "modified": "2026-11-25 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Deal",
