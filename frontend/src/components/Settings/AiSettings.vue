@@ -118,7 +118,7 @@
               {{
                 autoJunk
                   ? __(
-                      'New pipelines AI is sure are junk go to Junk on their own, with the lost reason filled in. Pipelines someone is already working on are never moved.',
+                      'Pipelines still in New that AI is sure are junk go to Junk on their own, with the lost reason filled in. Older pipelines are checked too, a few every few minutes. Pipelines someone is already working on are never moved.',
                     )
                   : __(
                       'Off: AI only suggests Junk, and a person clicks Move.',

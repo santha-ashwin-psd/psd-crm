@@ -411,7 +411,7 @@
   },
   {
    "default": "0",
-   "description": "New pipelines (still in an Open stage such as New) that AI is sure are junk are moved to Junk on their own, with the lost reason filled in. Off: AI only suggests and a person clicks Move.",
+   "description": "Pipelines still in an Open stage such as New, older ones included, that AI is sure are junk are moved to Junk on their own, with the lost reason filled in. Off: AI only suggests and a person clicks Move.",
    "fieldname": "ai_auto_junk",
    "fieldtype": "Check",
    "label": "Move junk automatically"

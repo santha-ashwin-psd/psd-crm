@@ -391,3 +391,33 @@ class TestAIPipeline(IntegrationTestCase):
 	def test_blank_threshold_uses_the_safe_default(self):
 		self.auto_junk(confidence=0)
 		self.assertEqual(ai.auto_junk_confidence(), ai.DEFAULT_AUTO_JUNK_CONFIDENCE)
+
+	def test_old_untouched_junk_is_moved_too(self):
+		self.ensure_junk()
+		self.auto_junk()  # "Include older pipelines" stays off
+		deal = self.make_old_pipeline("old.junk@example.com")
+		with patch(
+			"xbr_crm.ai.pipeline.chat_json",
+			side_effect=[answer("Junk", confidence=97, reason="A newsletter."), {"reason": "Newsletter"}],
+		), patch("frappe.db.commit"):
+			ai.sweep()
+		deal.reload()
+		self.assertEqual((deal.status, deal.lost_reason), ("Junk", "Newsletter"))
+		self.assertIn("Auto-moved", self.decisions(deal.name))
+
+	def test_old_pipeline_being_worked_on_is_not_read_for_junk(self):
+		self.auto_junk()
+		deal = self.make_old_pipeline("old.worked@example.com")
+		frappe.db.set_value("CRM Deal", deal.name, "status", stage_of_type("Ongoing"))
+		with patch("xbr_crm.ai.pipeline.chat_json") as model, patch("frappe.db.commit"):
+			ai.sweep()
+		model.assert_not_called()
+		self.assertFalse(frappe.db.get_value("CRM Deal", deal.name, "ai_controlled"))
+
+	def test_old_pipelines_are_not_read_with_both_switches_off(self):
+		self.auto_junk(False)
+		deal = self.make_old_pipeline("old.off@example.com")
+		with patch("xbr_crm.ai.pipeline.chat_json") as model, patch("frappe.db.commit"):
+			ai.sweep()
+		model.assert_not_called()
+		self.assertFalse(frappe.db.get_value("CRM Deal", deal.name, "ai_controlled"))

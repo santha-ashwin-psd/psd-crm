@@ -16,7 +16,8 @@
 AI does not move a pipeline itself: every new pipeline starts in the entry stage
 and a person accepts or dismisses each suggestion. The one exception, off by
 default, is Settings → "Move junk automatically": a pipeline still in an Open
-stage (New) that AI is very sure is junk goes to Junk on its own (auto_junk). Which pipelines are under AI
+stage (New) that AI is very sure is junk goes to Junk on its own (auto_junk),
+older pipelines included (sweep reads the untouched ones a few at a time). Which pipelines are under AI
 control: those created after AI was switched on, plus older ones once "Include
 older pipelines" is on.
 
@@ -484,8 +485,13 @@ def on_deal_update(deal):
 
 def sweep():
 	"""Every few minutes: move waiting junk suggestions when that's switched on,
-	retry postponed reviews, then bring a few older pipelines under AI control
-	when that's switched on."""
+	retry postponed reviews, then bring a few older pipelines under AI control.
+
+	Older pipelines (made before AI was switched on) are read when "Include
+	older pipelines" is on, any stage but Won/Lost; or, when only "Move junk
+	automatically" is on, those still in an Open stage (New), so old junk
+	nobody has touched is cleared too. Pipelines being worked on are left alone.
+	"""
 	if not is_enabled():
 		return
 	auto_junk_waiting()
@@ -494,16 +500,29 @@ def sweep():
 			return  # the model is unavailable; try again next run
 		frappe.db.commit()
 
-	settings = _settings()
-	if not settings.ai_include_existing:
+	if _settings().ai_include_existing:
+		older_stages = [s.name for s in stages() if s.type not in TERMINAL]
+	elif auto_junk_enabled():
+		older_stages = [s.name for s in stages() if s.type == "Open"]
+	else:
 		return
-	open_stages = [s.name for s in stages() if s.type not in TERMINAL]
+	_review_older(older_stages)
+
+
+# Older pipelines read per sweep run (every 5 minutes): ~120 an hour, well
+# inside a free AI tier's limits.
+OLDER_BATCH = 10
+
+
+def _review_older(stage_names: list[str]):
+	if not stage_names:
+		return
 	for name in frappe.get_all(
 		"CRM Deal",
-		filters={"ai_controlled": 0, "status": ["in", open_stages]},
+		filters={"ai_controlled": 0, "status": ["in", stage_names]},
 		pluck="name",
 		order_by="modified desc",
-		limit=5,
+		limit=OLDER_BATCH,
 	):
 		frappe.db.set_value("CRM Deal", name, "ai_controlled", 1, update_modified=False)
 		if review_deal(name) is None and conversation(name):
