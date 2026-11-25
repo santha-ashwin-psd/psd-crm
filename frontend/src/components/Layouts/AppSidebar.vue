@@ -111,7 +111,7 @@
           :afterUpgrade="() => capture('upgrade_plan_from_trial_banner')"
         />
         <GettingStartedBanner
-          v-if="!isOnboardingStepsCompleted"
+          v-if="!gettingStartedOff && !isOnboardingStepsCompleted"
           :isSidebarCollapsed="isSidebarCollapsed"
         />
       </div>
@@ -126,7 +126,7 @@
         </template>
       </SidebarLink>
       <SidebarLink
-        v-if="isOnboardingStepsCompleted"
+        v-if="!gettingStartedOff && isOnboardingStepsCompleted"
         :label="__('Help')"
         :isCollapsed="isSidebarCollapsed"
         @click="
@@ -147,7 +147,7 @@
     </div>
 
     <HelpModal
-      v-if="showHelpModal"
+      v-if="showHelpModal && !gettingStartedOff"
       v-model="showHelpModal"
       v-model:articles="articles"
       :logo="CRMLogo"
@@ -227,7 +227,16 @@ import {
 } from 'vue'
 
 const { getPinnedViews, getPublicViews } = viewsStore()
-const { brand } = getSettings()
+const { brand, _settings: crmSettings } = getSettings()
+
+// Settings → General → "Show Getting started". Off hides the sidebar card, its
+// checklist panel and the Help link for everyone.
+const gettingStartedOff = computed(() =>
+  Boolean(crmSettings.doc?.hide_getting_started),
+)
+watch(gettingStartedOff, (off) => {
+  if (off) showHelpModal.value = false
+})
 
 const settingsUsed = ref(false)
 watch(

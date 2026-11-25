@@ -203,6 +203,7 @@ describe('GeneralSettings', () => {
     it('covers the Leads switch, three automation switches and two timeline choices', () => {
       expect(mount(GeneralSettings).vm.rows.map((r) => r.field)).toEqual([
         'enable_leads',
+        'hide_getting_started',
         'update_timestamp_on_new_communication',
         'auto_mark_replied_on_response',
         'auto_reopen_on_new_communication',
@@ -232,6 +233,19 @@ describe('GeneralSettings', () => {
       for (const row of mount(GeneralSettings).vm.rows) {
         expect(row.description, row.field).toBeTruthy()
       }
+    })
+  })
+
+  describe('show Getting started', () => {
+    it('is on while nothing hides it, and saves "hide" when switched off', () => {
+      const wrapper = mount(GeneralSettings)
+      const row = wrapper.vm.rows.find((r) => r.field === 'hide_getting_started')
+      expect(row.invert).toBe(true)
+      expect(row.title).toBe('Show Getting started')
+      wrapper.vm.onToggle('hide_getting_started', true, false)
+      expect(api.fcrm.doc.hide_getting_started).toBe(true)
+      api.fcrm.save.submit.mock.calls.at(-1)[1].onSuccess()
+      expect(api.toast.success).toHaveBeenCalledWith('Setting disabled successfully')
     })
   })
 

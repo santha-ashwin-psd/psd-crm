@@ -35,9 +35,14 @@ vi.mock('@/stores/views', () => ({
   }),
 }))
 
-vi.mock('@/stores/settings', () => ({
-  getSettings: () => ({ brand: { name: 'Acme' } }),
-}))
+const crmSettings = vi.hoisted(() => ({ value: null }))
+vi.mock('@/stores/settings', async () => {
+  const { reactive } = await import('vue')
+  crmSettings.value = reactive({ doc: { hide_getting_started: 0 } })
+  return {
+    getSettings: () => ({ brand: { name: 'Acme' }, _settings: crmSettings.value }),
+  }
+})
 
 vi.mock('@/stores/notifications', async () => {
   const { ref } = await import('vue')
@@ -195,7 +200,19 @@ describe('AppSidebar', () => {
     api.showSettings.value = false
     api.activeSettingsPage.value = ''
     api.showChangePasswordModal.value = false
+    crmSettings.value.doc.hide_getting_started = 0
     localStorage.clear()
+  })
+
+  describe('Getting started', () => {
+    it('shows the sidebar card while steps are left', () => {
+      expect(mount().findComponent({ name: 'S2' }).exists()).toBe(true)
+    })
+
+    it('hides the card when Settings turns it off', () => {
+      crmSettings.value.doc.hide_getting_started = 1
+      expect(mount().findComponent({ name: 'S2' }).exists()).toBe(false)
+    })
   })
 
   describe('the links it shows', () => {

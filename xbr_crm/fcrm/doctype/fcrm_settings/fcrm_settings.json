@@ -8,6 +8,7 @@
   "defaults_tab",
   "restore_defaults",
   "enable_leads",
+  "hide_getting_started",
   "enable_forecasting",
   "enable_sales_hierarchy",
   "auto_update_expected_deal_value",
@@ -118,6 +119,13 @@
    "fieldname": "enable_leads",
    "fieldtype": "Check",
    "label": "Enable Leads"
+  },
+  {
+   "default": "0",
+   "description": "Hide the Getting started card in the sidebar, its checklist panel and the Help link, for everyone.",
+   "fieldname": "hide_getting_started",
+   "fieldtype": "Check",
+   "label": "Hide Getting started"
   },
   {
    "default": "0",
@@ -481,7 +489,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-11-25 12:00:00.000000",
+ "modified": "2026-11-25 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "FCRM Settings",

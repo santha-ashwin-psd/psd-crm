@@ -1,7 +1,5 @@
 <template>
-  <SettingsLayoutBase
-    :title="__('General Settings')"
-  >
+  <SettingsLayoutBase :title="__('General Settings')">
     <template #title>
       <div class="flex items-center gap-3.5">
         <span
@@ -39,9 +37,15 @@
           <div class="shrink-0">
             <Switch
               v-if="row.type === 'switch'"
-              :modelValue="Boolean(settings.doc?.[row.field])"
+              :modelValue="
+                row.invert
+                  ? !settings.doc?.[row.field]
+                  : Boolean(settings.doc?.[row.field])
+              "
               size="sm"
-              @update:modelValue="(val) => onToggle(row.field, val)"
+              @update:modelValue="
+                (val) => onToggle(row.field, row.invert ? !val : val, val)
+              "
             />
             <FormControl
               v-else
@@ -67,6 +71,7 @@ import LucideMail from '~icons/lucide/mail'
 import LucideCalendarClock from '~icons/lucide/calendar-clock'
 import LucideArrowUpDown from '~icons/lucide/arrow-up-down'
 import LucideUserPlus from '~icons/lucide/user-plus'
+import LucideSparkles from '~icons/lucide/sparkles'
 import { getSettings } from '@/stores/settings'
 import { isLeadsEnabled } from '@/utils/leads'
 import { FormControl, Switch, FeatherIcon, toast } from 'frappe-ui'
@@ -94,6 +99,17 @@ const rows = [
     title: __('Enable Leads'),
     description: __(
       'Show Leads across the CRM. When off, Leads are hidden everywhere and cannot be created or edited; existing lead data is kept.',
+    ),
+  },
+  {
+    // Stored as "hide" so sites that never set it keep showing it.
+    field: 'hide_getting_started',
+    invert: true,
+    type: 'switch',
+    icon: markRaw(LucideSparkles),
+    title: __('Show Getting started'),
+    description: __(
+      'The Getting started card in the sidebar, its checklist and the Help link. Turn off to hide them for everyone.',
     ),
   },
   {
@@ -163,18 +179,20 @@ const rows = [
   },
 ]
 
-function onToggle(field, val) {
+// `shown` is what the switch shows (differs from `val` for inverted rows).
+function onToggle(field, val, shown = val) {
   settings.doc[field] = val
   settings.save.submit(null, {
     onSuccess: () => {
       toast.success(
-        val
+        shown
           ? __('Setting enabled successfully')
           : __('Setting disabled successfully'),
       )
       // Navigation, menus and routes are all built from this flag; reload so
       // every part of the app picks up the change at once.
-      if (field === 'enable_leads') setTimeout(() => window.location.reload(), 600)
+      if (field === 'enable_leads')
+        setTimeout(() => window.location.reload(), 600)
     },
   })
 }
