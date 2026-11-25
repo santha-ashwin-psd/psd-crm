@@ -64,6 +64,32 @@ describe('AiSettings', () => {
     expect(api.doc.ai_enabled).toBe(0)
   })
 
+  describe('move junk automatically', () => {
+    it('is off by default, with no threshold shown', () => {
+      const w = mountPage({ ai_enabled: 1 })
+      expect(w.vm.autoJunk).toBe(false)
+      expect(w.text()).toContain('Move junk automatically')
+      expect(w.text()).not.toContain('Move junk at confidence')
+    })
+
+    it('switching on sets the field and starts at 90% when blank', async () => {
+      const w = mountPage({ ai_enabled: 1, ai_auto_junk_confidence: 0 })
+      w.vm.autoJunk = true
+      await w.vm.$nextTick()
+      expect(api.doc.ai_auto_junk).toBe(1)
+      expect(api.doc.ai_auto_junk_confidence).toBe(90)
+      expect(w.text()).toContain('Move junk at confidence')
+    })
+
+    it('keeps a threshold that was already set', () => {
+      const w = mountPage({ ai_enabled: 1, ai_auto_junk_confidence: 95 })
+      w.vm.autoJunk = true
+      expect(api.doc.ai_auto_junk_confidence).toBe(95)
+      w.vm.autoJunk = false
+      expect(api.doc.ai_auto_junk).toBe(0)
+    })
+  })
+
   it('keeps older pipelines out by default', () => {
     expect(mountPage().vm.includeExisting).toBe(false)
   })

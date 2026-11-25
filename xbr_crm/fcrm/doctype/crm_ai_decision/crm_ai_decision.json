@@ -36,7 +36,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action",
-   "options": "Set stage\nSuggested\nAccepted\nDismissed\nSkipped\nNo change\nTagged"
+   "options": "Set stage\nSuggested\nAccepted\nAuto-moved\nDismissed\nSkipped\nNo change\nTagged"
   },
   {
    "fieldname": "decided_by",
@@ -108,7 +108,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-31 10:00:00.000000",
+ "modified": "2026-11-25 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM AI Decision",

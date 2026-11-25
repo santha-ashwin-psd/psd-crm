@@ -13,8 +13,10 @@
       -> on_message queues review_deal, which re-reads the WHOLE conversation
          and suggests a stage (Accept / Dismiss on the pipeline page)
 
-AI never moves a pipeline itself: every new pipeline starts in the entry stage
-and a person accepts or dismisses each suggestion. Which pipelines are under AI
+AI does not move a pipeline itself: every new pipeline starts in the entry stage
+and a person accepts or dismisses each suggestion. The one exception, off by
+default, is Settings → "Move junk automatically": a pipeline still in an Open
+stage (New) that AI is very sure is junk goes to Junk on its own (auto_junk). Which pipelines are under AI
 control: those created after AI was switched on, plus older ones once "Include
 older pipelines" is on.
 
@@ -332,6 +334,7 @@ def after_new_pipeline(deal):
 		return
 	if deal.ai_suggested_status:
 		log(deal.name, "Suggested", decision, from_status=deal.status)
+		try_auto_junk(deal.name)
 	else:
 		log(deal.name, "No change", decision, from_status=deal.status)
 
@@ -419,6 +422,7 @@ def review_deal(deal: str, raise_errors: bool = False) -> dict | None:
 			log(doc.name, "Suggested", decision, from_status=doc.status, **ref)
 		_set_suggestion_fields(fields, decision)
 		_save_ai_fields(doc, **fields)
+		try_auto_junk(doc.name)
 	else:
 		# The current stage still fits (or AI isn't sure): nothing to suggest.
 		if doc.ai_suggested_status:
@@ -479,10 +483,12 @@ def on_deal_update(deal):
 
 
 def sweep():
-	"""Every few minutes: retry postponed reviews, then bring a few older
-	pipelines under AI control when that's switched on."""
+	"""Every few minutes: move waiting junk suggestions when that's switched on,
+	retry postponed reviews, then bring a few older pipelines under AI control
+	when that's switched on."""
 	if not is_enabled():
 		return
+	auto_junk_waiting()
 	for name in frappe.get_all("CRM Deal", filters={"ai_review_pending": 1}, pluck="name", limit=10):
 		if review_deal(name) is None and frappe.db.get_value("CRM Deal", name, "ai_review_pending"):
 			return  # the model is unavailable; try again next run
@@ -592,13 +598,112 @@ def accept_suggestion(deal: str):
 	if stage_type(stage) != "Lost" or needs_manual_reason(stage):
 		frappe.throw(_("This stage needs to be set on the pipeline page."))
 
+	_close(doc, stage)
+	doc.save()
+	return {"status": doc.status, "lost_reason": doc.lost_reason}
+
+
+def _close(doc, stage: str):
+	"""Set a closing stage with its lost reason (AI's pick) and AI's reason as
+	the notes. The caller saves."""
 	why = doc.ai_suggestion_reason
 	doc.status = stage
 	doc.lost_reason = pick_lost_reason(stage, why)
 	if why and not doc.lost_notes:
 		doc.lost_notes = why
-	doc.save()
-	return {"status": doc.status, "lost_reason": doc.lost_reason}
+
+
+# ---------------------------------------------------------------- automatic junk
+
+# Settings → AI Assistant → "Move junk automatically". Off by default: AI then
+# only suggests, and a person clicks Move.
+DEFAULT_AUTO_JUNK_CONFIDENCE = 90
+# How many waiting suggestions one sweep run settles.
+AUTO_JUNK_BATCH = 20
+
+
+def auto_junk_enabled() -> bool:
+	return bool(_settings().get("ai_auto_junk"))
+
+
+def auto_junk_confidence() -> int:
+	return cint(_settings().get("ai_auto_junk_confidence")) or DEFAULT_AUTO_JUNK_CONFIDENCE
+
+
+def closes_in_one_click(stage: str | None) -> bool:
+	"""A closing stage AI may fill the reason for: Junk, Archive; not Lost."""
+	return bool(stage) and stage_type(stage) == "Lost" and not needs_manual_reason(stage)
+
+
+def auto_junk(deal: str) -> bool:
+	"""Move a pipeline to the junk stage AI suggested, when Settings allow it.
+
+	Only when the switch is on, the pipeline is still in an Open stage (New: no
+	one has worked on it yet), the suggested stage closes without a person's
+	reason (Junk, not Lost), and AI is at least as sure as the setting asks.
+	Returns whether the pipeline was moved.
+	"""
+	if not auto_junk_enabled():
+		return False
+	doc = frappe.get_doc("CRM Deal", deal)
+	stage = doc.ai_suggested_status
+	if not closes_in_one_click(stage) or stage == doc.status:
+		return False
+	if stage_type(doc.status) != "Open":
+		return False
+	if cint(doc.ai_suggestion_confidence) < auto_junk_confidence():
+		return False
+
+	decision = {
+		"stage": stage,
+		"reason": doc.ai_suggestion_reason,
+		"confidence": doc.ai_suggestion_confidence,
+		"decided_by": "AI",
+	}
+	from_status = doc.status
+	_close(doc, stage)
+	_clear_suggestion(doc)
+	# Not a person's choice: on_deal_validate must not log it as "Accepted".
+	doc.flags.ai_change = True
+	# No value or close date on a new inquiry; forecasting's checks don't apply.
+	doc.flags.from_inquiry = True
+	doc.save(ignore_permissions=True)
+	log(doc.name, "Auto-moved", decision, from_status=from_status)
+	return True
+
+
+def try_auto_junk(deal: str) -> bool:
+	"""auto_junk that never raises: a pipeline that can't be moved keeps its
+	suggestion for a person to act on."""
+	try:
+		return auto_junk(deal)
+	except Exception:
+		frappe.log_error(title=f"AI: {deal} not moved to junk automatically")
+		return False
+
+
+def auto_junk_waiting():
+	"""Settle junk suggestions already waiting, e.g. those made before the switch
+	was turned on. A few per run (see sweep)."""
+	if not auto_junk_enabled():
+		return
+	junk = [s.name for s in stages() if closes_in_one_click(s.name)]
+	open_stages = [s.name for s in stages() if s.type == "Open"]
+	if not junk or not open_stages:
+		return
+	for name in frappe.get_all(
+		"CRM Deal",
+		filters={
+			"ai_suggested_status": ["in", junk],
+			"status": ["in", open_stages],
+			"ai_suggestion_confidence": [">=", auto_junk_confidence()],
+		},
+		pluck="name",
+		order_by="modified desc",
+		limit=AUTO_JUNK_BATCH,
+	):
+		if try_auto_junk(name):
+			frappe.db.commit()
 
 
 @frappe.whitelist()

@@ -984,6 +984,7 @@ function aiVerb(activity) {
     'Set stage': __('moved this pipeline to'),
     Suggested: __('suggested moving to'),
     Accepted: __('accepted the AI suggestion'),
+    'Auto-moved': __('automatically moved this pipeline to'),
     Dismissed: __('dismissed the AI suggestion'),
     Tagged: __('tagged this pipeline'),
   }[activity.data.action]

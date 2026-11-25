@@ -323,3 +323,71 @@ class TestAIPipeline(IntegrationTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			ai.accept_suggestion(deal)
 		self.assertNotEqual(frappe.db.get_value("CRM Deal", deal, "status"), ai.MANUAL_REASON_STAGE)
+
+	# ------------------------------------------------------------ automatic junk
+
+	def auto_junk(self, on=True, confidence=90):
+		frappe.db.set_single_value("FCRM Settings", {"ai_auto_junk": int(on), "ai_auto_junk_confidence": confidence})
+		frappe.clear_document_cache("FCRM Settings", "FCRM Settings")
+
+	def ensure_junk(self):
+		if not frappe.db.exists("CRM Deal Status", "Junk"):
+			frappe.get_doc({"doctype": "CRM Deal Status", "deal_status": "Junk", "type": "Lost"}).insert()
+
+	def test_auto_junk_off_leaves_the_suggestion(self):
+		self.auto_junk(False)
+		deal = self.suggested_close("auto.off@example.com", "Junk")
+		self.assertFalse(ai.auto_junk(deal))
+		self.assertEqual(frappe.db.get_value("CRM Deal", deal, ["status", "ai_suggested_status"]), (self.entry, "Junk"))
+
+	def test_review_suggesting_junk_moves_a_new_pipeline(self):
+		self.ensure_junk()
+		self.auto_junk()
+		deal = self.make_ai_pipeline("auto.review@example.com")
+		with patch(
+			"xbr_crm.ai.pipeline.chat_json",
+			side_effect=[answer("Junk", confidence=96, reason="Automated tender alerts."), {"reason": "Automated Alert"}],
+		):
+			self.receive("auto.review@example.com", "Tenders", "Your daily tender alert.")
+		deal.reload()
+		self.assertEqual(deal.status, "Junk")
+		self.assertEqual(deal.lost_reason, "Automated Alert")
+		self.assertEqual(deal.lost_notes, "Automated tender alerts.")
+		self.assertFalse(deal.ai_suggested_status)
+		actions = self.decisions(deal.name)
+		self.assertIn("Auto-moved", actions)
+		self.assertNotIn("Accepted", actions)
+		auto = frappe.get_all("CRM AI Decision", {"deal": deal.name, "action": "Auto-moved"}, ["decided_by", "from_status", "to_status"])[0]
+		self.assertEqual((auto.decided_by, auto.from_status, auto.to_status), ("AI", self.entry, "Junk"))
+
+	def test_less_sure_than_the_setting_stays_a_suggestion(self):
+		self.auto_junk(confidence=97)
+		deal = self.suggested_close("auto.unsure@example.com", "Junk")  # 95% sure
+		self.assertFalse(ai.auto_junk(deal))
+		self.assertEqual(frappe.db.get_value("CRM Deal", deal, "status"), self.entry)
+
+	def test_lost_is_never_automatic(self):
+		self.auto_junk()
+		deal = self.suggested_close("auto.lost@example.com", ai.MANUAL_REASON_STAGE)
+		self.assertFalse(ai.auto_junk(deal))
+		self.assertEqual(frappe.db.get_value("CRM Deal", deal, "status"), self.entry)
+
+	def test_a_pipeline_being_worked_on_is_never_moved(self):
+		self.auto_junk()
+		deal = self.suggested_close("auto.worked@example.com", "Junk")
+		ongoing = stage_of_type("Ongoing")
+		frappe.db.set_value("CRM Deal", deal, "status", ongoing)
+		self.assertFalse(ai.auto_junk(deal))
+		self.assertEqual(frappe.db.get_value("CRM Deal", deal, "status"), ongoing)
+
+	def test_waiting_suggestions_are_moved_once_switched_on(self):
+		self.auto_junk(False)
+		deal = self.suggested_close("auto.waiting@example.com", "Junk")
+		self.auto_junk()
+		with patch("xbr_crm.ai.pipeline.chat_json", side_effect=AIUnavailable("down")), patch("frappe.db.commit"):
+			ai.sweep()
+		self.assertEqual(frappe.db.get_value("CRM Deal", deal, ["status", "lost_reason"]), ("Junk", "Junk"))
+
+	def test_blank_threshold_uses_the_safe_default(self):
+		self.auto_junk(confidence=0)
+		self.assertEqual(ai.auto_junk_confidence(), ai.DEFAULT_AUTO_JUNK_CONFIDENCE)

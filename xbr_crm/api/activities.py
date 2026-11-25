@@ -572,7 +572,7 @@ def get_ai_activities(deal: str) -> list:
 		}
 		for d in frappe.get_all(
 			"CRM AI Decision",
-			filters={"deal": deal, "action": ["in", ["Set stage", "Suggested", "Accepted", "Dismissed", "Tagged"]]},
+			filters={"deal": deal, "action": ["in", ["Set stage", "Suggested", "Accepted", "Auto-moved", "Dismissed", "Tagged"]]},
 			fields=["name", "creation", "owner", "user", "action", "decided_by", "from_status", "to_status", "tags", "confidence", "reason"],
 		)
 	]

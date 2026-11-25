@@ -52,6 +52,8 @@
   "ai_enabled_on",
   "ai_include_existing",
   "ai_min_confidence",
+  "ai_auto_junk",
+  "ai_auto_junk_confidence",
   "ai_connection_section",
   "ai_base_url",
   "ai_model",
@@ -408,6 +410,21 @@
    "label": "Minimum confidence (%)"
   },
   {
+   "default": "0",
+   "description": "New pipelines (still in an Open stage such as New) that AI is sure are junk are moved to Junk on their own, with the lost reason filled in. Off: AI only suggests and a person clicks Move.",
+   "fieldname": "ai_auto_junk",
+   "fieldtype": "Check",
+   "label": "Move junk automatically"
+  },
+  {
+   "default": "90",
+   "depends_on": "eval:doc.ai_auto_junk",
+   "description": "Only move a pipeline to Junk on its own when AI is at least this sure. Less certain junk stays a suggestion.",
+   "fieldname": "ai_auto_junk_confidence",
+   "fieldtype": "Int",
+   "label": "Move junk at confidence (%)"
+  },
+  {
    "fieldname": "ai_connection_section",
    "fieldtype": "Section Break",
    "label": "Connection"
@@ -454,7 +471,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-11-23 18:00:00.000000",
+ "modified": "2026-11-25 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "FCRM Settings",

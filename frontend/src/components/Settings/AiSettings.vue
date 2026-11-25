@@ -106,6 +106,65 @@
           />
         </div>
 
+        <div class="crm-settings-row" :class="{ 'opacity-60': !enabled }">
+          <span class="crm-settings-row-icon"
+            ><LucideTrash class="size-5"
+          /></span>
+          <div class="min-w-0 flex-1">
+            <div class="text-base font-semibold text-ink-gray-9">
+              {{ __('Move junk automatically') }}
+            </div>
+            <div class="mt-0.5 text-sm leading-relaxed text-ink-gray-6">
+              {{
+                autoJunk
+                  ? __(
+                      'New pipelines AI is sure are junk go to Junk on their own, with the lost reason filled in. Pipelines someone is already working on are never moved.',
+                    )
+                  : __(
+                      'Off: AI only suggests Junk, and a person clicks Move.',
+                    )
+              }}
+            </div>
+          </div>
+          <Switch
+            v-model="autoJunk"
+            :disabled="!enabled"
+            :aria-label="__('Move junk automatically')"
+            class="shrink-0"
+          />
+        </div>
+
+        <div
+          v-if="autoJunk"
+          class="crm-settings-row"
+          :class="{ 'opacity-60': !enabled }"
+        >
+          <span class="crm-settings-row-icon"
+            ><LucideGauge class="size-5"
+          /></span>
+          <div class="min-w-0 flex-1">
+            <div class="text-base font-semibold text-ink-gray-9">
+              {{ __('Move junk at confidence (%)') }}
+            </div>
+            <div class="mt-0.5 text-sm leading-relaxed text-ink-gray-6">
+              {{
+                __(
+                  'Only move on its own when AI is at least this sure. Less certain junk stays a suggestion.',
+                )
+              }}
+            </div>
+          </div>
+          <FormControl
+            v-model.number="settings.doc.ai_auto_junk_confidence"
+            type="number"
+            min="1"
+            max="100"
+            :disabled="!enabled"
+            :aria-label="__('Move junk at confidence (%)')"
+            class="!w-24 shrink-0"
+          />
+        </div>
+
         <section class="flex flex-col gap-3 pt-2">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -230,6 +289,7 @@ import Link from '@/components/Controls/Link.vue'
 import LucideSparkles from '~icons/lucide/sparkles'
 import LucideHistory from '~icons/lucide/history'
 import LucideGauge from '~icons/lucide/gauge'
+import LucideTrash from '~icons/lucide/trash-2'
 import { getSettings } from '@/stores/settings'
 import { formatError } from '@/utils/formatError'
 import { formatDate } from '@/utils'
@@ -257,6 +317,17 @@ const enabled = computed({
 const includeExisting = computed({
   get: () => Boolean(settings.doc?.ai_include_existing),
   set: (value) => (settings.doc.ai_include_existing = value ? 1 : 0),
+})
+
+const autoJunk = computed({
+  get: () => Boolean(settings.doc?.ai_auto_junk),
+  set: (value) => {
+    settings.doc.ai_auto_junk = value ? 1 : 0
+    // A blank threshold would mean "any confidence"; start from the safe default.
+    if (value && !settings.doc.ai_auto_junk_confidence) {
+      settings.doc.ai_auto_junk_confidence = 90
+    }
+  },
 })
 
 const rules = computed(() => settings.doc?.ai_rules || [])
