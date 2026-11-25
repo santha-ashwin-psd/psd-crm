@@ -81,6 +81,23 @@ describe('AiSettings', () => {
       expect(w.text()).toContain('Move junk at confidence')
     })
 
+    it('shows the wait, 12 hours by default', async () => {
+      const w = mountPage({ ai_enabled: 1, ai_auto_junk_confidence: 90 })
+      w.vm.autoJunk = true
+      await w.vm.$nextTick()
+      expect(api.doc.ai_auto_junk_after_hours).toBe(12)
+      expect(w.text()).toContain('Wait before moving (hours)')
+      expect(w.text()).toContain('moved once it is 12 hours old')
+    })
+
+    it('keeps a wait of 0 and says it moves straight away', async () => {
+      const w = mountPage({ ai_enabled: 1, ai_auto_junk: 1, ai_auto_junk_after_hours: 0 })
+      w.vm.autoJunk = true
+      await w.vm.$nextTick()
+      expect(api.doc.ai_auto_junk_after_hours).toBe(0)
+      expect(w.text()).toContain('Moved as soon as AI suggests Junk.')
+    })
+
     it('keeps a threshold that was already set', () => {
       const w = mountPage({ ai_enabled: 1, ai_auto_junk_confidence: 95 })
       w.vm.autoJunk = true

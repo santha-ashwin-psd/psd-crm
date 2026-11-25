@@ -54,6 +54,7 @@
   "ai_min_confidence",
   "ai_auto_junk",
   "ai_auto_junk_confidence",
+  "ai_auto_junk_after_hours",
   "ai_connection_section",
   "ai_base_url",
   "ai_model",
@@ -425,6 +426,15 @@
    "label": "Move junk at confidence (%)"
   },
   {
+   "default": "12",
+   "depends_on": "eval:doc.ai_auto_junk",
+   "description": "A new pipeline is only moved once it is at least this old, so someone can still look at it and dismiss the suggestion. 0 moves it as soon as AI suggests Junk.",
+   "fieldname": "ai_auto_junk_after_hours",
+   "fieldtype": "Int",
+   "label": "Wait before moving (hours)",
+   "non_negative": 1
+  },
+  {
    "fieldname": "ai_connection_section",
    "fieldtype": "Section Break",
    "label": "Connection"
@@ -471,7 +481,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-11-25 10:00:00.000000",
+ "modified": "2026-11-25 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "FCRM Settings",

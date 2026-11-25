@@ -16,8 +16,9 @@
 AI does not move a pipeline itself: every new pipeline starts in the entry stage
 and a person accepts or dismisses each suggestion. The one exception, off by
 default, is Settings → "Move junk automatically": a pipeline still in an Open
-stage (New) that AI is very sure is junk goes to Junk on its own (auto_junk),
-older pipelines included (sweep reads the untouched ones a few at a time). Which pipelines are under AI
+stage (New) that AI is very sure is junk goes to Junk on its own (auto_junk)
+once it is 12 hours old (adjustable), older pipelines included (sweep reads the
+untouched ones a few at a time). Which pipelines are under AI
 control: those created after AI was switched on, plus older ones once "Include
 older pipelines" is on.
 
@@ -34,7 +35,7 @@ import re
 
 import frappe
 from frappe import _
-from frappe.utils import cint, get_datetime, now_datetime
+from frappe.utils import add_to_date, cint, get_datetime, now_datetime
 
 from xbr_crm.ai.client import AIUnavailable, api_key, chat_json, model_name
 
@@ -649,6 +650,21 @@ def auto_junk_confidence() -> int:
 	return cint(_settings().get("ai_auto_junk_confidence")) or DEFAULT_AUTO_JUNK_CONFIDENCE
 
 
+DEFAULT_AUTO_JUNK_AFTER_HOURS = 12
+
+
+def auto_junk_after_hours() -> int:
+	"""How old a pipeline must be before it is moved on its own. 0 is allowed
+	("straight away"); never stored (None) means the default."""
+	value = _settings().get("ai_auto_junk_after_hours")
+	return DEFAULT_AUTO_JUNK_AFTER_HOURS if value is None else max(cint(value), 0)
+
+
+def auto_junk_cutoff():
+	"""Pipelines created at or before this are old enough to move."""
+	return add_to_date(now_datetime(), hours=-auto_junk_after_hours())
+
+
 def closes_in_one_click(stage: str | None) -> bool:
 	"""A closing stage AI may fill the reason for: Junk, Archive; not Lost."""
 	return bool(stage) and stage_type(stage) == "Lost" and not needs_manual_reason(stage)
@@ -659,8 +675,9 @@ def auto_junk(deal: str) -> bool:
 
 	Only when the switch is on, the pipeline is still in an Open stage (New: no
 	one has worked on it yet), the suggested stage closes without a person's
-	reason (Junk, not Lost), and AI is at least as sure as the setting asks.
-	Returns whether the pipeline was moved.
+	reason (Junk, not Lost), AI is at least as sure as the setting asks, and the
+	pipeline is older than the wait setting (12 hours by default), so someone
+	can still look at it and dismiss the suggestion. Returns whether it moved.
 	"""
 	if not auto_junk_enabled():
 		return False
@@ -671,6 +688,9 @@ def auto_junk(deal: str) -> bool:
 	if stage_type(doc.status) != "Open":
 		return False
 	if cint(doc.ai_suggestion_confidence) < auto_junk_confidence():
+		return False
+	# Give people time to see it first; the sweep moves it once it's old enough.
+	if get_datetime(doc.creation) > auto_junk_cutoff():
 		return False
 
 	decision = {
@@ -702,8 +722,9 @@ def try_auto_junk(deal: str) -> bool:
 
 
 def auto_junk_waiting():
-	"""Settle junk suggestions already waiting, e.g. those made before the switch
-	was turned on. A few per run (see sweep)."""
+	"""Settle junk suggestions that are waiting: those on pipelines that have now
+	passed the wait, and those made before the switch was turned on. A few per
+	run (see sweep)."""
 	if not auto_junk_enabled():
 		return
 	junk = [s.name for s in stages() if closes_in_one_click(s.name)]
@@ -716,6 +737,7 @@ def auto_junk_waiting():
 			"ai_suggested_status": ["in", junk],
 			"status": ["in", open_stages],
 			"ai_suggestion_confidence": [">=", auto_junk_confidence()],
+			"creation": ["<=", auto_junk_cutoff()],
 		},
 		pluck="name",
 		order_by="modified desc",

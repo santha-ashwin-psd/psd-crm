@@ -118,7 +118,7 @@
               {{
                 autoJunk
                   ? __(
-                      'Pipelines still in New that AI is sure are junk go to Junk on their own, with the lost reason filled in. Older pipelines are checked too, a few every few minutes. Pipelines someone is already working on are never moved.',
+                      'Pipelines still in New that AI is sure are junk go to Junk on their own, after the wait below, with the lost reason filled in. Older pipelines are checked too, a few every few minutes. Pipelines someone is already working on are never moved.',
                     )
                   : __(
                       'Off: AI only suggests Junk, and a person clicks Move.',
@@ -161,6 +161,40 @@
             max="100"
             :disabled="!enabled"
             :aria-label="__('Move junk at confidence (%)')"
+            class="!w-24 shrink-0"
+          />
+        </div>
+
+        <div
+          v-if="autoJunk"
+          class="crm-settings-row"
+          :class="{ 'opacity-60': !enabled }"
+        >
+          <span class="crm-settings-row-icon"
+            ><LucideHourglass class="size-5"
+          /></span>
+          <div class="min-w-0 flex-1">
+            <div class="text-base font-semibold text-ink-gray-9">
+              {{ __('Wait before moving (hours)') }}
+            </div>
+            <div class="mt-0.5 text-sm leading-relaxed text-ink-gray-6">
+              {{
+                waitHours > 0
+                  ? __(
+                      'A new pipeline is moved once it is {0} hours old. Until then the Junk suggestion shows, so someone can still dismiss it.',
+                      [waitHours],
+                    )
+                  : __('Moved as soon as AI suggests Junk.')
+              }}
+            </div>
+          </div>
+          <FormControl
+            v-model.number="settings.doc.ai_auto_junk_after_hours"
+            type="number"
+            min="0"
+            max="720"
+            :disabled="!enabled"
+            :aria-label="__('Wait before moving (hours)')"
             class="!w-24 shrink-0"
           />
         </div>
@@ -290,6 +324,7 @@ import LucideSparkles from '~icons/lucide/sparkles'
 import LucideHistory from '~icons/lucide/history'
 import LucideGauge from '~icons/lucide/gauge'
 import LucideTrash from '~icons/lucide/trash-2'
+import LucideHourglass from '~icons/lucide/hourglass'
 import { getSettings } from '@/stores/settings'
 import { formatError } from '@/utils/formatError'
 import { formatDate } from '@/utils'
@@ -323,12 +358,21 @@ const autoJunk = computed({
   get: () => Boolean(settings.doc?.ai_auto_junk),
   set: (value) => {
     settings.doc.ai_auto_junk = value ? 1 : 0
-    // A blank threshold would mean "any confidence"; start from the safe default.
+    // A blank threshold would mean "any confidence", and a blank wait "move
+    // straight away"; start from the safe defaults.
     if (value && !settings.doc.ai_auto_junk_confidence) {
       settings.doc.ai_auto_junk_confidence = 90
     }
+    if (value && settings.doc.ai_auto_junk_after_hours == null) {
+      settings.doc.ai_auto_junk_after_hours = 12
+    }
   },
 })
+
+// Shown in the wait row's help text; blank or negative reads as 0.
+const waitHours = computed(() =>
+  Math.max(Number(settings.doc?.ai_auto_junk_after_hours) || 0, 0),
+)
 
 const rules = computed(() => settings.doc?.ai_rules || [])
 

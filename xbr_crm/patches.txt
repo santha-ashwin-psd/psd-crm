@@ -45,3 +45,4 @@ xbr_crm.patches.v1_1.rename_organization_to_institution
 xbr_crm.patches.v1_1.ai_assistant
 xbr_crm.patches.v1_1.desk_user_role
 xbr_crm.patches.v1_1.interested_stage
+xbr_crm.patches.v1_1.ai_auto_junk_defaults

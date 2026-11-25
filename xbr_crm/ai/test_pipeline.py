@@ -326,8 +326,11 @@ class TestAIPipeline(IntegrationTestCase):
 
 	# ------------------------------------------------------------ automatic junk
 
-	def auto_junk(self, on=True, confidence=90):
-		frappe.db.set_single_value("FCRM Settings", {"ai_auto_junk": int(on), "ai_auto_junk_confidence": confidence})
+	def auto_junk(self, on=True, confidence=90, hours=0):
+		frappe.db.set_single_value(
+			"FCRM Settings",
+			{"ai_auto_junk": int(on), "ai_auto_junk_confidence": confidence, "ai_auto_junk_after_hours": hours},
+		)
 		frappe.clear_document_cache("FCRM Settings", "FCRM Settings")
 
 	def ensure_junk(self):
@@ -421,3 +424,37 @@ class TestAIPipeline(IntegrationTestCase):
 			ai.sweep()
 		model.assert_not_called()
 		self.assertFalse(frappe.db.get_value("CRM Deal", deal.name, "ai_controlled"))
+
+	# ------------------------------------------------------------ the wait
+
+	def test_a_new_pipeline_waits_before_it_is_moved(self):
+		self.auto_junk(hours=12)
+		deal = self.suggested_close("wait.young@example.com", "Junk")
+		self.assertFalse(ai.auto_junk(deal))
+		with patch("frappe.db.commit"):
+			ai.sweep()
+		self.assertEqual(frappe.db.get_value("CRM Deal", deal, ["status", "ai_suggested_status"]), (self.entry, "Junk"))
+
+	def test_moved_by_the_sweep_once_the_wait_is_over(self):
+		self.auto_junk(hours=12)
+		deal = self.suggested_close("wait.over@example.com", "Junk")
+		frappe.db.set_value("CRM Deal", deal, "creation", add_to_date(now_datetime(), hours=-13))
+		with patch("xbr_crm.ai.pipeline.chat_json", side_effect=AIUnavailable("down")), patch("frappe.db.commit"):
+			ai.sweep()
+		self.assertEqual(frappe.db.get_value("CRM Deal", deal, "status"), "Junk")
+
+	def test_dismissed_during_the_wait_is_never_moved(self):
+		self.auto_junk(hours=12)
+		deal = self.suggested_close("wait.dismissed@example.com", "Junk")
+		ai.dismiss_suggestion(deal)
+		frappe.db.set_value("CRM Deal", deal, "creation", add_to_date(now_datetime(), hours=-13))
+		with patch("xbr_crm.ai.pipeline.chat_json", side_effect=AIUnavailable("down")), patch("frappe.db.commit"):
+			ai.sweep()
+		self.assertEqual(frappe.db.get_value("CRM Deal", deal, "status"), self.entry)
+
+	def test_wait_settings_default_and_zero(self):
+		frappe.db.delete("Singles", {"doctype": "FCRM Settings", "field": "ai_auto_junk_after_hours"})
+		frappe.clear_document_cache("FCRM Settings", "FCRM Settings")
+		self.assertEqual(ai.auto_junk_after_hours(), 12)
+		self.auto_junk(hours=0)
+		self.assertEqual(ai.auto_junk_after_hours(), 0)
