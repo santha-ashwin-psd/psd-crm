@@ -52,6 +52,18 @@ class CRMCallLog(Document):
 			self.id = generate_hash(length=12)
 		if not self.telephony_medium:
 			self.telephony_medium = "Manual"
+		self.set_logged_by()
+
+	def set_logged_by(self):
+		"""A call logged by hand was made or taken by the person logging it:
+		the caller of an outgoing call, the receiver of an incoming one. Calls
+		from a telephony provider set these themselves."""
+		if self.telephony_medium != "Manual" or frappe.session.user in ("Guest", "Administrator"):
+			return
+		if self.type == "Outgoing" and not self.caller:
+			self.caller = frappe.session.user
+		elif self.type == "Incoming" and not self.receiver:
+			self.receiver = frappe.session.user
 
 	@staticmethod
 	def default_list_data():

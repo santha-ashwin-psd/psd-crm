@@ -66,6 +66,7 @@ import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import ReminderPanel from '@/components/Calendar/ReminderPanel.vue'
 import { useDocument } from '@/data/document'
+import { prefillCallLog } from '@/composables/callLogPrefill'
 import { globalStore } from '@/stores/global'
 import { usersStore } from '@/stores/users'
 import {
@@ -76,7 +77,7 @@ import {
 import { isMobileView } from '@/composables/settings'
 import { setupCustomizations } from '@/utils'
 import { call, createResource, toast } from 'frappe-ui'
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -186,5 +187,12 @@ onMounted(async () => {
     ...props.defaults,
   }
   await triggerOnRender()
+  // A new call log: fill From / To with my number and the record's.
+  if (props.doctype === 'CRM Call Log' && !props.docname) {
+    stopPrefill = await prefillCallLog(() => document.doc)
+  }
 })
+
+let stopPrefill = null
+onBeforeUnmount(() => stopPrefill?.())
 </script>
