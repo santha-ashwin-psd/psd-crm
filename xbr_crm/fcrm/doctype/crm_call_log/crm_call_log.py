@@ -4,9 +4,13 @@
 import frappe
 from frappe import _, generate_hash
 from frappe.model.document import Document
+from frappe.utils import add_to_date, cint, get_datetime, now_datetime
 
 from xbr_crm.integrations.api import get_contact_by_phone_number
 from xbr_crm.utils import seconds_to_duration
+
+# A clock a little ahead of the server's still counts as "now".
+FUTURE_SLACK_MINUTES = 5
 
 
 class CRMCallLog(Document):
@@ -53,6 +57,40 @@ class CRMCallLog(Document):
 		if not self.telephony_medium:
 			self.telephony_medium = "Manual"
 		self.set_logged_by()
+
+	def validate(self):
+		if self.telephony_medium == "Manual":
+			self.set_call_time()
+
+	def set_call_time(self):
+		"""A call logged by hand happened at its "Call Date & Time" (start_time),
+		which may be in the past: a call made yesterday and logged today. It
+		can't be in the future. The end follows from the duration."""
+		if not self.start_time:
+			self.start_time = now_datetime()
+		start = get_datetime(self.start_time)
+		if start > add_to_date(now_datetime(), minutes=FUTURE_SLACK_MINUTES):
+			frappe.throw(_("The call's date and time can't be in the future."))
+		if self.duration and (self.is_new() or self.has_value_changed("start_time") or self.has_value_changed("duration")):
+			self.end_time = add_to_date(start, seconds=cint(self.duration))
+
+	def after_insert(self):
+		self.date_by_call_time()
+
+	def on_update(self):
+		if not self.is_new() and self.has_value_changed("start_time"):
+			self.date_by_call_time()
+
+	def date_by_call_time(self):
+		"""Date a manual log by when the call happened, not when it was typed in:
+		the timeline, the Calls tab and the call list all order and show calls by
+		`creation`, so a call logged a day late still lands on its own day."""
+		if self.telephony_medium != "Manual" or not self.start_time:
+			return
+		start = get_datetime(self.start_time)
+		if get_datetime(self.creation) != start:
+			frappe.db.set_value("CRM Call Log", self.name, "creation", start, update_modified=False)
+			self.creation = start
 
 	def set_logged_by(self):
 		"""A call logged by hand was made or taken by the person logging it:

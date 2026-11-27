@@ -175,7 +175,7 @@ def add_default_fields_layout(force=False):
 		},
 		"CRM Call Log-Quick Entry": {
 			"doctype": "CRM Call Log",
-			"layout": '[{"name":"details_section","columns":[{"name":"column_uMSG","fields":["type","from","duration"]},{"name":"column_wiZT","fields":["to","status","caller","receiver"]}]}]',
+			"layout": '[{"name":"details_section","columns":[{"name":"column_uMSG","fields":["type","from","duration","start_time"]},{"name":"column_wiZT","fields":["to","status","caller","receiver"]}]}]',
 		},
 		"FCRM Note-Quick Entry": {
 			"doctype": "FCRM Note",

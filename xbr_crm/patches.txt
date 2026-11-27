@@ -46,3 +46,4 @@ xbr_crm.patches.v1_1.ai_assistant
 xbr_crm.patches.v1_1.desk_user_role
 xbr_crm.patches.v1_1.interested_stage
 xbr_crm.patches.v1_1.ai_auto_junk_defaults
+xbr_crm.patches.v1_1.call_log_date_time
