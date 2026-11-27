@@ -100,7 +100,7 @@
    "fieldname": "organization",
    "fieldtype": "Link",
    "in_standard_filter": 1,
-   "label": "Institution",
+   "label": "Organization",
    "options": "CRM Organization"
   },
   {
@@ -182,7 +182,7 @@
   {
    "fieldname": "organization_tab",
    "fieldtype": "Tab Break",
-   "label": "Institution"
+   "label": "Organization"
   },
   {
    "fieldname": "sla_tab",
@@ -310,12 +310,12 @@
   {
    "fieldname": "organization_details_section",
    "fieldtype": "Section Break",
-   "label": "Institution Details"
+   "label": "Organization Details"
   },
   {
    "fieldname": "organization_name",
    "fieldtype": "Data",
-   "label": "Institution Name"
+   "label": "Organization Name"
   },
   {
    "fieldname": "column_break_xbyf",
@@ -491,7 +491,7 @@
   {
    "fieldname": "organization_logo",
    "fieldtype": "Attach Image",
-   "label": "Institution Logo",
+   "label": "Organization Logo",
    "no_copy": 1
   },
   {
@@ -611,7 +611,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-11-25 14:00:00.000000",
+ "modified": "2026-11-27 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Deal",

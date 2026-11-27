@@ -1261,6 +1261,28 @@ body,
   font-size: 15px;
   color: var(--crm-text);
 }
+/* The country-code picker beside a mobile number: the code segment showing
+   "+44", with the real <select> laid invisibly over it, so the open list shows
+   "+44 UK" while the field stays narrow. */
+.crm-entry-field__code--select {
+  position: relative;
+  gap: 4px;
+  cursor: pointer;
+}
+.crm-entry-field__code--select > span {
+  color: var(--crm-text-3);
+}
+.crm-entry-field__code--select > select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.crm-entry-field__code--select:focus-within {
+  outline: 2px solid var(--crm-accent-primary);
+  outline-offset: -2px;
+}
 .crm-entry-field__control {
   flex: 1;
   min-width: 0;

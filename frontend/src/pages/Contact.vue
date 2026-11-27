@@ -158,7 +158,7 @@
           <div class="fact-tile">
             <span class="fact-k"
               ><FeatherIcon name="briefcase" class="size-3.5" />{{
-                __('Institution')
+                __('Organization')
               }}</span
             >
             <span
@@ -554,12 +554,12 @@ const parsedSections = computed(() => {
 
 const fieldLabelMap = {
   mobile_no: __('Mobile Number'),
-  company_name: __('Institution'),
+  company_name: __('Organization'),
 }
 
 const fieldPlaceholderMap = {
   mobile_no: __('Add Mobile Number...'),
-  company_name: __('Add Institution...'),
+  company_name: __('Add Organization...'),
 }
 
 async function setAsPrimary(field, value) {
@@ -637,7 +637,7 @@ function getDealRowObject(deal) {
 
 const dealColumns = [
   {
-    label: __('Institution'),
+    label: __('Organization'),
     key: 'organization',
     width: '11rem',
   },

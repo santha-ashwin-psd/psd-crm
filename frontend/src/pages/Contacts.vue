@@ -29,7 +29,7 @@
     v-model:resizeColumn="triggerResize"
     v-model:updatedPageCount="updatedPageCount"
     doctype="Contact"
-    :fieldLabels="{ company_name: __('Institution') }"
+    :fieldLabels="{ company_name: __('Organization') }"
   />
   <ContactsListView
     v-if="contacts.data && rows.length"
@@ -219,10 +219,10 @@ const rows = computed(() => {
 const columns = computed(() => {
   let _columns = contacts.value?.data?.columns || []
 
-  // Page-only wording: the company_name column header reads Institution.
+  // Page-only wording: the company_name column header reads Organization.
   _columns = _columns.map((col) =>
     col.key === 'company_name'
-      ? { ...col, label: __('Institution') }
+      ? { ...col, label: __('Organization') }
       : col,
   )
 

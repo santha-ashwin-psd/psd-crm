@@ -3,8 +3,8 @@
     v-model:open="show"
     size="xl"
     icon="briefcase"
-    :title="__('New Institution')"
-    :subtitle="__('Add a new institution')"
+    :title="__('New Organization')"
+    :subtitle="__('Add a new organization')"
     body-class="crm-doc-modal"
   >
     <template #header-actions>
@@ -135,7 +135,7 @@ const tabs = createResource({
               organization.doc[field.fieldname] = []
             }
             if (field.fieldname == 'organization_name') {
-              field.label = __('Institution Name')
+              field.label = __('Organization Name')
             }
           })
         })

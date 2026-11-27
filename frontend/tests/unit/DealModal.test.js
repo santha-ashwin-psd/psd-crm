@@ -154,6 +154,37 @@ describe('DealModal (Create Pipeline)', () => {
     })
   })
 
+  describe('mobile country code', () => {
+    it('starts at +91', () => {
+      const w = mountModal()
+      expect(w.vm.mobileCode).toBe('+91')
+    })
+
+    it('another code is stored with the number and sent cleaned', async () => {
+      const w = mountModal()
+      w.vm.mobileCode = '+971'
+      w.vm.mobileLocal = '050 123 4567'
+      expect(doc.ref.doc.mobile_no).toBe('+97150 123 4567')
+      doc.ref.doc.first_name = 'Omar'
+      await w.vm.create()
+      expect(sent()).toMatchObject({ mobile_no: '+971501234567' })
+    })
+
+    it('switching code keeps the number typed', () => {
+      const w = mountModal()
+      w.vm.mobileLocal = '7911 123456'
+      w.vm.mobileCode = '+44'
+      expect(doc.ref.doc.mobile_no).toBe('+447911 123456')
+      w.vm.mobileCode = '+91'
+      expect(doc.ref.doc.mobile_no).toBe('7911 123456')
+    })
+
+    it('shows the code of an existing international number', () => {
+      const w = mountModal({ mobile_no: '+447911123456' })
+      expect([w.vm.mobileCode, w.vm.mobileLocal]).toEqual(['+44', '7911123456'])
+    })
+  })
+
   describe('what is sent', () => {
     it('a new contact with a normalised mobile, value as a number, and the note', async () => {
       const w = mountModal()

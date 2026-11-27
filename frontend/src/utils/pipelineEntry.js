@@ -29,6 +29,62 @@ export const STICKY_FIELDS = ['deal_owner', 'status', 'source', 'currency']
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
+// Country codes offered next to the mobile number, +91 first (the default).
+// Any other code can still be typed in full ("+30 ...").
+export const DEFAULT_DIAL_CODE = '+91'
+export const DIAL_CODES = [
+  ['+91', 'India'],
+  ['+971', 'UAE'],
+  ['+966', 'Saudi Arabia'],
+  ['+974', 'Qatar'],
+  ['+968', 'Oman'],
+  ['+965', 'Kuwait'],
+  ['+973', 'Bahrain'],
+  ['+1', 'USA / Canada'],
+  ['+44', 'UK'],
+  ['+61', 'Australia'],
+  ['+64', 'New Zealand'],
+  ['+65', 'Singapore'],
+  ['+60', 'Malaysia'],
+  ['+94', 'Sri Lanka'],
+  ['+977', 'Nepal'],
+  ['+880', 'Bangladesh'],
+  ['+49', 'Germany'],
+  ['+33', 'France'],
+  ['+31', 'Netherlands'],
+  ['+353', 'Ireland'],
+  ['+27', 'South Africa'],
+  ['+254', 'Kenya'],
+  ['+234', 'Nigeria'],
+  ['+81', 'Japan'],
+  ['+86', 'China'],
+].map(([code, country]) => ({ code, country }))
+
+// A stored mobile split into a listed code and the rest. A number without a
+// + is local (the default code); a + code that isn't listed stays whole in
+// `local`, with no code.
+export function splitDialCode(value) {
+  const text = String(value || '').trim()
+  if (!text.startsWith('+')) return { code: DEFAULT_DIAL_CODE, local: text }
+  const match = DIAL_CODES.map((d) => d.code)
+    .sort((a, b) => b.length - a.length)
+    .find((code) => text.startsWith(code))
+  return match
+    ? { code: match, local: text.slice(match.length).trim() }
+    : { code: '', local: text }
+}
+
+// What to store for a code and the number typed beside it. The default code
+// is left off (cleanMobile adds +91 to an Indian number); a number typed with
+// its own + is kept as typed; a trunk 0 ("07911 ...") is dropped after a
+// foreign code.
+export function joinDialCode(code, local) {
+  const text = String(local || '').trim()
+  if (!text || text.startsWith('+') || !code) return text
+  if (code === DEFAULT_DIAL_CODE) return text
+  return code + text.replace(/^0+/, '')
+}
+
 // Same rule as the server (web_lead.normalize_mobile + pipeline_entry.clean_mobile):
 // Indian mobiles become +91XXXXXXXXXX, other numbers must start with +.
 // Returns { value, error }.

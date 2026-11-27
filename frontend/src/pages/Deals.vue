@@ -346,7 +346,7 @@ const columns = computed(() => {
     _columns = _columns.map((col, index) => {
       // Saved views may still carry the old "Organization" header.
       if (col.key === 'organization') {
-        col = { ...col, label: __('Institution') }
+        col = { ...col, label: __('Organization') }
       }
       if (index === _columns.length - 1) {
         return { ...col, align: 'right' }

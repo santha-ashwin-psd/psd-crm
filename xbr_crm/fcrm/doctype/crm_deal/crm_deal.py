@@ -342,7 +342,7 @@ class CRMDeal(Document):
 	def default_list_data():
 		columns = [
 			{
-				"label": "Institution",
+				"label": "Organization",
 				"type": "Link",
 				"key": "organization",
 				"options": "CRM Organization",

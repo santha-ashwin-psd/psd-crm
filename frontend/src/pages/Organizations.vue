@@ -4,7 +4,7 @@
       <ViewBreadcrumbs
         v-model="viewControls"
         routeName="Organizations"
-        :label="__('Institutions')"
+        :label="__('Organizations')"
       />
     </template>
     <template #right-header>
@@ -19,7 +19,7 @@
     class="mx-3 sm:mx-5 mt-3"
     doctype="CRM Organization"
     :statuses="orgStatuses"
-    totalLabel="Total Institutions"
+    totalLabel="Total Organizations"
     :activeStatus="activeStatus"
     :refreshToken="organizations?.data?.total_count"
     :show="showStatusBand"
@@ -33,7 +33,7 @@
     v-model:resizeColumn="triggerResize"
     v-model:updatedPageCount="updatedPageCount"
     doctype="CRM Organization"
-    :fieldLabels="{ organization_name: __('Institution Name') }"
+    :fieldLabels="{ organization_name: __('Organization Name') }"
   />
   <OrganizationsListView
     v-if="organizations.data && rows.length"
@@ -65,16 +65,16 @@
     v-else-if="!organizations.data"
     class="flex flex-col mt-3"
     aria-busy="true"
-    aria-label="Loading institutions"
+    aria-label="Loading organizations"
   >
     <SkeletonLoader type="table" />
   </div>
   <EmptyState
     v-else-if="organizations.data && !rows.length"
     framed
-    name="Institutions"
+    name="Organizations"
     :icon="OrganizationsIcon"
-    :ctaLabel="__('Create Institution')"
+    :ctaLabel="__('Create Organization')"
     @ctaClick="showOrganizationModal = true"
   />
   <OrganizationModal
@@ -230,10 +230,10 @@ const rows = computed(() => {
 const columns = computed(() => {
   let _columns = organizations.value?.data?.columns || []
 
-  // Page-only wording: the name column header reads Institution.
+  // Page-only wording: the name column header reads Organization.
   _columns = _columns.map((col) =>
     col.key === 'organization_name'
-      ? { ...col, label: __('Institution') }
+      ? { ...col, label: __('Organization') }
       : col,
   )
 

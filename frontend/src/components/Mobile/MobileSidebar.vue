@@ -132,7 +132,7 @@ const links = [
     to: 'Contacts',
   },
   {
-    label: 'Institutions',
+    label: 'Organizations',
     icon: OrganizationsIcon,
     to: 'Organizations',
   },

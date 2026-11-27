@@ -4,7 +4,7 @@
     size="5xl"
     icon="zap"
     :title="__('Create Pipeline')"
-    :subtitle="__('Add contact, institution and pipeline details in one go')"
+    :subtitle="__('Add contact, organization and pipeline details in one go')"
     root-class="crm-dialog--entry"
     body-class="crm-doc-modal"
     max-body-height="min(74vh, calc(100vh - 13rem))"
@@ -156,14 +156,23 @@
                 />
               </EntryField>
               <EntryField :label="__('Mobile')" icon="lucide-phone">
-                <!-- +91 is the default; an international number typed with
-                     its own + code drops the segment and is kept as typed. -->
+                <!-- +91 is the default. Pick another country's code here, or
+                     type a number with its own + code (kept as typed). -->
                 <div class="flex w-full items-center">
-                  <span
-                    v-if="mobileHasDefaultCode"
-                    class="crm-entry-field__code"
-                    >+91</span
+                  <label
+                    v-if="mobileCode"
+                    class="crm-entry-field__code crm-entry-field__code--select"
                   >
+                    {{ mobileCode }}
+                    <span class="lucide-chevron-down size-3.5" aria-hidden="true" />
+                    <!-- Invisible over the code: closed it shows just "+44",
+                         open it lists the countries. -->
+                    <select v-model="mobileCode" :aria-label="__('Country code')">
+                      <option v-for="d in DIAL_CODES" :key="d.code" :value="d.code">
+                        {{ d.code }} {{ d.country }}
+                      </option>
+                    </select>
+                  </label>
                   <FormControl
                     v-model="mobileLocal"
                     class="flex-1"
@@ -246,9 +255,9 @@
               ><span class="lucide-building-2 size-[22px]"
             /></span>
             <div class="min-w-0">
-              <h3 class="crm-entry-card__title">{{ __('Institution') }}</h3>
+              <h3 class="crm-entry-card__title">{{ __('Organization') }}</h3>
               <p class="crm-entry-card__sub">
-                {{ __('Link to an existing institution or create a new one') }}
+                {{ __('Link to an existing organization or create a new one') }}
               </p>
             </div>
           </div>
@@ -259,7 +268,7 @@
                 doctype="CRM Organization"
                 variant="outline"
                 :value="deal.doc.organization"
-                :placeholder="__('Search institutions, or create a new one')"
+                :placeholder="__('Search organizations, or create a new one')"
                 :onCreate="startNewOrganization"
                 @change="(v) => (deal.doc.organization = v)"
               />
@@ -271,14 +280,14 @@
               @click="startNewOrganization('')"
             >
               <span class="lucide-plus size-[18px]" />
-              {{ __('Create new institution') }}
+              {{ __('Create new organization') }}
             </button>
           </template>
           <template v-else>
             <div class="flex flex-col gap-4">
               <EntryField
                 ref="organizationInput"
-                :label="__('Institution name')"
+                :label="__('Organization name')"
                 icon="lucide-building-2"
               >
                 <FormControl
@@ -326,7 +335,7 @@
               class="self-start text-sm text-[var(--crm-accent-text)] hover:underline"
               @click="cancelNewOrganization"
             >
-              {{ __('Pick an existing institution instead') }}
+              {{ __('Pick an existing organization instead') }}
             </button>
           </template>
         </section>
@@ -621,6 +630,10 @@ import { useDocument } from '@/data/document'
 import { timeAgo } from '@/utils'
 import {
   STICKY_FIELDS,
+  DEFAULT_DIAL_CODE,
+  DIAL_CODES,
+  splitDialCode,
+  joinDialCode,
   cleanMobile,
   validateEntry,
   extraTabs,
@@ -688,19 +701,28 @@ const createNewContactAnyway = ref(false)
 const creatingOrganization = ref(false)
 const searchingContacts = ref(false)
 
-// Mobile shows a fixed +91 segment; the stored value keeps its +91 prefix
-// (cleanMobile adds it on blur). A number typed with another + code is kept
-// as typed and the segment steps aside.
-const mobileHasDefaultCode = computed(() => {
-  const v = String(deal.doc.mobile_no || '').trim()
-  return !v.startsWith('+') || v.startsWith('+91')
+// Mobile has a country-code picker (+91 by default) beside the number. The
+// stored value carries the code: "+44 7911 123456"; an Indian number is kept
+// bare until cleanMobile adds +91 on blur. A number typed with an unlisted +
+// code is kept as typed and the picker steps aside.
+const pickedCode = ref(DEFAULT_DIAL_CODE)
+const mobileParts = computed(() => {
+  const parts = splitDialCode(deal.doc.mobile_no)
+  // A bare number follows the picker, not the default.
+  return String(deal.doc.mobile_no || '').trim().startsWith('+')
+    ? parts
+    : { code: pickedCode.value, local: parts.local }
+})
+const mobileCode = computed({
+  get: () => mobileParts.value.code,
+  set: (code) => {
+    pickedCode.value = code
+    deal.doc.mobile_no = joinDialCode(code, mobileParts.value.local)
+  },
 })
 const mobileLocal = computed({
-  get: () => {
-    const v = String(deal.doc.mobile_no || '')
-    return v.startsWith('+91') ? v.slice(3) : v
-  },
-  set: (v) => (deal.doc.mobile_no = v),
+  get: () => mobileParts.value.local,
+  set: (v) => (deal.doc.mobile_no = joinDialCode(mobileParts.value.code, v)),
 })
 
 const me = computed(() => getUser().name)
@@ -766,8 +788,8 @@ const guideSteps = computed(() => {
     {
       icon: 'lucide-building-2',
       tone: 'crm-tone-violet',
-      title: __('Select or create institution'),
-      sub: __('Associate with an institution'),
+      title: __('Select or create organization'),
+      sub: __('Associate with an organization'),
       done: Boolean(
         d.organization || (creatingOrganization.value && d.organization_name),
       ),
